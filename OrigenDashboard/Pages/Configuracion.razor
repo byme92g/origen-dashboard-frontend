@@ -1,0 +1,89 @@
+@page "/configuracion"
+@inject UsuarioService UsuarioSvc
+@inject IDialogService Dialog
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>Configuración · Origen</PageTitle>
+
+<MudTabs Elevation="0" Rounded="true">
+    <MudTabPanel Text="Usuarios">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Gestión de usuarios</div>
+                <button class="btn btn-primary btn-sm" @onclick="AbrirCrear">+ Nuevo usuario</button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var u in _usuarios)
+                        {
+                            <tr>
+                                <td class="fw-bold">@u.NombreUsuario</td>
+                                <td>@u.NombreCompleto</td>
+                                <td><span class="badge @(u.Rol == "admin" ? "badge-navy" : "badge-gold")">@u.Rol</span></td>
+                                <td><span class="badge @(u.Activo ? "badge-green" : "badge-gray")">@(u.Activo ? "Activo" : "Inactivo")</span></td>
+                                <td>
+                                    <div class="d-flex gap-8">
+                                        <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditar(u)">✏️</button>
+                                        <button class="btn btn-danger btn-sm" @onclick="() => Eliminar(u)">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!_usuarios.Any()) { <tr><td colspan="5" class="text-center text-muted" style="padding:24px;">Sin usuarios</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </MudTabPanel>
+
+    <MudTabPanel Text="Información del sistema">
+        <div class="card">
+            <div class="card-body">
+                <div style="font-size:13px;color:#5a6478;line-height:1.8;">
+                    <div><strong>Sistema:</strong> Origen · Sistema Administrativo</div>
+                    <div><strong>Versión:</strong> 1.0.0</div>
+                    <div><strong>Tecnología:</strong> .NET 10 + Blazor WASM + MySQL</div>
+                    <div><strong>Zona horaria:</strong> America/Lima (UTC-5)</div>
+                </div>
+            </div>
+        </div>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+    private List<UsuarioDto> _usuarios = [];
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        var (ok, data, _) = await UsuarioSvc.ListarAsync();
+        _usuarios = ok && data is not null ? data : [];
+    }
+
+    private async Task AbrirCrear()
+    {
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.UsuarioDialog>("Nuevo usuario");
+        if ((await dlg.Result)?.Canceled == false) await Cargar();
+    }
+
+    private async Task AbrirEditar(UsuarioDto u)
+    {
+        var p = new DialogParameters<Shared.Dialogs.UsuarioDialog> { { x => x.Existente, u } };
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.UsuarioDialog>("Editar usuario", p);
+        if ((await dlg.Result)?.Canceled == false) await Cargar();
+    }
+
+    private async Task Eliminar(UsuarioDto u)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Eliminar el usuario '{u.NombreUsuario}'?"))
+        {
+            var (ok, error) = await UsuarioSvc.EliminarAsync(u.Id);
+            if (ok) { Snackbar.Add("Usuario eliminado.", Severity.Success); await Cargar(); }
+            else Snackbar.Add(error ?? "Error al eliminar.", Severity.Error);
+        }
+    }
+}

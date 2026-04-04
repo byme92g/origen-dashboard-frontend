@@ -1,0 +1,83 @@
+@inject PaqueteService Svc
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>@(Existente is null ? "Nuevo paquete" : "Editar paquete")</TitleContent>
+    <DialogContent>
+        <div class="form-grid" style="min-width:460px;">
+            <div class="form-group form-full">
+                <label class="form-label">Nombre *</label>
+                <input class="form-control" @bind="_nombre" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Precio (S/)</label>
+                <input type="number" class="form-control" @bind="_precio" step="0.01" min="0" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descuento (S/)</label>
+                <input type="number" class="form-control" @bind="_descuento" step="0.01" min="0" />
+            </div>
+            <div class="form-group form-full">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" @bind="_descripcion"></textarea>
+            </div>
+            <div class="form-group form-full">
+                <label class="form-label">Servicios incluidos</label>
+                @foreach (var s in Servicios)
+                {
+                    <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer;">
+                        <input type="checkbox" checked="@_seleccionados.Contains(s.Id)" @onchange="e => Toggle(s.Id, (bool)e.Value!)" />
+                        @s.Nombre — <span class="text-muted">@Fmt(s.Precio)</span>
+                    </label>
+                }
+            </div>
+        </div>
+        @if (_error is not null) { <div style="background:#fdecea;color:#c0392b;padding:8px 12px;border-radius:6px;font-size:12px;margin-top:10px;">@_error</div> }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Guardar" Disabled="_saving">@(_saving ? "Guardando..." : "Guardar")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public PaqueteDto? Existente { get; set; }
+    [Parameter] public List<ServicioDto> Servicios { get; set; } = [];
+
+    private string _nombre = ""; private string? _descripcion;
+    private decimal _precio = 0; private decimal _descuento = 0;
+    private HashSet<int> _seleccionados = [];
+    private bool _saving; private string? _error;
+
+    protected override void OnParametersSet()
+    {
+        if (Existente is null) return;
+        _nombre = Existente.Nombre; _descripcion = Existente.Descripcion;
+        _precio = Existente.Precio; _descuento = Existente.Descuento;
+        _seleccionados = Existente.Servicios.Select(ps => ps.ServicioId).ToHashSet();
+    }
+
+    private void Toggle(int id, bool check) { if (check) _seleccionados.Add(id); else _seleccionados.Remove(id); }
+
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(_nombre)) { _error = "El nombre es requerido."; return; }
+        _saving = true; _error = null;
+        var ids = _seleccionados.ToList();
+        if (Existente is null)
+        {
+            var (ok, _, err) = await Svc.CrearAsync(new CrearPaqueteRequest(_nombre, _descripcion, _precio, _descuento, ids));
+            if (ok) { Snackbar.Add("Paquete creado.", Severity.Success); MudDialog.Close(); }
+            else { _error = err ?? "Error."; _saving = false; }
+        }
+        else
+        {
+            var (ok, err) = await Svc.ActualizarAsync(Existente.Id, new ActualizarPaqueteRequest(_nombre, _descripcion, _precio, _descuento, Existente.Activo, ids));
+            if (ok) { Snackbar.Add("Paquete actualizado.", Severity.Success); MudDialog.Close(); }
+            else { _error = err ?? "Error."; _saving = false; }
+        }
+    }
+
+    private static string Fmt(decimal v) => $"S/ {v:N2}";
+}

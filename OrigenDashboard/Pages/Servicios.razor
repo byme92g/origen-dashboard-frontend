@@ -1,0 +1,208 @@
+@page "/servicios"
+@inject ServicioService SvcServicios
+@inject ProductoService SvcProductos
+@inject PaqueteService SvcPaquetes
+@inject IDialogService Dialog
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>Servicios &amp; Productos · Origen</PageTitle>
+
+<MudTabs Elevation="0" Rounded="true">
+
+    @* ── Servicios ── *@
+    <MudTabPanel Text="✂️ Servicios">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+            <button class="btn btn-primary btn-sm" @onclick="AbrirCrearServicio">+ Nuevo servicio</button>
+        </div>
+        @if (_servicios.Any())
+        {
+            <div class="catalog-grid">
+                @foreach (var s in _servicios)
+                {
+                    <div class="catalog-card @(!s.Activo ? "cc-inactive" : "")">
+                        <div class="cc-cat">@s.Categoria</div>
+                        <div class="cc-name">@s.Nombre</div>
+                        <div class="cc-price">S/ @s.Precio.ToString("N2")</div>
+                        <div class="cc-meta">
+                            <span>⏱ @s.DuracionMin min</span>
+                            <span>📊 @s.ComisionPct%</span>
+                            @if (!s.Activo) { <span class="badge badge-gray">Inactivo</span> }
+                        </div>
+                        <div class="cc-actions">
+                            <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarServicio(s)">✏️</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => EliminarServicio(s)">🗑️</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted" style="padding:40px;">Sin servicios registrados</div>
+        }
+    </MudTabPanel>
+
+    @* ── Productos ── *@
+    <MudTabPanel Text="📦 Productos">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Productos</div>
+                <button class="btn btn-primary btn-sm" @onclick="AbrirCrearProducto">+ Nuevo producto</button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _productos)
+                        {
+                            <tr>
+                                <td class="fw-bold">@p.Nombre</td>
+                                <td>@p.Categoria</td>
+                                <td style="font-family:var(--font-heading);font-size:1rem;font-weight:700;color:var(--navy);">S/ @p.PrecioVenta.ToString("N2")</td>
+                                <td><span class="badge @(p.Stock > 0 ? "badge-green" : "badge-red")">@p.Stock unid.</span></td>
+                                <td><span class="badge @(p.Activo ? "badge-green" : "badge-gray")">@(p.Activo ? "Activo" : "Inactivo")</span></td>
+                                <td>
+                                    <div class="d-flex gap-8">
+                                        <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarProducto(p)">✏️</button>
+                                        <button class="btn btn-danger btn-sm" @onclick="() => EliminarProducto(p)">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!_productos.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Sin productos</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </MudTabPanel>
+
+    @* ── Paquetes ── *@
+    <MudTabPanel Text="🎁 Paquetes">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+            <button class="btn btn-primary btn-sm" @onclick="AbrirCrearPaquete">+ Nuevo paquete</button>
+        </div>
+        @if (_paquetes.Any())
+        {
+            <div class="pkg-grid">
+                @foreach (var p in _paquetes)
+                {
+                    <div class="pkg-card">
+                        <div class="pk-name">@p.Nombre</div>
+                        <div class="pk-prices">
+                            <span class="pk-price">S/ @p.Precio.ToString("N2")</span>
+                            @if (p.Descuento > 0)
+                            {
+                                <span class="pk-discount">- S/ @p.Descuento.ToString("N2")</span>
+                            }
+                        </div>
+                        @if (p.Servicios.Any())
+                        {
+                            <div class="pk-svcs">
+                                @foreach (var svc in p.Servicios)
+                                {
+                                    <span class="pk-svc-chip">@svc.Servicio.Nombre</span>
+                                }
+                            </div>
+                        }
+                        <div class="pk-actions">
+                            <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarPaquete(p)">✏️ Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => EliminarPaquete(p)">🗑️</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted" style="padding:40px;">Sin paquetes registrados</div>
+        }
+    </MudTabPanel>
+
+</MudTabs>
+
+@code {
+    private List<ServicioDto> _servicios = [];
+    private List<ProductoDto> _productos = [];
+    private List<PaqueteDto>  _paquetes  = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var t1 = SvcServicios.ListarAsync();
+        var t2 = SvcProductos.ListarAsync();
+        var t3 = SvcPaquetes.ListarAsync();
+        await Task.WhenAll(t1, t2, t3);
+        _servicios = (await t1).data ?? [];
+        _productos = (await t2).data ?? [];
+        _paquetes  = (await t3).data ?? [];
+    }
+
+    private async Task AbrirCrearServicio()
+    {
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.ServicioDialog>("Nuevo servicio");
+        if ((await dlg.Result)?.Canceled == false) _servicios = (await SvcServicios.ListarAsync()).data ?? [];
+    }
+    private async Task AbrirEditarServicio(ServicioDto s)
+    {
+        var p = new DialogParameters<Shared.Dialogs.ServicioDialog> { { x => x.Existente, s } };
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.ServicioDialog>("Editar servicio", p);
+        if ((await dlg.Result)?.Canceled == false) _servicios = (await SvcServicios.ListarAsync()).data ?? [];
+    }
+    private async Task EliminarServicio(ServicioDto s)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Eliminar {s.Nombre}?"))
+        {
+            var (ok, err) = await SvcServicios.EliminarAsync(s.Id);
+            if (ok) { Snackbar.Add("Servicio eliminado.", Severity.Success); _servicios = (await SvcServicios.ListarAsync()).data ?? []; }
+            else Snackbar.Add(err ?? "Error.", Severity.Error);
+        }
+    }
+
+    private async Task AbrirCrearProducto()
+    {
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.ProductoDialog>("Nuevo producto");
+        if ((await dlg.Result)?.Canceled == false) _productos = (await SvcProductos.ListarAsync()).data ?? [];
+    }
+    private async Task AbrirEditarProducto(ProductoDto p)
+    {
+        var par = new DialogParameters<Shared.Dialogs.ProductoDialog> { { x => x.Existente, p } };
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.ProductoDialog>("Editar producto", par);
+        if ((await dlg.Result)?.Canceled == false) _productos = (await SvcProductos.ListarAsync()).data ?? [];
+    }
+    private async Task EliminarProducto(ProductoDto p)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Eliminar {p.Nombre}?"))
+        {
+            var (ok, err) = await SvcProductos.EliminarAsync(p.Id);
+            if (ok) { Snackbar.Add("Producto eliminado.", Severity.Success); _productos = (await SvcProductos.ListarAsync()).data ?? []; }
+            else Snackbar.Add(err ?? "Error.", Severity.Error);
+        }
+    }
+
+    private async Task AbrirCrearPaquete()
+    {
+        var p = new DialogParameters<Shared.Dialogs.PaqueteDialog> { { x => x.Servicios, _servicios } };
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.PaqueteDialog>("Nuevo paquete", p);
+        if ((await dlg.Result)?.Canceled == false) _paquetes = (await SvcPaquetes.ListarAsync()).data ?? [];
+    }
+    private async Task AbrirEditarPaquete(PaqueteDto paq)
+    {
+        var par = new DialogParameters<Shared.Dialogs.PaqueteDialog> { { x => x.Existente, paq }, { x => x.Servicios, _servicios } };
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.PaqueteDialog>("Editar paquete", par);
+        if ((await dlg.Result)?.Canceled == false) _paquetes = (await SvcPaquetes.ListarAsync()).data ?? [];
+    }
+    private async Task EliminarPaquete(PaqueteDto p)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Eliminar {p.Nombre}?"))
+        {
+            var (ok, err) = await SvcPaquetes.EliminarAsync(p.Id);
+            if (ok) { Snackbar.Add("Paquete eliminado.", Severity.Success); _paquetes = (await SvcPaquetes.ListarAsync()).data ?? []; }
+            else Snackbar.Add(err ?? "Error.", Severity.Error);
+        }
+    }
+}

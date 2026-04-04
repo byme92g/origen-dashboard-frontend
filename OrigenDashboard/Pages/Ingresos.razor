@@ -1,0 +1,326 @@
+@page "/ingresos"
+@inject IngresoService IngresoSvc
+@inject ClienteService ClienteSvc
+@inject EmpleadoService EmpleadoSvc
+@inject ServicioService ServicioSvc
+@inject ProductoService ProductoSvc
+@inject PaqueteService PaqueteSvc
+@inject ISnackbar Snackbar
+
+<PageTitle>Registrar Ingreso · Origen</PageTitle>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Registrar Ingreso</div>
+        <span style="font-size:12px;color:#8a97b0;">@_fecha.ToString("dd MMM yyyy, HH:mm")</span>
+    </div>
+    <div class="card-body">
+
+        @* ── Tipo ── *@
+        <span class="form-section-label">Tipo de cobro</span>
+        <div class="chip-select" style="margin-bottom:20px;">
+            <div class="chip-opt @(_tipo=="servicio"?"active":"")"   @onclick='()=>SetTipo("servicio")'>  ✂️ Servicio</div>
+            <div class="chip-opt @(_tipo=="producto"?"active":"")"   @onclick='()=>SetTipo("producto")'>  📦 Producto</div>
+            <div class="chip-opt @(_tipo=="paquete"?"active":"")"    @onclick='()=>SetTipo("paquete")'>   🎁 Paquete</div>
+            <div class="chip-opt @(_tipo=="personalizado"?"active":"")" @onclick='()=>SetTipo("personalizado")'>✏️ Personalizado</div>
+        </div>
+
+        @* ── Empleado ── *@
+        <span class="form-section-label">Empleado responsable</span>
+        <div class="avatar-chips" style="margin-bottom:20px;">
+            @foreach (var e in _empleados)
+            {
+                <div class="avatar-chip @(_empleadoId==e.Id.ToString()?"active":"")"
+                     @onclick="()=>SeleccionarEmpleado(e.Id.ToString())">
+                    <div class="av">@Iniciales(e.Nombre)</div>
+                    @e.Nombre.Split(' ')[0]
+                </div>
+            }
+            @if (!_empleados.Any())
+            {
+                <span style="font-size:13px;color:#8a97b0;">Sin empleados registrados</span>
+            }
+        </div>
+
+        @* ── Cliente ── *@
+        <div class="form-grid" style="margin-bottom:20px;">
+            <div class="form-group">
+                <label class="form-label">Cliente</label>
+                <select class="form-control" @bind="_clienteId">
+                    <option value="">— Sin cliente —</option>
+                    @foreach (var c in _clientes)
+                    {
+                        <option value="@c.Id">@c.Nombre</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha y hora</label>
+                <input type="datetime-local" class="form-control" @bind="_fecha" />
+            </div>
+        </div>
+
+        @* ── Item selector ── *@
+        @if (_tipo == "servicio")
+        {
+            <span class="form-section-label">Servicio</span>
+            <div class="item-cards" style="margin-bottom:20px;">
+                @foreach (var s in _servicios.Where(s => s.Activo))
+                {
+                    <div class="item-card @(_servicioId==s.Id.ToString()?"active":"")"
+                         @onclick="()=>SeleccionarServicio(s.Id.ToString())">
+                        <div class="ic-name">@s.Nombre</div>
+                        <div class="ic-price">S/ @s.Precio.ToString("N2")</div>
+                        <div class="ic-meta">@s.DuracionMin min · @s.ComisionPct%</div>
+                    </div>
+                }
+            </div>
+        }
+        else if (_tipo == "producto")
+        {
+            <span class="form-section-label">Producto</span>
+            <div class="item-cards" style="margin-bottom:20px;">
+                @foreach (var p in _productos.Where(p => p.Activo))
+                {
+                    <div class="item-card @(_productoId==p.Id.ToString()?"active":"")"
+                         @onclick="()=>SeleccionarProducto(p.Id.ToString())">
+                        <div class="ic-name">@p.Nombre</div>
+                        <div class="ic-price">S/ @p.PrecioVenta.ToString("N2")</div>
+                        <div class="ic-meta">@p.Categoria</div>
+                    </div>
+                }
+            </div>
+        }
+        else if (_tipo == "paquete")
+        {
+            <span class="form-section-label">Paquete</span>
+            <div class="item-cards" style="margin-bottom:20px;">
+                @foreach (var p in _paquetes.Where(p => p.Activo))
+                {
+                    <div class="item-card @(_paqueteId==p.Id.ToString()?"active":"")"
+                         @onclick="()=>SeleccionarPaquete(p.Id.ToString())">
+                        <div class="ic-name">@p.Nombre</div>
+                        <div class="ic-price">S/ @p.Precio.ToString("N2")</div>
+                        @if (p.Descuento > 0)
+                        {
+                            <div class="ic-meta" style="color:#2e7d5a;">Dcto: S/ @p.Descuento.ToString("N2")</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label">Concepto</label>
+                <input class="form-control" @bind="_concepto" placeholder="Descripción del cobro" />
+            </div>
+        }
+
+        @* ── Dinero ── *@
+        <span class="form-section-label">Montos</span>
+        <div class="money-row">
+            <div class="money-field">
+                <label>Monto (S/)</label>
+                <input type="number" class="money-input" @bind="_monto" @bind:event="oninput"
+                       step="0.50" min="0" placeholder="0.00" />
+            </div>
+            <div class="money-field">
+                <label>Descuento (S/)</label>
+                <input type="number" class="money-input" @bind="_descuento" @bind:event="oninput"
+                       step="0.50" min="0" placeholder="0.00" />
+            </div>
+        </div>
+        <div class="money-total-banner">
+            <span class="mtb-label">Total a cobrar</span>
+            <span class="mtb-amount">S/ @((_monto - _descuento).ToString("N2"))</span>
+        </div>
+        @if (_comision > 0)
+        {
+            <div class="money-comision-hint">Comisión estimada: S/ @_comision.ToString("N2")</div>
+        }
+
+        @* ── Método de pago ── *@
+        <span class="form-section-label">Método de pago</span>
+        <div class="pago-grid" style="margin-bottom:16px;">
+            @foreach (var m in _metodos)
+            {
+                <div class="pago-option @(_metodoPago==m?"selected":"")" @onclick="()=>_metodoPago=m">
+                    <div class="pago-icon">@_pagoIconos[m]</div>
+                    <div>@_pagoLabels[m]</div>
+                </div>
+            }
+        </div>
+
+        @if (_metodoPago is "transferencia" or "pos" or "yape" or "plin")
+        {
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label">N° de referencia / operación</label>
+                <input class="form-control" @bind="_referencia" placeholder="Número de operación" />
+            </div>
+        }
+
+        <div class="form-group" style="margin-bottom:20px;">
+            <label class="form-label">Observaciones</label>
+            <textarea class="form-control" @bind="_obs" placeholder="Notas del servicio, estado del cabello, productos usados..."></textarea>
+        </div>
+
+        @if (_error is not null)
+        {
+            <div style="background:#fdecea;color:#c0392b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">@_error</div>
+        }
+
+        <div class="d-flex gap-8" style="justify-content:flex-end;">
+            <button class="btn btn-outline" @onclick="Limpiar">Limpiar</button>
+            <button class="btn btn-gold" @onclick="Registrar" disabled="@_saving">
+                @(_saving ? "Registrando..." : "✓ Registrar ingreso")
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ClienteDto>  _clientes  = [];
+    private List<EmpleadoDto> _empleados = [];
+    private List<ServicioDto> _servicios = [];
+    private List<ProductoDto> _productos = [];
+    private List<PaqueteDto>  _paquetes  = [];
+
+    private DateTime _fecha       = DateTime.Now;
+    private string?  _empleadoId;
+    private string?  _clienteId;
+    private string   _tipo        = "servicio";
+    private string?  _servicioId;
+    private string?  _productoId;
+    private string?  _paqueteId;
+    private string?  _concepto;
+    private decimal  _monto       = 0;
+    private decimal  _descuento   = 0;
+    private decimal  _comision    = 0;
+    private string   _metodoPago  = "efectivo";
+    private string?  _referencia;
+    private string?  _obs;
+    private bool     _saving      = false;
+    private string?  _error;
+
+    private readonly string[] _metodos = ["efectivo", "transferencia", "pos", "yape", "plin", "otro"];
+
+    private static readonly Dictionary<string, string> _pagoIconos = new()
+    {
+        ["efectivo"] = "💵", ["transferencia"] = "🏦", ["pos"] = "💳",
+        ["yape"] = "📱", ["plin"] = "📲", ["otro"] = "💬"
+    };
+    private static readonly Dictionary<string, string> _pagoLabels = new()
+    {
+        ["efectivo"] = "Efectivo", ["transferencia"] = "Transfer.", ["pos"] = "POS/Tarjeta",
+        ["yape"] = "Yape", ["plin"] = "Plin", ["otro"] = "Otro"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var t1 = ClienteSvc.ListarAsync();
+        var t2 = EmpleadoSvc.ListarAsync();
+        var t3 = ServicioSvc.ListarAsync();
+        var t4 = ProductoSvc.ListarAsync();
+        var t5 = PaqueteSvc.ListarAsync();
+        await Task.WhenAll(t1, t2, t3, t4, t5);
+        _clientes  = (await t1).data ?? [];
+        _empleados = (await t2).data?.Where(e => e.Activo).ToList() ?? [];
+        _servicios = (await t3).data ?? [];
+        _productos = (await t4).data ?? [];
+        _paquetes  = (await t5).data ?? [];
+    }
+
+    private void SetTipo(string tipo)
+    {
+        _tipo = tipo;
+        _servicioId = null; _productoId = null; _paqueteId = null;
+        _concepto = null; _monto = 0; _comision = 0;
+    }
+
+    private void SeleccionarEmpleado(string id)
+    {
+        _empleadoId = _empleadoId == id ? null : id;
+        RecalcularComision();
+    }
+
+    private void SeleccionarServicio(string id)
+    {
+        _servicioId = _servicioId == id ? null : id;
+        if (int.TryParse(_servicioId, out var sid))
+        {
+            var s = _servicios.FirstOrDefault(x => x.Id == sid);
+            if (s is not null) { _monto = s.Precio; RecalcularComision(s.ComisionPct); }
+        }
+        else { _monto = 0; _comision = 0; }
+    }
+
+    private void SeleccionarProducto(string id)
+    {
+        _productoId = _productoId == id ? null : id;
+        if (int.TryParse(_productoId, out var pid))
+        {
+            var p = _productos.FirstOrDefault(x => x.Id == pid);
+            if (p is not null) { _monto = p.PrecioVenta; _comision = 0; }
+        }
+        else { _monto = 0; }
+    }
+
+    private void SeleccionarPaquete(string id)
+    {
+        _paqueteId = _paqueteId == id ? null : id;
+        if (int.TryParse(_paqueteId, out var pqid))
+        {
+            var p = _paquetes.FirstOrDefault(x => x.Id == pqid);
+            if (p is not null) { _monto = p.Precio; _descuento = p.Descuento; _comision = 0; }
+        }
+        else { _monto = 0; _descuento = 0; }
+    }
+
+    private void RecalcularComision(decimal pctSugerido = 0)
+    {
+        if (!int.TryParse(_empleadoId, out var eid)) { _comision = 0; return; }
+        var emp = _empleados.FirstOrDefault(e => e.Id == eid);
+        var pct = emp?.ComisionPct > 0 ? emp.ComisionPct : pctSugerido;
+        _comision = pct > 0 ? Math.Round(_monto * pct / 100, 2) : 0;
+    }
+
+    private async Task Registrar()
+    {
+        _error = null;
+        if (_monto <= 0) { _error = "El monto debe ser mayor a 0."; return; }
+
+        _saving = true;
+        var req = new CrearIngresoRequest(
+            _fecha,
+            int.TryParse(_clienteId, out var cid) ? cid : null,
+            int.TryParse(_empleadoId, out var eid) ? eid : null,
+            _tipo,
+            int.TryParse(_servicioId, out var sid) ? sid : null,
+            int.TryParse(_productoId, out var pid) ? pid : null,
+            int.TryParse(_paqueteId, out var pqid) ? pqid : null,
+            _concepto,
+            _monto, _descuento, _metodoPago, _referencia, _comision, _obs
+        );
+
+        var (ok, _, error) = await IngresoSvc.CrearAsync(req);
+        if (ok) { Snackbar.Add("Ingreso registrado correctamente.", Severity.Success); Limpiar(); }
+        else _error = error ?? "Error al registrar.";
+        _saving = false;
+    }
+
+    private void Limpiar()
+    {
+        _fecha = DateTime.Now; _empleadoId = null; _clienteId = null;
+        _tipo = "servicio"; _servicioId = null; _productoId = null; _paqueteId = null;
+        _concepto = null; _monto = 0; _descuento = 0; _comision = 0;
+        _metodoPago = "efectivo"; _referencia = null; _obs = null; _error = null;
+    }
+
+    private static string Iniciales(string nombre)
+    {
+        var p = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return p.Length >= 2 ? $"{p[0][0]}{p[1][0]}".ToUpper()
+                             : nombre.Length > 0 ? nombre[0].ToString().ToUpper() : "?";
+    }
+}

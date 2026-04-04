@@ -1,0 +1,25 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+
+# Secrets & env
+.env
+.env.local
+appsettings.Development.json
+
+# Blazor WASM publish
+**/wwwroot/_framework/
+
+# OS
+.DS_Store
+Thumbs.db

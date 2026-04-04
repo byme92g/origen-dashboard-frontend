@@ -1,0 +1,129 @@
+@inherits LayoutComponentBase
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<MudThemeProvider Theme="_theme" />
+<MudSnackbarProvider />
+<MudDialogProvider />
+
+@if (_loading)
+{
+    <div class="splash-loading">
+        <div class="splash-logo">Origen</div>
+        <div class="splash-spinner"></div>
+    </div>
+}
+else if (!_authenticated)
+{
+    @Body
+}
+else
+{
+    <div class="app-shell">
+        <nav class="sidebar">
+            <div class="sidebar-logo">
+                <span class="sidebar-logo-text">Origen</span>
+                <span class="sidebar-logo-sub">Sistema Administrativo</span>
+            </div>
+
+            @if (_usuario is not null)
+            {
+                <div class="sidebar-user">
+                    <div class="sidebar-user-avatar">@_usuario.NombreCompleto[0]</div>
+                    <div>
+                        <div class="sidebar-user-name">@_usuario.NombreCompleto</div>
+                        <div class="sidebar-user-role">@_usuario.Rol</div>
+                    </div>
+                </div>
+            }
+
+            <div class="sidebar-nav">
+                <div class="sidebar-section-label">Principal</div>
+                <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+                    <span class="nav-icon">📊</span> Dashboard
+                </NavLink>
+                <NavLink class="nav-item" href="/ingresos">
+                    <span class="nav-icon">💰</span> Nuevo Ingreso
+                </NavLink>
+                <NavLink class="nav-item" href="/egresos">
+                    <span class="nav-icon">📤</span> Nuevo Egreso
+                </NavLink>
+                <NavLink class="nav-item" href="/caja">
+                    <span class="nav-icon">🗃️</span> Control de Caja
+                </NavLink>
+
+                <div class="sidebar-section-label">Gestión</div>
+                <NavLink class="nav-item" href="/clientes">
+                    <span class="nav-icon">👥</span> Clientes
+                </NavLink>
+                <NavLink class="nav-item" href="/servicios">
+                    <span class="nav-icon">✂️</span> Servicios &amp; Productos
+                </NavLink>
+                <NavLink class="nav-item" href="/empleados">
+                    <span class="nav-icon">👤</span> Empleados
+                </NavLink>
+
+                <div class="sidebar-section-label">Análisis</div>
+                <NavLink class="nav-item" href="/reportes">
+                    <span class="nav-icon">📈</span> Reportes
+                </NavLink>
+
+                <div class="sidebar-section-label">Sistema</div>
+                <NavLink class="nav-item" href="/configuracion">
+                    <span class="nav-icon">⚙️</span> Configuración
+                </NavLink>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;" @onclick="LogoutAsync">
+                    Cerrar sesión
+                </button>
+            </div>
+        </nav>
+
+        <div class="main-area">
+            <div class="topbar">
+                <div class="topbar-title">@_pageTitle</div>
+                <div class="topbar-date">@DateTime.Now.ToString("dddd, d 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))</div>
+            </div>
+            <div class="page-content">
+                @Body
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated = false;
+    private UsuarioInfo? _usuario;
+    private string _pageTitle = "Dashboard";
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#1b3a60",
+            Secondary = "#a07838",
+            AppbarBackground = "#1b3a60",
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _authenticated = await Auth.IsAuthenticatedAsync();
+        if (_authenticated)
+            _usuario = await Auth.GetUsuarioAsync();
+
+        _loading = false;
+
+        if (!_authenticated && !Nav.Uri.Contains("/login"))
+            Nav.NavigateTo("/login");
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+}

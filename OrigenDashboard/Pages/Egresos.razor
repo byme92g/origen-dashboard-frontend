@@ -1,0 +1,109 @@
+@page "/egresos"
+@inject EgresoService Svc
+@inject ISnackbar Snackbar
+
+<PageTitle>Registrar Egreso · Origen</PageTitle>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+    <div class="card">
+        <div class="card-header"><div class="card-title">Registrar Egreso</div></div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Fecha</label>
+                    <input type="datetime-local" class="form-control" @bind="_fecha" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Categoría</label>
+                    <select class="form-control" @bind="_categoria">
+                        <option value="">— Seleccionar —</option>
+                        <option>Insumos y productos</option>
+                        <option>Servicios y utilidades</option>
+                        <option>Sueldos y comisiones</option>
+                        <option>Alquiler</option>
+                        <option>Equipos y herramientas</option>
+                        <option>Marketing</option>
+                        <option>Impuestos</option>
+                        <option>Otros</option>
+                    </select>
+                </div>
+                <div class="form-group form-full">
+                    <label class="form-label">Descripción</label>
+                    <input class="form-control" @bind="_descripcion" placeholder="Detalle del egreso" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Monto (S/)</label>
+                    <input type="number" class="form-control" @bind="_monto" step="0.01" min="0" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Proveedor</label>
+                    <input class="form-control" @bind="_proveedor" placeholder="Nombre del proveedor" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Comprobante / N° factura</label>
+                    <input class="form-control" @bind="_comprobante" placeholder="Opcional" />
+                </div>
+                <div class="form-group form-full">
+                    <label class="form-label">Observaciones</label>
+                    <textarea class="form-control" @bind="_obs"></textarea>
+                </div>
+            </div>
+
+            @if (_error is not null)
+            {
+                <div style="background:#fdecea;color:#c0392b;padding:10px;border-radius:6px;font-size:13px;margin-top:12px;">@_error</div>
+            }
+
+            <div class="d-flex gap-8 mt-16" style="justify-content:flex-end;">
+                <button class="btn btn-outline" @onclick="Limpiar">Limpiar</button>
+                <button class="btn btn-danger" @onclick="Registrar" disabled="@_saving">
+                    @(_saving ? "Registrando..." : "Registrar egreso")
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><div class="card-title">Resumen</div></div>
+        <div class="card-body">
+            <div style="font-size:12px;color:#8a97b0;margin-bottom:6px;">Monto a registrar</div>
+            <div style="font-family:var(--font-heading);font-size:2rem;font-weight:700;color:#c0392b;">S/ @_monto.ToString("N2")</div>
+            @if (!string.IsNullOrEmpty(_categoria))
+            {
+                <div style="margin-top:12px;font-size:12px;color:#5a6478;">Categoría: <strong>@_categoria</strong></div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private DateTime _fecha = DateTime.Now;
+    private string _categoria = "";
+    private string _descripcion = "";
+    private decimal _monto = 0;
+    private string? _proveedor;
+    private string? _comprobante;
+    private string? _obs;
+    private bool _saving = false;
+    private string? _error;
+
+    private async Task Registrar()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_descripcion)) { _error = "La descripción es requerida."; return; }
+        if (_monto <= 0) { _error = "El monto debe ser mayor a 0."; return; }
+
+        _saving = true;
+        var req = new CrearEgresoRequest(_fecha, _categoria, _descripcion, _monto, _proveedor, _comprobante, _obs);
+        var (ok, _, error) = await Svc.CrearAsync(req);
+        if (ok) { Snackbar.Add("Egreso registrado correctamente.", Severity.Success); Limpiar(); }
+        else _error = error ?? "Error al registrar.";
+        _saving = false;
+    }
+
+    private void Limpiar()
+    {
+        _fecha = DateTime.Now; _categoria = ""; _descripcion = ""; _monto = 0;
+        _proveedor = null; _comprobante = null; _obs = null; _error = null;
+    }
+}

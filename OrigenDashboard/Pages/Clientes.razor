@@ -1,0 +1,91 @@
+@page "/clientes"
+@inject ClienteService Svc
+@inject IDialogService Dialog
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>Clientes · Origen</PageTitle>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Clientes</div>
+        <button class="btn btn-primary btn-sm" @onclick="AbrirCrear">+ Nuevo cliente</button>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Observaciones</th><th>Registro</th><th></th></tr>
+            </thead>
+            <tbody>
+                @if (_loading)
+                {
+                    <tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Cargando...</td></tr>
+                }
+                else
+                {
+                    @foreach (var c in _clientes)
+                    {
+                        <tr>
+                            <td class="fw-bold">@c.Nombre</td>
+                            <td>@(c.Telefono ?? "—")</td>
+                            <td>@(c.Email ?? "—")</td>
+                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(c.Observaciones ?? "—")</td>
+                            <td class="text-muted">@c.FechaRegistro.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <div class="d-flex gap-8">
+                                    <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditar(c)">✏️</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => Eliminar(c)">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_clientes.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Sin clientes registrados</td></tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<ClienteDto> _clientes = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        _loading = true;
+        var (ok, data, _) = await Svc.ListarAsync();
+        _clientes = ok && data is not null ? data : [];
+        _loading = false;
+    }
+
+    private async Task AbrirCrear()
+    {
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.ClienteDialog>("Nuevo cliente");
+        var res = await dlg.Result;
+        if (res?.Canceled == false) await Cargar();
+    }
+
+    private async Task AbrirEditar(ClienteDto c)
+    {
+        var params_ = new DialogParameters<Shared.Dialogs.ClienteDialog> { { x => x.Existente, c } };
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.ClienteDialog>("Editar cliente", params_);
+        var res = await dlg.Result;
+        if (res?.Canceled == false) await Cargar();
+    }
+
+    private async Task Eliminar(ClienteDto c)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", $"¿Eliminar a {c.Nombre}?");
+        if (ok)
+        {
+            var (success, error) = await Svc.EliminarAsync(c.Id);
+            if (success) { Snackbar.Add("Cliente eliminado.", Severity.Success); await Cargar(); }
+            else Snackbar.Add(error ?? "Error al eliminar.", Severity.Error);
+        }
+    }
+}

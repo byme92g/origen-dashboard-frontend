@@ -1,0 +1,93 @@
+@page "/empleados"
+@inject EmpleadoService Svc
+@inject IDialogService Dialog
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>Empleados · Origen</PageTitle>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Empleados</div>
+        <button class="btn btn-primary btn-sm" @onclick="AbrirCrear">+ Nuevo empleado</button>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr><th>Nombre</th><th>Cargo</th><th>Comisión</th><th>Usuario</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody>
+                @if (_loading)
+                {
+                    <tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Cargando...</td></tr>
+                }
+                else
+                {
+                    @foreach (var e in _empleados)
+                    {
+                        <tr>
+                            <td class="fw-bold">@e.Nombre</td>
+                            <td>@e.Cargo</td>
+                            <td>@e.ComisionPct%</td>
+                            <td class="text-muted">@(e.UsuarioLogin ?? "—")</td>
+                            <td>
+                                <span class="badge @(e.Activo ? "badge-green" : "badge-gray")">
+                                    @(e.Activo ? "Activo" : "Inactivo")
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-8">
+                                    <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditar(e)">✏️</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => Eliminar(e)">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_empleados.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Sin empleados registrados</td></tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<EmpleadoDto> _empleados = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        _loading = true;
+        var (ok, data, _) = await Svc.ListarAsync();
+        _empleados = ok && data is not null ? data : [];
+        _loading = false;
+    }
+
+    private async Task AbrirCrear()
+    {
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.EmpleadoDialog>("Nuevo empleado");
+        if ((await dlg.Result)?.Canceled == false) await Cargar();
+    }
+
+    private async Task AbrirEditar(EmpleadoDto e)
+    {
+        var params_ = new DialogParameters<Shared.Dialogs.EmpleadoDialog> { { x => x.Existente, e } };
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.EmpleadoDialog>("Editar empleado", params_);
+        if ((await dlg.Result)?.Canceled == false) await Cargar();
+    }
+
+    private async Task Eliminar(EmpleadoDto e)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", $"¿Eliminar a {e.Nombre}?");
+        if (ok)
+        {
+            var (success, error) = await Svc.EliminarAsync(e.Id);
+            if (success) { Snackbar.Add("Empleado eliminado.", Severity.Success); await Cargar(); }
+            else Snackbar.Add(error ?? "Error al eliminar.", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,134 @@
+@page "/reportes"
+@inject ReporteService Svc
+
+<PageTitle>Reportes · Origen</PageTitle>
+
+<div class="d-flex align-center gap-8 mb-16">
+    <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin:0;">
+        <label class="form-label" style="white-space:nowrap;margin:0;">Desde:</label>
+        <input type="date" class="form-control" style="width:150px;" @bind="_desde" />
+    </div>
+    <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin:0;">
+        <label class="form-label" style="white-space:nowrap;margin:0;">Hasta:</label>
+        <input type="date" class="form-control" style="width:150px;" @bind="_hasta" />
+    </div>
+    <button class="btn btn-primary btn-sm" @onclick="Cargar">Generar reporte</button>
+    @if (_loading) { <span class="text-muted" style="font-size:12px;">Cargando...</span> }
+</div>
+
+@if (_reporte is not null)
+{
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card green">
+            <div class="kpi-icon">💰</div>
+            <div>
+                <div class="kpi-label">Total ingresos</div>
+                <div class="kpi-value">@Fmt(_reporte.Resumen.TotalIngresos)</div>
+            </div>
+        </div>
+        <div class="kpi-card red">
+            <div class="kpi-icon">📤</div>
+            <div>
+                <div class="kpi-label">Total egresos</div>
+                <div class="kpi-value">@Fmt(_reporte.Resumen.TotalEgresos)</div>
+            </div>
+        </div>
+        <div class="kpi-card @(_reporte.Resumen.UtilidadNeta >= 0 ? "green" : "red")">
+            <div class="kpi-icon">📈</div>
+            <div>
+                <div class="kpi-label">Utilidad neta</div>
+                <div class="kpi-value">@Fmt(_reporte.Resumen.UtilidadNeta)</div>
+            </div>
+        </div>
+        <div class="kpi-card gold">
+            <div class="kpi-icon">💼</div>
+            <div>
+                <div class="kpi-label">Comisiones</div>
+                <div class="kpi-value">@Fmt(_reporte.Resumen.TotalComisiones)</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Top servicios</div></div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>#</th><th>Servicio</th><th>Cantidad</th><th class="text-right">Total</th></tr></thead>
+                    <tbody>
+                        @{ var i = 1; }
+                        @foreach (var s in _reporte.TopServicios)
+                        {
+                            <tr>
+                                <td class="text-muted">@(i++)</td>
+                                <td class="fw-bold">@s.Servicio</td>
+                                <td>@s.Cantidad</td>
+                                <td class="text-right">@Fmt(s.Total)</td>
+                            </tr>
+                        }
+                        @if (!_reporte.TopServicios.Any()) { <tr><td colspan="4" class="text-center text-muted" style="padding:20px;">Sin datos</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><div class="card-title">Por empleado</div></div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>Empleado</th><th>Servicios</th><th>Ventas</th><th class="text-right">Comisión</th></tr></thead>
+                    <tbody>
+                        @foreach (var e in _reporte.PorEmpleado)
+                        {
+                            <tr>
+                                <td class="fw-bold">@e.Empleado</td>
+                                <td>@e.Servicios</td>
+                                <td>@Fmt(e.TotalVentas)</td>
+                                <td class="text-right badge-gold">@Fmt(e.TotalComision)</td>
+                            </tr>
+                        }
+                        @if (!_reporte.PorEmpleado.Any()) { <tr><td colspan="4" class="text-center text-muted" style="padding:20px;">Sin datos</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><div class="card-title">Por método de pago</div></div>
+            <div class="card-body">
+                @foreach (var m in _reporte.PorMetodoPago)
+                {
+                    var pct = _reporte.Resumen.TotalIngresos > 0 ? (int)((m.Total / _reporte.Resumen.TotalIngresos) * 100) : 0;
+                    <div style="margin-bottom:12px;">
+                        <div class="d-flex justify-between align-center" style="margin-bottom:4px;">
+                            <span style="font-size:13px;font-weight:500;text-transform:capitalize;">@m.Metodo</span>
+                            <span class="fw-bold" style="font-size:13px;">@Fmt(m.Total) <span class="text-muted">(@pct%)</span></span>
+                        </div>
+                        <div style="background:#eef1f6;border-radius:4px;height:6px;">
+                            <div style="background:var(--navy);height:6px;border-radius:4px;width:@(pct)%;"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DateTime _desde = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime _hasta = DateTime.Today;
+    private ResumenReporte? _reporte;
+    private bool _loading = false;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        _loading = true;
+        var (ok, data, _) = await Svc.ObtenerResumenAsync(_desde.ToUniversalTime(), _hasta.AddDays(1).AddTicks(-1).ToUniversalTime());
+        if (ok) _reporte = data;
+        _loading = false;
+    }
+
+    private static string Fmt(decimal v) => $"S/ {v:N2}";
+}
