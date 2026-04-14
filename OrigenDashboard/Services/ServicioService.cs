@@ -7,6 +7,9 @@ public class ServicioService(HttpClient http) : ApiBase(http)
     public Task<(bool ok, List<ServicioDto>? data, string? error)> ListarAsync() =>
         GetAsync<List<ServicioDto>>("/api/servicios");
 
+    public Task<(bool ok, PagedResult<ServicioDto>? data, string? error)> ListarPaginadoAsync(int page, int pageSize) =>
+        GetAsync<PagedResult<ServicioDto>>($"/api/servicios?page={page}&pageSize={pageSize}");
+
     public Task<(bool ok, ServicioDto? data, string? error)> CrearAsync(CrearServicioRequest req) =>
         PostAsync<ServicioDto>("/api/servicios", req);
 

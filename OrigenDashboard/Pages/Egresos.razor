@@ -1,109 +1,596 @@
 @page "/egresos"
 @inject EgresoService Svc
 @inject ISnackbar Snackbar
+@inject IConfiguration Config
+@inject OrigenDashboard.Auth.AuthService Auth
+@inject Microsoft.AspNetCore.Components.NavigationManager Nav
+@inject MudBlazor.IDialogService Dialog
 
-<PageTitle>Registrar Egreso · Origen</PageTitle>
+<PageTitle>Egresos · Origen</PageTitle>
 
-<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
-    <div class="card">
-        <div class="card-header"><div class="card-title">Registrar Egreso</div></div>
-        <div class="card-body">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Fecha</label>
-                    <input type="datetime-local" class="form-control" @bind="_fecha" />
+<style>
+.stepper-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(27,58,96,.10); padding: 24px; }
+.step-title { font-size: 1.2rem; font-weight: 600; color: #1b3a60; margin-bottom: 20px; }
+.step-description { font-size: 13px; color: #8a97b0; margin-bottom: 16px; }
+
+.categoria-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 24px; }
+.categoria-btn {
+    padding: 14px 8px; border: 2px solid #d0d8e8; border-radius: 8px;
+    background: white; cursor: pointer; transition: all .15s; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.categoria-btn:hover { border-color: #1b3a60; background: #f0f4ff; }
+.categoria-btn.active { border-color: #1b3a60; background: #eef2fa; }
+.categoria-btn.active .cat-icon-wrap { color: #1b3a60; }
+.categoria-btn.active .categoria-name { color: #1b3a60; font-weight: 700; }
+.cat-icon-wrap { color: #8a97b0; transition: color .15s; }
+.categoria-name { font-size: 12px; font-weight: 500; color: #5a6478; display: block; transition: color .15s; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-full { grid-column: 1 / -1; }
+
+.step-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: space-between; }
+.btn { padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+.btn-primary { background: #1b3a60; color: white; }
+.btn-primary:hover { background: #142d4c; }
+.btn-danger { background: #c0392b; color: white; }
+.btn-danger:hover { background: #a93226; }
+.btn-secondary { background: #d0d8e8; color: #5a6478; }
+.btn-secondary:hover { background: #c0c8d8; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-outline { background: transparent !important; border: 1px solid #d0d8e8 !important; color: #1b3a60; }
+.btn-outline:hover { background: #f4f6fa !important; }
+.btn-sm { padding: 5px 10px !important; font-size: 12px !important; }
+
+.stepper-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.progress-step { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.progress-num { width: 28px; height: 28px; border-radius: 50%; background: #e8edf4; color: #5a6478;
+    display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.progress-num.active { background: #1b3a60; color: white; }
+.progress-num.completed { background: #2e7d5a; color: white; }
+.progress-line { flex: 1; height: 2px; background: #e8edf4; }
+.progress-line.active { background: #1b3a60; }
+
+/* ── Monto display (step 2) ─────────────────────────── */
+.monto-box { margin: 20px 0; padding: 20px; background: #f0f4ff; border-radius: 10px; border: 2px solid #c0cff0; text-align: center; }
+.monto-label { font-size: 11px; font-weight: 700; color: #8a97b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.monto-value { font-family: var(--font-heading, system-ui); font-size: 2.8rem; font-weight: 800; color: #1b3a60; line-height: 1; }
+.monto-currency { font-size: 1.2rem; font-weight: 600; color: #5a6478; margin-right: 4px; vertical-align: super; }
+
+/* ── Step 3 resumen ──────────────────────────────────── */
+.resumen-card { background: #f8fafc; border: 1px solid #e0e6f0; border-left: 4px solid #1b3a60; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.resumen-header { font-size: 11px; font-weight: 700; color: #8a97b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+.resumen-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #edf0f5; font-size: 13px; }
+.resumen-row:last-child { border-bottom: none; }
+.resumen-row-label { color: #8a97b0; }
+.resumen-row-value { font-weight: 600; color: #1b3a60; }
+.resumen-monto-row { padding: 14px 0 6px; }
+.resumen-monto-label { font-size: 13px; color: #5a6478; font-weight: 600; }
+.resumen-monto-value { font-family: var(--font-heading, system-ui); font-size: 1.6rem; font-weight: 800; color: #1b3a60; }
+
+/* ── Constancia ──────────────────────────────────────── */
+.constancia-wrap { max-width: 520px; margin: 0 auto; }
+.constancia-card { background: white; border-radius: 10px; box-shadow: 0 4px 16px rgba(27,58,96,.12); padding: 32px; }
+.constancia-header { text-align: center; margin-bottom: 28px; }
+.constancia-check { width: 52px; height: 52px; border-radius: 50%; background: #e8f5ee; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; color: #2e7d5a; }
+.constancia-title { font-size: 1.15rem; font-weight: 700; color: #1b3a60; margin-bottom: 4px; }
+.constancia-sub { font-size: 12px; color: #8a97b0; }
+.constancia-monto { font-family: var(--font-heading, system-ui); font-size: 2.4rem; font-weight: 800; color: #1b3a60; text-align: center; margin: 20px 0; padding: 16px; background: #f8fafc; border: 1px solid #e0e6f0; border-radius: 8px; }
+.constancia-detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f4f8; font-size: 13px; }
+.constancia-detail-row:last-child { border-bottom: none; }
+.constancia-detail-label { color: #8a97b0; }
+.constancia-detail-value { font-weight: 600; color: #1b3a60; text-align: right; max-width: 60%; }
+.constancia-actions { display: flex; gap: 12px; margin-top: 24px; }
+
+/* ── Historial ────────────────────────────────────── */
+.hist-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.hist-title { font-size: 1.4rem; font-weight: 700; color: #1b3a60; }
+.hist-subtitle { font-size: 13px; color: #8a97b0; margin-top: 2px; }
+.hist-filters { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(27,58,96,.10); padding: 16px; margin-bottom: 16px; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.hist-filter-label { font-size: 11px; font-weight: 600; color: #8a97b0; display: block; margin-bottom: 4px; text-transform: uppercase; }
+.hist-filter-input { border: 1.5px solid #d0d8e8; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: #1b3a60; outline: none; }
+.hist-filter-input:focus { border-color: #1b3a60; }
+.hist-table-wrap { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(27,58,96,.10); overflow: hidden; }
+.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-table th { background: #f8fafc; color: #8a97b0; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 16px; text-align: left; white-space: nowrap; }
+.hist-table td { padding: 11px 16px; border-top: 1px solid #f0f4f8; color: #1b3a60; vertical-align: middle; }
+.hist-table tr:hover td { background: #fafbfc; }
+.hist-monto-neg { font-weight: 700; color: #c0392b; white-space: nowrap; }
+.hist-empty { text-align: center; padding: 48px 24px; color: #8a97b0; }
+.hist-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.cat-badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #eef2fa; color: #1b3a60; }
+.btn-icon-sm { background: none; border: none; cursor: pointer; color: #8a97b0; padding: 4px 6px; border-radius: 4px; transition: color .15s; }
+.btn-icon-sm:hover { color: #c0392b; background: #fdecea; }
+</style>
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+@if (_showConstancia && _egresoRegistrado is not null)
+{
+    <!-- ── CONSTANCIA ──────────────────────────── -->
+    <div style="margin-bottom:16px;">
+        <button class="btn btn-secondary" @onclick="VolverHistorial" style="display:flex;align-items:center;gap:6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Volver al historial
+        </button>
+    </div>
+    <div class="constancia-wrap">
+        <div class="constancia-card">
+            <div class="constancia-header">
+                <div class="constancia-check">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="26" height="26">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Categoría</label>
-                    <select class="form-control" @bind="_categoria">
-                        <option value="">— Seleccionar —</option>
-                        <option>Insumos y productos</option>
-                        <option>Servicios y utilidades</option>
-                        <option>Sueldos y comisiones</option>
-                        <option>Alquiler</option>
-                        <option>Equipos y herramientas</option>
-                        <option>Marketing</option>
-                        <option>Impuestos</option>
-                        <option>Otros</option>
-                    </select>
-                </div>
-                <div class="form-group form-full">
-                    <label class="form-label">Descripción</label>
-                    <input class="form-control" @bind="_descripcion" placeholder="Detalle del egreso" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Monto (S/)</label>
-                    <input type="number" class="form-control" @bind="_monto" step="0.01" min="0" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Proveedor</label>
-                    <input class="form-control" @bind="_proveedor" placeholder="Nombre del proveedor" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Comprobante / N° factura</label>
-                    <input class="form-control" @bind="_comprobante" placeholder="Opcional" />
-                </div>
-                <div class="form-group form-full">
-                    <label class="form-label">Observaciones</label>
-                    <textarea class="form-control" @bind="_obs"></textarea>
-                </div>
+                <div class="constancia-title">Egreso registrado</div>
+                <div class="constancia-sub">@_egresoRegistrado.Fecha.ToString("dd/MM/yyyy HH:mm")</div>
             </div>
 
-            @if (_error is not null)
-            {
-                <div style="background:#fdecea;color:#c0392b;padding:10px;border-radius:6px;font-size:13px;margin-top:12px;">@_error</div>
-            }
+            <div class="constancia-monto">
+                <span class="monto-currency">S/.</span>@_egresoRegistrado.Monto.ToString("N2")
+            </div>
 
-            <div class="d-flex gap-8 mt-16" style="justify-content:flex-end;">
-                <button class="btn btn-outline" @onclick="Limpiar">Limpiar</button>
-                <button class="btn btn-danger" @onclick="Registrar" disabled="@_saving">
-                    @(_saving ? "Registrando..." : "Registrar egreso")
+            <div>
+                <div class="constancia-detail-row">
+                    <span class="constancia-detail-label">Categoría</span>
+                    <span class="constancia-detail-value">@GetCategoriaLabel(_egresoRegistrado.Categoria)</span>
+                </div>
+                <div class="constancia-detail-row">
+                    <span class="constancia-detail-label">Descripción</span>
+                    <span class="constancia-detail-value">@_egresoRegistrado.Descripcion</span>
+                </div>
+                @if (!string.IsNullOrEmpty(_egresoRegistrado.Proveedor))
+                {
+                    <div class="constancia-detail-row">
+                        <span class="constancia-detail-label">Proveedor</span>
+                        <span class="constancia-detail-value">@_egresoRegistrado.Proveedor</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_egresoRegistrado.Comprobante))
+                {
+                    <div class="constancia-detail-row">
+                        <span class="constancia-detail-label">Comprobante</span>
+                        <span class="constancia-detail-value">@_egresoRegistrado.Comprobante</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_egresoRegistrado.Observaciones))
+                {
+                    <div class="constancia-detail-row">
+                        <span class="constancia-detail-label">Observaciones</span>
+                        <span class="constancia-detail-value">@_egresoRegistrado.Observaciones</span>
+                    </div>
+                }
+            </div>
+
+            <div class="constancia-actions">
+                <button class="btn btn-secondary" style="flex:1;" @onclick="NuevoEgreso">+ Registrar otro egreso</button>
+                <button class="btn btn-primary" style="flex:1;" @onclick="VolverHistorial">Ver historial</button>
+            </div>
+        </div>
+    </div>
+}
+else if (!ShowForm)
+{
+    <!-- ── HISTORIAL ──────────────────────────── -->
+    <div class="hist-header">
+        <div>
+            <div class="hist-title">Egresos</div>
+            <div class="hist-subtitle">Historial de gastos registrados</div>
+        </div>
+        <button class="btn btn-danger" @onclick="() => ShowForm = true">+ Nuevo Egreso</button>
+    </div>
+
+    <div class="hist-filters">
+        <div>
+            <span class="hist-filter-label">Desde</span>
+            <input type="date" class="hist-filter-input" @bind="FilterDesde" />
+        </div>
+        <div>
+            <span class="hist-filter-label">Hasta</span>
+            <input type="date" class="hist-filter-input" @bind="FilterHasta" />
+        </div>
+        <button class="btn btn-secondary" @onclick="FiltrarHistorial" style="height:38px;">Filtrar</button>
+    </div>
+
+    <div class="hist-table-wrap">
+        @if (IsLoadingHistorial)
+        {
+            <div class="hist-empty"><div>Cargando...</div></div>
+        }
+        else if (!Historial.Any())
+        {
+            <div class="hist-empty">
+                <div class="hist-empty-icon" style="font-size:36px;color:#c0cedc;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>
+                </div>
+                <div>Sin egresos en el período seleccionado</div>
+            </div>
+        }
+        else
+        {
+            <table class="hist-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Descripción</th>
+                        <th>Categoría</th>
+                        <th>Proveedor</th>
+                        <th>Monto</th>
+                        @if (IsAdmin) { <th></th> }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var eg in Historial)
+                    {
+                        <tr>
+                            <td style="color:#8a97b0; white-space:nowrap;">@eg.Fecha.ToString("dd/MM/yy")</td>
+                            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;">@eg.Descripcion</td>
+                            <td><span class="cat-badge">@GetCategoriaLabel(eg.Categoria)</span></td>
+                            <td style="color:#5a6478;">@(string.IsNullOrEmpty(eg.Proveedor) ? "—" : eg.Proveedor)</td>
+                            <td class="hist-monto-neg">-S/. @eg.Monto.ToString("N2")</td>
+                            @if (IsAdmin)
+                            {
+                                <td>
+                                    <button class="btn-icon-sm" title="Eliminar" @onclick="() => EliminarEgreso(eg)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (_totalHistorial > 0)
+            {
+                <div class="pagination-bar">
+                    <button class="btn btn-outline btn-sm" disabled="@(_paginaHistorial <= 1)" @onclick="() => CambiarPaginaHistorial(_paginaHistorial - 1)">‹ Anterior</button>
+                    <span class="pagination-info">Página @_paginaHistorial de @_totalPaginasHistorial · @_totalHistorial registros</span>
+                    <button class="btn btn-outline btn-sm" disabled="@(_paginaHistorial >= _totalPaginasHistorial)" @onclick="() => CambiarPaginaHistorial(_paginaHistorial + 1)">Siguiente ›</button>
+                </div>
+            }
+        }
+    </div>
+}
+else
+{
+    <div style="margin-bottom:16px;">
+        <button class="btn btn-secondary" @onclick="() => ShowForm = false" style="display:flex;align-items:center;gap:6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Volver al historial
+        </button>
+    </div>
+
+    <!-- Progress Tracker -->
+    <div class="stepper-progress">
+        <div class="progress-step">
+            <div class="progress-num @(CurrentStep == 1 ? "active" : CurrentStep > 1 ? "completed" : "")">1</div>
+            <span>Categoría</span>
+        </div>
+        <div class="progress-line @(CurrentStep > 1 ? "active" : "")"></div>
+        <div class="progress-step">
+            <div class="progress-num @(CurrentStep == 2 ? "active" : CurrentStep > 2 ? "completed" : "")">2</div>
+            <span>Detalles</span>
+        </div>
+        <div class="progress-line @(CurrentStep > 2 ? "active" : "")"></div>
+        <div class="progress-step">
+            <div class="progress-num @(CurrentStep == 3 ? "active" : "")">3</div>
+            <span>Confirmación</span>
+        </div>
+    </div>
+
+    <div class="stepper-card">
+        <!-- PASO 1: CATEGORÍA -->
+        @if (CurrentStep == 1)
+        {
+            <div class="step-title">Paso 1: Categoría del egreso</div>
+            <p class="step-description">Selecciona la categoría de este gasto</p>
+
+            <div class="categoria-grid">
+                <button class="categoria-btn @(SelectedCategoria == "suministros" ? "active" : "")" @onclick="@(() => SelectCategoria("suministros"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-6-2v2h-4V5h4zM4 20V9h16v11H4z"/></svg>
+                    </span>
+                    <span class="categoria-name">Insumos</span>
+                </button>
+                <button class="categoria-btn @(SelectedCategoria == "servicios" ? "active" : "")" @onclick="@(() => SelectCategoria("servicios"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+                    </span>
+                    <span class="categoria-name">Servicios</span>
+                </button>
+                <button class="categoria-btn @(SelectedCategoria == "salarios" ? "active" : "")" @onclick="@(() => SelectCategoria("salarios"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </span>
+                    <span class="categoria-name">Salarios</span>
+                </button>
+                <button class="categoria-btn @(SelectedCategoria == "renta" ? "active" : "")" @onclick="@(() => SelectCategoria("renta"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    </span>
+                    <span class="categoria-name">Renta</span>
+                </button>
+                <button class="categoria-btn @(SelectedCategoria == "marketing" ? "active" : "")" @onclick="@(() => SelectCategoria("marketing"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 3C6.48 3 2 6.48 2 12s4.48 9 10 9 10-4.48 10-9S17.52 3 12 3zm-1 14H9V7h2v10zm4 0h-2V7h2v10z"/></svg>
+                    </span>
+                    <span class="categoria-name">Marketing</span>
+                </button>
+                <button class="categoria-btn @(SelectedCategoria == "mantenimiento" ? "active" : "")" @onclick="@(() => SelectCategoria("mantenimiento"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M13.78 15.3L19.78 21.3L21.89 19.14L15.89 13.14L13.78 15.3M17.5 11.5C19.33 11.5 21 10.6 22 9.2L20 7.2L18 9.2L16 7.2L18 5.2C16.6 4.2 14.93 3.5 13.1 3.5L13 3.59C12.25 3.69 11.5 3.97 10.84 4.41L14.5 8L13.09 9.41L9.5 5.84C9.06 6.5 8.78 7.25 8.68 8L8.59 8.09C7.5 8.09 6.5 8.5 5.73 9.27C3.78 11.22 3.78 14.37 5.73 16.32C7.68 18.27 10.83 18.27 12.78 16.32L13.5 15.6L12.09 14.19C11.5 14.78 10.5 14.78 9.91 14.19C9.32 13.6 9.32 12.6 9.91 12.01C10.5 11.42 11.5 11.42 12.09 12.01L17.5 11.5Z"/></svg>
+                    </span>
+                    <span class="categoria-name">Mantenimiento</span>
+                </button>
+                <button class="categoria-btn @(SelectedCategoria == "impuestos" ? "active" : "")" @onclick="@(() => SelectCategoria("impuestos"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm4-8v-1h4v1h-4zm0 2v-1h4v1h-4zm0 2v-1h4v1h-4z"/></svg>
+                    </span>
+                    <span class="categoria-name">Impuestos</span>
+                </button>
+                <button class="categoria-btn @(SelectedCategoria == "otros" ? "active" : "")" @onclick="@(() => SelectCategoria("otros"))">
+                    <span class="cat-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </span>
+                    <span class="categoria-name">Otros</span>
                 </button>
             </div>
-        </div>
-    </div>
 
-    <div class="card">
-        <div class="card-header"><div class="card-title">Resumen</div></div>
-        <div class="card-body">
-            <div style="font-size:12px;color:#8a97b0;margin-bottom:6px;">Monto a registrar</div>
-            <div style="font-family:var(--font-heading);font-size:2rem;font-weight:700;color:#c0392b;">S/ @_monto.ToString("N2")</div>
-            @if (!string.IsNullOrEmpty(_categoria))
-            {
-                <div style="margin-top:12px;font-size:12px;color:#5a6478;">Categoría: <strong>@_categoria</strong></div>
-            }
-        </div>
+            <div class="step-buttons">
+                <div></div>
+                <button class="btn btn-primary" @onclick="GoToStep2" disabled="@(SelectedCategoria == null)">
+                    Siguiente
+                </button>
+            </div>
+        }
+
+        <!-- PASO 2: DETALLES -->
+        @if (CurrentStep == 2)
+        {
+            <div class="step-title">Paso 2: Detalles del egreso</div>
+            <p class="step-description">Completa la descripción y el monto del gasto</p>
+
+            <div class="form-row form-full">
+                <MudTextField T="string" Label="Descripción *" @bind-Value="Descripcion" Placeholder="Ej: Compra de tinte L'Oreal, pago de servicio de luz..."></MudTextField>
+            </div>
+
+            <div class="monto-box">
+                <div class="monto-label">Monto del egreso</div>
+                <div class="monto-value">
+                    <span class="monto-currency">S/.</span>@Monto.ToString("N2")
+                </div>
+            </div>
+
+            <div class="form-row form-full" style="margin-bottom:8px;">
+                <MudNumericField T="decimal" Label="Monto (S/.)" @bind-Value="Monto" Min="0" Step="0.5m" Placeholder="0.00"></MudNumericField>
+            </div>
+
+            <div class="form-row">
+                <MudTextField T="string" Label="Proveedor" @bind-Value="Proveedor" Placeholder="Nombre o razón social"></MudTextField>
+                <MudTextField T="string" Label="Comprobante" @bind-Value="Comprobante" Placeholder="N° de factura/recibo"></MudTextField>
+            </div>
+
+            <div class="step-buttons">
+                <button class="btn btn-secondary" @onclick="GoToStep1">Atrás</button>
+                <button class="btn btn-primary" @onclick="GoToStep3" disabled="@(string.IsNullOrEmpty(Descripcion) || Monto <= 0)">
+                    Siguiente
+                </button>
+            </div>
+        }
+
+        <!-- PASO 3: CONFIRMACIÓN -->
+        @if (CurrentStep == 3)
+        {
+            <div class="step-title">Paso 3: Confirmar egreso</div>
+            <p class="step-description">Revisa los detalles antes de registrar</p>
+
+            <div class="form-row form-full">
+                <MudTextField T="string" Label="Observaciones" @bind-Value="Observaciones" Multiline="true" Lines="3" Placeholder="Notas adicionales..."></MudTextField>
+            </div>
+
+            <div class="resumen-card">
+                <div class="resumen-header">Resumen del egreso</div>
+                <div class="resumen-row">
+                    <span class="resumen-row-label">Categoría</span>
+                    <span class="resumen-row-value">@CategoriaLabels[SelectedCategoria]</span>
+                </div>
+                <div class="resumen-row">
+                    <span class="resumen-row-label">Descripción</span>
+                    <span class="resumen-row-value" style="max-width:60%;text-align:right;">@Descripcion</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Proveedor))
+                {
+                    <div class="resumen-row">
+                        <span class="resumen-row-label">Proveedor</span>
+                        <span class="resumen-row-value">@Proveedor</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Comprobante))
+                {
+                    <div class="resumen-row">
+                        <span class="resumen-row-label">Comprobante</span>
+                        <span class="resumen-row-value">@Comprobante</span>
+                    </div>
+                }
+                <div class="resumen-row resumen-monto-row">
+                    <span class="resumen-monto-label">Monto total</span>
+                    <span class="resumen-monto-value">S/. @Monto.ToString("N2")</span>
+                </div>
+            </div>
+
+            <div class="step-buttons">
+                <button class="btn btn-secondary" @onclick="GoToStep2">Atrás</button>
+                <button class="btn btn-primary" @onclick="GuardarEgreso" disabled="@IsSubmitting">
+                    @if (IsSubmitting) { <span>Guardando...</span> } else { <span>Registrar egreso</span> }
+                </button>
+            </div>
+        }
     </div>
+}
+
 </div>
 
 @code {
-    private DateTime _fecha = DateTime.Now;
-    private string _categoria = "";
-    private string _descripcion = "";
-    private decimal _monto = 0;
-    private string? _proveedor;
-    private string? _comprobante;
-    private string? _obs;
-    private bool _saving = false;
-    private string? _error;
+    // ── Vista ─────────────────────────────────────────────
+    private bool ShowForm = false;
+    private bool IsLoadingHistorial = true;
+    private List<EgresoDto> Historial = new();
+    private DateTime FilterDesde = DateTime.Today.AddDays(-30);
+    private DateTime FilterHasta = DateTime.Today;
+    private bool IsAdmin = false;
 
-    private async Task Registrar()
+    // Constancia
+    private bool _showConstancia = false;
+    private EgresoDto? _egresoRegistrado = null;
+
+    // Paginación historial
+    private int _paginaHistorial = 1;
+    private int _totalHistorial = 0;
+    private int _totalPaginasHistorial = 1;
+    private int _historialPageSize = 10;
+
+    // Paso 1
+    private string SelectedCategoria;
+
+    // Paso 2
+    private int CurrentStep = 1;
+    private bool IsSubmitting = false;
+    private string Descripcion;
+    private decimal Monto;
+    private string Proveedor;
+    private string Comprobante;
+
+    // Paso 3
+    private string Observaciones;
+
+    private readonly Dictionary<string, string> CategoriaLabels = new()
     {
-        _error = null;
-        if (string.IsNullOrWhiteSpace(_descripcion)) { _error = "La descripción es requerida."; return; }
-        if (_monto <= 0) { _error = "El monto debe ser mayor a 0."; return; }
+        ["suministros"]  = "Insumos y productos",
+        ["servicios"]    = "Servicios y utilidades",
+        ["salarios"]     = "Sueldos y comisiones",
+        ["renta"]        = "Alquiler",
+        ["marketing"]    = "Marketing y publicidad",
+        ["mantenimiento"]= "Equipos y mantenimiento",
+        ["impuestos"]    = "Impuestos",
+        ["otros"]        = "Otros"
+    };
 
-        _saving = true;
-        var req = new CrearEgresoRequest(_fecha, _categoria, _descripcion, _monto, _proveedor, _comprobante, _obs);
-        var (ok, _, error) = await Svc.CrearAsync(req);
-        if (ok) { Snackbar.Add("Egreso registrado correctamente.", Severity.Success); Limpiar(); }
-        else _error = error ?? "Error al registrar.";
-        _saving = false;
+    protected override async Task OnInitializedAsync()
+    {
+        _historialPageSize = Config.GetValue<int>("Pagination:EgresosTable", 10);
+
+        var uri = new Uri(Nav.Uri);
+        var qs = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        if (qs["nuevo"] == "1") ShowForm = true;
+
+        var userTask = Auth.GetUsuarioAsync();
+        await CargarHistorial();
+        var user = await userTask;
+        IsAdmin = user?.Rol == "admin";
     }
 
-    private void Limpiar()
+    private async Task CargarHistorial()
     {
-        _fecha = DateTime.Now; _categoria = ""; _descripcion = ""; _monto = 0;
-        _proveedor = null; _comprobante = null; _obs = null; _error = null;
+        IsLoadingHistorial = true;
+        var hasta = FilterHasta.Date.AddDays(1).AddSeconds(-1);
+        var (ok, data, _) = await Svc.ListarPaginadoAsync(FilterDesde.Date, hasta, _paginaHistorial, _historialPageSize);
+        if (ok && data is not null)
+        {
+            _totalHistorial = data.Total;
+            _totalPaginasHistorial = Math.Max(1, (int)Math.Ceiling((double)_totalHistorial / _historialPageSize));
+            if (_paginaHistorial > _totalPaginasHistorial) _paginaHistorial = _totalPaginasHistorial;
+            Historial = data.Items.ToList();
+        }
+        else Historial = new();
+        IsLoadingHistorial = false;
+    }
+
+    private async Task CambiarPaginaHistorial(int pagina) { _paginaHistorial = pagina; await CargarHistorial(); }
+
+    private async Task FiltrarHistorial() { _paginaHistorial = 1; await CargarHistorial(); }
+
+    private async Task EliminarEgreso(EgresoDto eg)
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("ItemName", eg.Descripcion);
+        var dialog = await Dialog.ShowAsync<ConfirmDeleteDialog>("Confirmar", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var (ok, error) = await Svc.EliminarAsync(eg.Id);
+            if (ok)
+            {
+                Historial.RemoveAll(e => e.Id == eg.Id);
+                Snackbar.Add("Egreso eliminado", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(error ?? "No se pudo eliminar el egreso", Severity.Error);
+            }
+        }
+    }
+
+    private string GetCategoriaLabel(string clave) =>
+        CategoriaLabels.TryGetValue(clave, out var label) ? label : clave;
+
+    private void SelectCategoria(string cat) => SelectedCategoria = cat;
+
+    private void GoToStep1() => CurrentStep = 1;
+    private void GoToStep2() => CurrentStep = 2;
+    private void GoToStep3() => CurrentStep = 3;
+
+    private void NuevoEgreso()
+    {
+        _showConstancia = false;
+        _egresoRegistrado = null;
+        ShowForm = true;
+        CurrentStep = 1;
+        SelectedCategoria = null;
+        Descripcion = null;
+        Monto = 0;
+        Proveedor = null;
+        Comprobante = null;
+        Observaciones = null;
+    }
+
+    private async Task VolverHistorial()
+    {
+        _showConstancia = false;
+        _egresoRegistrado = null;
+        ShowForm = false;
+        await CargarHistorial();
+    }
+
+    private async Task GuardarEgreso()
+    {
+        IsSubmitting = true;
+
+        var req = new CrearEgresoRequest(
+            DateTime.Now,
+            SelectedCategoria,
+            Descripcion,
+            Monto,
+            Proveedor,
+            Comprobante,
+            Observaciones
+        );
+
+        var (success, saved, error) = await Svc.CrearAsync(req);
+
+        if (success)
+        {
+            ShowForm = false;
+            _egresoRegistrado = saved ?? new EgresoDto(0, DateTime.Now, SelectedCategoria, Descripcion, Monto, Proveedor, Comprobante, Observaciones);
+            _showConstancia = true;
+        }
+        else
+        {
+            Snackbar.Add(error ?? "Error al registrar egreso", Severity.Error);
+        }
+
+        IsSubmitting = false;
     }
 }

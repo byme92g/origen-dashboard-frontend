@@ -1,126 +1,521 @@
 @page "/caja"
 @inject IngresoService IngresoSvc
 @inject EgresoService EgresoSvc
+@inject EmpleadoService EmpleadoSvc
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
-<PageTitle>Control de Caja · Origen</PageTitle>
+<PageTitle>Caja · Origen</PageTitle>
 
-<div class="d-flex align-center gap-8 mb-16">
-    <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin:0;">
-        <label class="form-label" style="white-space:nowrap;margin:0;">Desde:</label>
-        <input type="date" class="form-control" style="width:150px;" @bind="_desde" />
-    </div>
-    <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin:0;">
-        <label class="form-label" style="white-space:nowrap;margin:0;">Hasta:</label>
-        <input type="date" class="form-control" style="width:150px;" @bind="_hasta" />
-    </div>
-    <button class="btn btn-primary btn-sm" @onclick="Cargar">Filtrar</button>
-    <button class="btn btn-outline btn-sm" @onclick="FiltrarHoy">Hoy</button>
-    <button class="btn btn-outline btn-sm" @onclick="FiltrarMes">Este mes</button>
-</div>
+<style>
+/* ── Print ────────────────────────────────────────────────────────────────── */
+@@media print {
+    .mud-drawer, .mud-app-bar, .no-print { display: none !important; }
+    .mud-main-content { padding: 0 !important; margin: 0 !important; }
+    .cierre-footer { display: none !important; }
+    body { background: white !important; }
+}
 
-<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
-    <div class="kpi-card green">
-        <div class="kpi-icon">💰</div>
-        <div>
-            <div class="kpi-label">Total ingresos</div>
-            <div class="kpi-value">@Fmt(_totalIngresos)</div>
-        </div>
-    </div>
-    <div class="kpi-card red">
-        <div class="kpi-icon">📤</div>
-        <div>
-            <div class="kpi-label">Total egresos</div>
-            <div class="kpi-value">@Fmt(_totalEgresos)</div>
-        </div>
-    </div>
-    <div class="kpi-card @(_neto >= 0 ? "green" : "red")">
-        <div class="kpi-icon">📊</div>
-        <div>
-            <div class="kpi-label">Neto</div>
-            <div class="kpi-value">@Fmt(_neto)</div>
-        </div>
-    </div>
-</div>
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+.caja-wrap { max-width: 820px; margin: 0 auto; }
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-    <div class="card">
-        <div class="card-header"><div class="card-title">Ingresos (@_ingresos.Count)</div></div>
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead><tr><th>Fecha</th><th>Concepto</th><th>Método</th><th class="text-right">Total</th></tr></thead>
-                <tbody>
-                    @foreach (var i in _ingresos)
+/* ── Apertura (caja cerrada) ──────────────────────────────────────────────── */
+.apertura-outer { display: flex; justify-content: center; padding-top: 48px; }
+.apertura-card {
+    background: white; border-radius: 10px;
+    box-shadow: 0 2px 16px rgba(27,58,96,.13);
+    width: 100%; max-width: 460px; overflow: hidden;
+}
+.apertura-header {
+    background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%);
+    color: white; padding: 22px 32px 18px;
+}
+.apertura-header-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    opacity: .7; margin-bottom: 4px;
+}
+.apertura-header-date {
+    font-size: 18px; font-weight: 700;
+}
+.apertura-body { padding: 24px 32px 28px; }
+.apertura-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.afield { display: flex; flex-direction: column; gap: 5px; }
+.afield label { font-size: 12px; font-weight: 600; color: #5a6478; text-transform: uppercase; letter-spacing: .5px; }
+.afield input {
+    padding: 9px 12px; border: 1.5px solid #e0e8f0; border-radius: 6px;
+    font-size: 14px; color: #1b3a60; font-family: inherit; background: white;
+    transition: border-color .15s;
+}
+.afield input:focus { outline: none; border-color: #1b3a60; }
+.resp-section { margin-bottom: 20px; }
+.resp-section-label { font-size: 12px; font-weight: 600; color: #5a6478; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.resp-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.resp-chip {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 12px; border: 1.5px solid #dce5f0; border-radius: 20px;
+    cursor: pointer; font-size: 13px; color: #5a6478;
+    background: #f8fafc; transition: all .15s; user-select: none;
+}
+.resp-chip:hover { border-color: #a0b4cc; background: #f0f4f9; }
+.resp-chip.sel { border-color: #1b3a60; background: #eef2fa; color: #1b3a60; font-weight: 600; }
+.resp-chip .resp-cargo { font-size: 10px; color: #8a97b0; font-weight: 400; }
+.resp-chip.sel .resp-cargo { color: #5a6478; }
+.apertura-footer { display: flex; justify-content: flex-end; padding-top: 4px; }
+
+/* ── Top bar (caja abierta) ───────────────────────────────────────────────── */
+.caja-topbar {
+    background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%);
+    border-radius: 10px; color: white;
+    box-shadow: 0 2px 10px rgba(27,58,96,.25);
+    padding: 14px 22px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.caja-topbar-left { display: flex; align-items: center; gap: 10px; }
+.caja-dot {
+    width: 9px; height: 9px; border-radius: 50%; background: #4ade80; flex-shrink: 0;
+    box-shadow: 0 0 0 3px rgba(74,222,128,.25);
+    animation: pulse-dot 2s infinite;
+}
+@@keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(74,222,128,.25); }
+    50% { box-shadow: 0 0 0 5px rgba(74,222,128,.12); }
+}
+.caja-topbar-info strong { font-size: 13px; color: white; display: block; font-weight: 700; }
+.caja-topbar-info span { font-size: 12px; color: rgba(255,255,255,.65); }
+.caja-topbar .btn-cierre {
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+    color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px;
+    font-weight: 500; cursor: pointer; transition: background .15s;
+}
+.caja-topbar .btn-cierre:hover { background: rgba(255,255,255,.2); }
+
+/* ── KPIs ─────────────────────────────────────────────────────────────────── */
+.caja-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.caja-kpi {
+    border-radius: 10px; padding: 15px 18px;
+    box-shadow: 0 2px 8px rgba(27,58,96,.08);
+    background: white; border-left: 3px solid #d8e1ec;
+}
+.caja-kpi-label { font-size: 10px; color: #8a97b0; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; font-weight: 600; }
+.caja-kpi-value { font-size: 18px; font-weight: 800; color: #1b3a60; }
+.caja-kpi.ing { background: #f0faf5; border-left-color: #2e7d5a; }
+.caja-kpi.ing .caja-kpi-label { color: #2e7d5a; }
+.caja-kpi.ing .caja-kpi-value { color: #2e7d5a; }
+.caja-kpi.egr { background: #fef6f6; border-left-color: #c0392b; }
+.caja-kpi.egr .caja-kpi-label { color: #c0392b; }
+.caja-kpi.egr .caja-kpi-value { color: #c0392b; }
+.caja-kpi.net { background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%); border-left-color: #1b3a60; }
+.caja-kpi.net .caja-kpi-label { color: rgba(255,255,255,.65); }
+.caja-kpi.net .caja-kpi-value { color: white; }
+
+/* ── Movimientos ──────────────────────────────────────────────────────────── */
+.movs-card {
+    background: white; border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(27,58,96,.08);
+    overflow: hidden; margin-bottom: 12px;
+}
+.movs-head {
+    padding: 13px 20px; border-bottom: 1px solid #f0f4f8;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.movs-head-title { font-size: 13px; font-weight: 700; color: #1b3a60; }
+.movs-head-count { font-size: 12px; color: #8a97b0; }
+.mov-row {
+    display: grid; grid-template-columns: 48px 1fr auto;
+    gap: 12px; padding: 10px 20px;
+    border-bottom: 1px solid #f8fafc; align-items: center;
+    border-left: 3px solid transparent; transition: background .12s;
+}
+.mov-row.is-ing { border-left-color: #2e7d5a; }
+.mov-row.is-egr { border-left-color: #c0392b; }
+.mov-row:last-child { border-bottom: none; }
+.mov-row:hover { background: #fafbfd; }
+.mov-time { font-size: 12px; color: #8a97b0; font-weight: 500; }
+.mov-main { font-size: 13px; font-weight: 600; color: #1b3a60; }
+.mov-sub { font-size: 11px; color: #8a97b0; margin-top: 1px; }
+.mov-amt { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.mov-amt.ing { color: #2e7d5a; }
+.mov-amt.egr { color: #c0392b; }
+.movs-empty { padding: 36px; text-align: center; font-size: 13px; color: #8a97b0; }
+
+.caja-bottom { display: flex; justify-content: flex-end; }
+
+/* ── Cierre ───────────────────────────────────────────────────────────────── */
+.cierre-outer { display: flex; justify-content: center; }
+.cierre-card {
+    background: white; border-radius: 10px;
+    box-shadow: 0 2px 16px rgba(27,58,96,.13);
+    overflow: hidden; width: 100%; max-width: 500px;
+}
+.cierre-top {
+    background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%);
+    color: white; padding: 22px 28px;
+}
+.cierre-top-title { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.cierre-top-sub { font-size: 12px; opacity: .7; margin-top: 3px; }
+.cierre-body { padding: 20px 28px; }
+.cierre-meta { font-size: 12px; color: #8a97b0; margin-bottom: 18px; line-height: 1.9; }
+.cierre-meta strong { color: #1b3a60; }
+.cierre-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.ck { border-radius: 8px; padding: 10px 12px; text-align: center; }
+.ck-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-bottom: 3px; }
+.ck-value { font-size: 16px; font-weight: 800; margin-top: 2px; }
+.ck.ini { background: #eef2fa; }
+.ck.ini .ck-label { color: #5a6478; }
+.ck.ini .ck-value { color: #1b3a60; }
+.ck.ing { background: #e8f5ee; }
+.ck.ing .ck-label { color: #2e7d5a; }
+.ck.ing .ck-value { color: #2e7d5a; }
+.ck.egr { background: #fdecea; }
+.ck.egr .ck-label { color: #c0392b; }
+.ck.egr .ck-value { color: #c0392b; }
+.cierre-movs {
+    border: 1px solid #e8edf4; border-radius: 8px;
+    overflow: hidden; margin-bottom: 18px;
+    max-height: 210px; overflow-y: auto;
+}
+.cierre-mov {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 12px; border-bottom: 1px solid #f0f4f8; font-size: 12px;
+    border-left: 2px solid transparent;
+}
+.cierre-mov:last-child { border-bottom: none; }
+.cierre-mov.is-ing { border-left-color: #2e7d5a; }
+.cierre-mov.is-egr { border-left-color: #c0392b; }
+.cierre-mov-time { color: #8a97b0; width: 36px; flex-shrink: 0; }
+.cierre-mov-desc { flex: 1; color: #5a6478; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cierre-mov-amt { font-weight: 600; white-space: nowrap; }
+.cierre-mov-amt.ing { color: #2e7d5a; }
+.cierre-mov-amt.egr { color: #c0392b; }
+.cierre-totales { border-top: 1px solid #f0f4f8; padding-top: 14px; }
+.cierre-total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.cierre-total-row.final {
+    border-top: 2px solid #1b3a60; padding-top: 12px; margin-top: 10px;
+    background: #eef2fa; padding: 10px 12px; border-radius: 6px;
+}
+.cierre-total-label { color: #5a6478; }
+.cierre-total-value { font-weight: 700; color: #1b3a60; }
+.cierre-footer {
+    display: flex; gap: 10px; justify-content: flex-end;
+    margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f4f8;
+}
+</style>
+
+<div class="caja-wrap no-print">
+
+@if (_showCierre)
+{
+    <!-- ── Cierre de caja ── -->
+    <div class="cierre-outer">
+        <div class="cierre-card">
+            <div class="cierre-top">
+                <div class="cierre-top-title">Cierre de Caja — Origen</div>
+                <div class="cierre-top-sub">
+                    @DateTime.Now.ToString("dddd d 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-PE"))
+                </div>
+            </div>
+            <div class="cierre-body">
+                <div class="cierre-meta">
+                    Responsable(s): <strong>@ResponsableDisplay</strong><br/>
+                    Apertura: <strong>@_fechaApertura.ToString("HH:mm")</strong>
+                    &nbsp;·&nbsp;
+                    Cierre: <strong>@DateTime.Now.ToString("HH:mm")</strong>
+                </div>
+
+                <div class="cierre-kpis">
+                    <div class="ck ini">
+                        <div class="ck-label">Saldo inicial</div>
+                        <div class="ck-value">S/. @_montoInicial.ToString("N2")</div>
+                    </div>
+                    <div class="ck ing">
+                        <div class="ck-label">Ingresos</div>
+                        <div class="ck-value">+S/. @TotalIngresos.ToString("N2")</div>
+                    </div>
+                    <div class="ck egr">
+                        <div class="ck-label">Egresos</div>
+                        <div class="ck-value">-S/. @TotalEgresos.ToString("N2")</div>
+                    </div>
+                </div>
+
+                <div class="cierre-movs">
+                    @foreach (var m in MovimientosOrdenados)
                     {
-                        <tr>
-                            <td class="text-muted">@i.Fecha.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                            <td>@(i.Servicio?.Nombre ?? i.Producto?.Nombre ?? i.Paquete?.Nombre ?? i.ConceptoPersonalizado ?? "—")</td>
-                            <td><span class="badge badge-navy">@i.MetodoPago</span></td>
-                            <td class="text-right fw-bold text-green">@Fmt(i.Monto - i.Descuento)</td>
-                        </tr>
+                        <div class="cierre-mov @(m.EsIngreso ? "is-ing" : "is-egr")">
+                            <span class="cierre-mov-time">@m.Fecha.ToString("HH:mm")</span>
+                            <span class="cierre-mov-desc">@m.Concepto</span>
+                            <span class="cierre-mov-amt @(m.EsIngreso ? "ing" : "egr")">
+                                @(m.EsIngreso ? "+" : "−")S/. @m.Monto.ToString("N2")
+                            </span>
+                        </div>
                     }
-                    @if (!_ingresos.Any()) { <tr><td colspan="4" class="text-center text-muted" style="padding:20px;">Sin ingresos</td></tr> }
-                </tbody>
-            </table>
+                    @if (!MovimientosOrdenados.Any())
+                    {
+                        <div style="padding:16px;text-align:center;font-size:12px;color:#8a97b0;">
+                            Sin movimientos registrados
+                        </div>
+                    }
+                </div>
+
+                <div class="cierre-totales">
+                    <div class="cierre-total-row">
+                        <span class="cierre-total-label">Saldo inicial</span>
+                        <span class="cierre-total-value">S/. @_montoInicial.ToString("N2")</span>
+                    </div>
+                    <div class="cierre-total-row">
+                        <span class="cierre-total-label">Ingresos (@_ingresosHoy.Count transacciones)</span>
+                        <span class="cierre-total-value" style="color:#2e7d5a;">+S/. @TotalIngresos.ToString("N2")</span>
+                    </div>
+                    <div class="cierre-total-row">
+                        <span class="cierre-total-label">Egresos (@_egresosHoy.Count transacciones)</span>
+                        <span class="cierre-total-value" style="color:#c0392b;">−S/. @TotalEgresos.ToString("N2")</span>
+                    </div>
+                    <div class="cierre-total-row final">
+                        <span class="cierre-total-label" style="font-size:15px;font-weight:700;color:#1b3a60;">
+                            Saldo final
+                        </span>
+                        <span class="cierre-total-value" style="font-size:20px;color:#1b3a60;">
+                            S/. @_saldoAlCerrar.ToString("N2")
+                        </span>
+                    </div>
+                </div>
+
+                <div class="cierre-footer">
+                    <button class="btn btn-outline btn-sm" @onclick="() => _showCierre = false">Cancelar</button>
+                    <button class="btn btn-outline btn-sm" @onclick="Imprimir">Imprimir</button>
+                    <button class="btn btn-primary btn-sm" @onclick="ConfirmarCierre">Confirmar cierre</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (!_cajaAbierta)
+{
+    <!-- ── Caja cerrada: form de apertura ── -->
+    <div class="apertura-outer">
+        <div class="apertura-card">
+            <div class="apertura-header">
+                <div class="apertura-header-label">Control de Caja · Origen</div>
+                <div class="apertura-header-date">
+                    @DateTime.Now.ToString("dddd d 'de' MMMM", new System.Globalization.CultureInfo("es-PE"))
+                </div>
+            </div>
+            <div class="apertura-body">
+                <div style="margin-bottom:18px;">
+                    <div class="afield">
+                        <label>Monto inicial (S/.)</label>
+                        <input type="number" @bind="_montoInicial" step="0.50" min="0" placeholder="0.00" style="max-width:180px;" />
+                    </div>
+                </div>
+
+                <div class="resp-section">
+                    <div class="resp-section-label">Responsable(s)</div>
+                    @if (_empleados.Any())
+                    {
+                        <div class="resp-grid">
+                            @foreach (var emp in _empleados)
+                            {
+                                var sel = _responsablesIds.Contains(emp.Id);
+                                <div class="resp-chip @(sel ? "sel" : "")"
+                                     @onclick="() => ToggleResponsable(emp.Id)">
+                                    <span>@emp.Nombre</span>
+                                    <span class="resp-cargo">@emp.Cargo</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (_cargandoEmpleados)
+                    {
+                        <div style="font-size:12px;color:#8a97b0;">Cargando empleados...</div>
+                    }
+                    else
+                    {
+                        <div style="font-size:12px;color:#8a97b0;">Sin empleados registrados</div>
+                    }
+                </div>
+
+                <div class="apertura-footer">
+                    <button class="btn btn-primary"
+                            @onclick="AbrirCaja"
+                            disabled="@(!_responsablesIds.Any())">
+                        Abrir caja
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- ── Caja abierta: dashboard ── -->
+    <div class="caja-topbar">
+        <div class="caja-topbar-left">
+            <div class="caja-dot"></div>
+            <div class="caja-topbar-info">
+                <strong>Caja abierta</strong>
+                <span>Desde las @_fechaApertura.ToString("HH:mm") · @ResponsableDisplay</span>
+            </div>
+        </div>
+        <button class="btn-cierre" @onclick="IniciarCierre">Cerrar caja</button>
+    </div>
+
+    <div class="caja-kpis">
+        <div class="caja-kpi">
+            <div class="caja-kpi-label">Saldo inicial</div>
+            <div class="caja-kpi-value">S/. @_montoInicial.ToString("N2")</div>
+        </div>
+        <div class="caja-kpi ing">
+            <div class="caja-kpi-label">Ingresos del día</div>
+            <div class="caja-kpi-value">+S/. @TotalIngresos.ToString("N2")</div>
+        </div>
+        <div class="caja-kpi egr">
+            <div class="caja-kpi-label">Egresos del día</div>
+            <div class="caja-kpi-value">−S/. @TotalEgresos.ToString("N2")</div>
+        </div>
+        <div class="caja-kpi net">
+            <div class="caja-kpi-label">Saldo actual</div>
+            <div class="caja-kpi-value">S/. @SaldoFinal.ToString("N2")</div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header"><div class="card-title">Egresos (@_egresos.Count)</div></div>
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th class="text-right">Monto</th></tr></thead>
-                <tbody>
-                    @foreach (var e in _egresos)
-                    {
-                        <tr>
-                            <td class="text-muted">@e.Fecha.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                            <td>@e.Descripcion</td>
-                            <td><span class="badge badge-gold">@e.Categoria</span></td>
-                            <td class="text-right fw-bold" style="color:#c0392b;">@Fmt(e.Monto)</td>
-                        </tr>
-                    }
-                    @if (!_egresos.Any()) { <tr><td colspan="4" class="text-center text-muted" style="padding:20px;">Sin egresos</td></tr> }
-                </tbody>
-            </table>
+    <div class="movs-card">
+        <div class="movs-head">
+            <span class="movs-head-title">Movimientos del día</span>
+            <span class="movs-head-count">@MovimientosOrdenados.Count() operaciones</span>
         </div>
+        @if (MovimientosOrdenados.Any())
+        {
+            @foreach (var m in MovimientosOrdenados)
+            {
+                <div class="mov-row @(m.EsIngreso ? "is-ing" : "is-egr")">
+                    <div class="mov-time">@m.Fecha.ToString("HH:mm")</div>
+                    <div>
+                        <div class="mov-main">@m.Concepto</div>
+                        @if (!string.IsNullOrEmpty(m.SubConcepto))
+                        {
+                            <div class="mov-sub">@m.SubConcepto</div>
+                        }
+                    </div>
+                    <div class="mov-amt @(m.EsIngreso ? "ing" : "egr")">
+                        @(m.EsIngreso ? "+" : "−")S/. @m.Monto.ToString("N2")
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="movs-empty">Sin movimientos registrados hoy</div>
+        }
     </div>
+}
+
 </div>
 
 @code {
-    private List<IngresoDto> _ingresos = [];
-    private List<EgresoDto> _egresos = [];
-    private DateTime _desde = DateTime.Today;
-    private DateTime _hasta = DateTime.Today;
+    private record Movimiento(DateTime Fecha, string Concepto, string? SubConcepto, decimal Monto, bool EsIngreso);
 
-    private decimal _totalIngresos => _ingresos.Sum(i => i.Monto - i.Descuento);
-    private decimal _totalEgresos => _egresos.Sum(e => e.Monto);
-    private decimal _neto => _totalIngresos - _totalEgresos;
+    private bool _cajaAbierta = false;
+    private bool _showCierre = false;
+    private DateTime _fechaApertura;
+    private decimal _montoInicial = 0;
+    private decimal _saldoAlCerrar = 0;
 
-    protected override async Task OnInitializedAsync() => await FiltrarHoy();
+    // Empleados / responsables
+    private List<EmpleadoDto> _empleados = new();
+    private HashSet<int> _responsablesIds = new();
+    private bool _cargandoEmpleados = true;
 
-    private async Task FiltrarHoy()
+    private string ResponsableDisplay =>
+        _empleados.Count > 0 && _responsablesIds.Count > 0
+            ? string.Join(", ", _empleados.Where(e => _responsablesIds.Contains(e.Id)).Select(e => e.Nombre))
+            : "Sin asignar";
+
+    private List<IngresoDto> _ingresosHoy = new();
+    private List<EgresoDto>  _egresosHoy  = new();
+
+    private decimal TotalIngresos => _ingresosHoy.Sum(i => i.Monto - i.Descuento);
+    private decimal TotalEgresos  => _egresosHoy.Sum(e => e.Monto);
+    private decimal SaldoFinal    => _montoInicial + TotalIngresos - TotalEgresos;
+
+    private IEnumerable<Movimiento> MovimientosOrdenados =>
+        _ingresosHoy
+            .Select(i => new Movimiento(
+                i.Fecha,
+                GetConceptoIngreso(i),
+                i.Cliente?.Nombre,
+                i.Monto - i.Descuento,
+                true))
+        .Concat(
+            _egresosHoy
+                .Select(e => new Movimiento(
+                    e.Fecha,
+                    e.Descripcion,
+                    e.Categoria,
+                    e.Monto,
+                    false)))
+        .OrderBy(m => m.Fecha);
+
+    protected override async Task OnInitializedAsync()
     {
-        _desde = DateTime.Today;
-        _hasta = DateTime.Today;
-        await Cargar();
+        var t1 = EmpleadoSvc.ListarAsync();
+        var t2 = CargarMovimientosHoy();
+        await Task.WhenAll(t1, t2);
+        var (ok, data, _) = await t1;
+        _empleados = ok && data is not null
+            ? data.Where(e => e.Activo).ToList()
+            : new();
+        _cargandoEmpleados = false;
     }
-    private async Task FiltrarMes()
-    {
-        _desde = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-        _hasta = DateTime.Today;
-        await Cargar();
-    }
 
-    private async Task Cargar()
+    private async Task CargarMovimientosHoy()
     {
-        var desde = _desde.ToUniversalTime();
-        var hasta = _hasta.AddDays(1).AddTicks(-1).ToUniversalTime();
+        var desde = DateTime.Today;
+        var hasta = DateTime.Today.AddDays(1).AddSeconds(-1);
         var t1 = IngresoSvc.ListarAsync(desde, hasta);
         var t2 = EgresoSvc.ListarAsync(desde, hasta);
         await Task.WhenAll(t1, t2);
-        _ingresos = (await t1).data ?? [];
-        _egresos = (await t2).data ?? [];
+        _ingresosHoy = (await t1).data ?? new();
+        _egresosHoy  = (await t2).data ?? new();
     }
 
-    private static string Fmt(decimal v) => $"S/ {v:N2}";
+    private void ToggleResponsable(int id)
+    {
+        if (_responsablesIds.Contains(id)) _responsablesIds.Remove(id);
+        else _responsablesIds.Add(id);
+    }
+
+    private void AbrirCaja()
+    {
+        _cajaAbierta = true;
+        _fechaApertura = DateTime.Now;
+        Snackbar.Add($"Caja abierta — {ResponsableDisplay}", Severity.Success);
+    }
+
+    private void IniciarCierre()
+    {
+        _saldoAlCerrar = SaldoFinal;
+        _showCierre = true;
+    }
+
+    private async Task Imprimir() => await JS.InvokeVoidAsync("print");
+
+    private void ConfirmarCierre()
+    {
+        var saldo = _saldoAlCerrar;
+        _cajaAbierta = false;
+        _showCierre  = false;
+        _montoInicial = 0;
+        _responsablesIds.Clear();
+        Snackbar.Add($"Caja cerrada — Saldo final: S/. {saldo:N2}", Severity.Success);
+    }
+
+    private static string GetConceptoIngreso(IngresoDto i) => i.Tipo switch
+    {
+        "servicio"       => i.Servicio?.Nombre ?? "Servicio",
+        "producto"       => i.Cantidad > 1
+                               ? $"{i.Cantidad}x {i.Producto?.Nombre}"
+                               : (i.Producto?.Nombre ?? "Producto"),
+        "paquete"        => i.Paquete?.Nombre ?? "Paquete",
+        "personalizado"  => i.ConceptoPersonalizado ?? "Personalizado",
+        _                => "—"
+    };
 }

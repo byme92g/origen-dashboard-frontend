@@ -28,6 +28,14 @@
             <div class="form-group">
                 <label class="form-label">Comisión (%)</label>
                 <input type="number" class="form-control" @bind="_comisionPct" step="0.5" min="0" max="100" />
+                <div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;">
+                    @foreach (var p in new[] { 0m, 5m, 10m, 15m, 20m })
+                    {
+                        <button type="button"
+                                class="pct-btn @(_comisionPct == p ? "pct-active" : "")"
+                                @onclick="() => _comisionPct = p">@p%</button>
+                    }
+                </div>
             </div>
             @if (Existente is not null)
             {
@@ -40,6 +48,11 @@
             }
         </div>
         @if (_error is not null) { <div style="background:#fdecea;color:#c0392b;padding:8px 12px;border-radius:6px;font-size:12px;margin-top:10px;">@_error</div> }
+        <style>
+            .pct-btn { padding:3px 10px;border-radius:14px;border:1.5px solid #d0d8e8;background:white;font-size:11px;font-weight:600;color:#5a6478;cursor:pointer;transition:all .12s; }
+            .pct-btn:hover { border-color:#1b3a60;color:#1b3a60; }
+            .pct-btn.pct-active { background:#1b3a60;border-color:#1b3a60;color:white; }
+        </style>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="() => MudDialog.Cancel()">Cancelar</MudButton>

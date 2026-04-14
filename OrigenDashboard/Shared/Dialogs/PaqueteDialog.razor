@@ -4,39 +4,130 @@
 <MudDialog>
     <TitleContent>@(Existente is null ? "Nuevo paquete" : "Editar paquete")</TitleContent>
     <DialogContent>
-        <div class="form-grid" style="min-width:460px;">
-            <div class="form-group form-full">
-                <label class="form-label">Nombre *</label>
-                <input class="form-control" @bind="_nombre" />
-            </div>
-            <div class="form-group">
-                <label class="form-label">Precio (S/)</label>
-                <input type="number" class="form-control" @bind="_precio" step="0.01" min="0" />
-            </div>
-            <div class="form-group">
-                <label class="form-label">Descuento (S/)</label>
-                <input type="number" class="form-control" @bind="_descuento" step="0.01" min="0" />
-            </div>
-            <div class="form-group form-full">
-                <label class="form-label">Descripción</label>
-                <textarea class="form-control" @bind="_descripcion"></textarea>
-            </div>
-            <div class="form-group form-full">
-                <label class="form-label">Servicios incluidos</label>
-                @foreach (var s in Servicios)
-                {
-                    <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer;">
-                        <input type="checkbox" checked="@_seleccionados.Contains(s.Id)" @onchange="e => Toggle(s.Id, (bool)e.Value!)" />
-                        @s.Nombre — <span class="text-muted">@Fmt(s.Precio)</span>
+        <div style="min-width:520px;max-width:580px;">
+            <div class="form-grid">
+                <div class="form-group form-full">
+                    <label class="form-label">Nombre *</label>
+                    <input class="form-control" @bind="_nombre" placeholder="Ej: Pack corte + tinte" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        Precio total (S/)
+                        @if (PrecioHint > 0)
+                        {
+                            <span style="font-size:10px;color:#6b7fd4;font-weight:400;margin-left:6px;">
+                                suma seleccionados: ~S/ @PrecioHint.ToString("N2")
+                            </span>
+                        }
                     </label>
+                    <input type="number"
+                           class="form-control @(_precio == 0 ? "input-warn" : "")"
+                           @bind="_precio" step="0.01" min="0"
+                           placeholder="@(PrecioHint > 0 ? $"~{PrecioHint:N2} (suma seleccionados)" : "0.00")" />
+                    @if (_precio == 0 && _confirmadoCeroPrecio)
+                    {
+                        <div class="warn-cero">Guardando con precio S/ 0.00. Confirma para continuar.</div>
+                    }
+                    else if (_precio == 0)
+                    {
+                        <div class="warn-cero">El precio es S/ 0.00. ¿Estás seguro?</div>
+                    }
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descuento (S/)</label>
+                    <input type="number" class="form-control" @bind="_descuento" step="0.01" min="0" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Comisión empleado (%)</label>
+                    <input type="number" class="form-control" @bind="_comisionPct" step="0.1" min="0" max="100" />
+                    <div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;">
+                        @foreach (var p in new[] { 0m, 5m, 10m, 15m, 20m })
+                        {
+                            <button type="button"
+                                    class="pct-btn @(_comisionPct == p ? "pct-active" : "")"
+                                    @onclick="() => _comisionPct = p">@p%</button>
+                        }
+                    </div>
+                </div>
+                <div class="form-group form-full">
+                    <label class="form-label">Descripción</label>
+                    <textarea class="form-control" @bind="_descripcion" rows="2" placeholder="Descripción opcional del paquete"></textarea>
+                </div>
+            </div>
+
+            @* Servicios *@
+            <div style="margin-top:16px;">
+                <div class="form-label" style="font-weight:600;margin-bottom:8px;">Servicios incluidos</div>
+                @if (Servicios.Any())
+                {
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+                        @foreach (var s in Servicios.Where(x => x.Activo))
+                        {
+                            var sel = _serviciosSeleccionados.Contains(s.Id);
+                            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;border:1px solid @(sel ? "var(--navy)" : "#e8ebf0");background:@(sel ? "#eef2fa" : "transparent");font-size:13px;transition:all .15s;">
+                                <input type="checkbox" checked="@sel" @onchange="e => ToggleServicio(s.Id, (bool)e.Value!)" style="accent-color:var(--navy);" />
+                                <span style="flex:1;">@s.Nombre</span>
+                                <span class="text-muted" style="font-size:11px;">S/ @s.Precio.ToString("N2")</span>
+                            </label>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted" style="font-size:12px;">Sin servicios disponibles</div>
                 }
             </div>
+
+            @* Productos *@
+            <div style="margin-top:16px;">
+                <div class="form-label" style="font-weight:600;margin-bottom:8px;">Productos incluidos</div>
+                @if (Productos.Any())
+                {
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+                        @foreach (var p in Productos.Where(x => x.Activo))
+                        {
+                            var sel = _productosSeleccionados.Contains(p.Id);
+                            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;border:1px solid @(sel ? "var(--navy)" : "#e8ebf0");background:@(sel ? "#eef2fa" : "transparent");font-size:13px;transition:all .15s;">
+                                <input type="checkbox" checked="@sel" @onchange="e => ToggleProducto(p.Id, (bool)e.Value!)" style="accent-color:var(--navy);" />
+                                <span style="flex:1;">@p.Nombre</span>
+                                <span class="text-muted" style="font-size:11px;">S/ @p.PrecioVenta.ToString("N2")</span>
+                            </label>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted" style="font-size:12px;">Sin productos disponibles</div>
+                }
+            </div>
+
+            @* Summary *@
+            @if (_serviciosSeleccionados.Count > 0 || _productosSeleccionados.Count > 0)
+            {
+                <div style="margin-top:16px;padding:10px 12px;background:#f5f7fb;border-radius:8px;font-size:12px;color:#5a6478;">
+                    <span style="font-weight:600;">Incluye:</span>
+                    @string.Join(", ", Servicios.Where(s => _serviciosSeleccionados.Contains(s.Id)).Select(s => s.Nombre))
+                    @if (_serviciosSeleccionados.Count > 0 && _productosSeleccionados.Count > 0) { <span> + </span> }
+                    @string.Join(", ", Productos.Where(p => _productosSeleccionados.Contains(p.Id)).Select(p => p.Nombre))
+                </div>
+            }
         </div>
         @if (_error is not null) { <div style="background:#fdecea;color:#c0392b;padding:8px 12px;border-radius:6px;font-size:12px;margin-top:10px;">@_error</div> }
+
+        <style>
+            .input-warn { border-color: #e8a000 !important; background: #fffbf0 !important; }
+            .warn-cero { font-size:11px; color:#b45309; background:#fffbeb; border:1px solid #fcd34d; border-radius:5px; padding:5px 9px; margin-top:5px; }
+            .precio-hint { font-size:11px; color:#5a6478; margin-top:4px; padding:4px 8px; background:#f0f4ff; border-radius:4px; border-left:2px solid #6b7fd4; }
+        </style>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="() => MudDialog.Cancel()">Cancelar</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Guardar" Disabled="_saving">@(_saving ? "Guardando..." : "Guardar")</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="@(_precio == 0 ? Color.Warning : Color.Primary)"
+                   OnClick="Guardar"
+                   Disabled="_saving">
+            @(_saving ? "Guardando..." : _precio == 0 && !_confirmadoCeroPrecio ? "Guardar con precio 0" : "Guardar")
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -44,40 +135,63 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
     [Parameter] public PaqueteDto? Existente { get; set; }
     [Parameter] public List<ServicioDto> Servicios { get; set; } = [];
+    [Parameter] public List<ProductoDto> Productos { get; set; } = [];
 
-    private string _nombre = ""; private string? _descripcion;
-    private decimal _precio = 0; private decimal _descuento = 0;
-    private HashSet<int> _seleccionados = [];
-    private bool _saving; private string? _error;
+    private string _nombre = "";
+    private string? _descripcion;
+    private decimal _precio = 0;
+    private decimal _descuento = 0;
+    private decimal _comisionPct = 0;
+    private HashSet<int> _serviciosSeleccionados = [];
+    private HashSet<int> _productosSeleccionados = [];
+    private bool _saving;
+    private string? _error;
+    private bool _confirmadoCeroPrecio = false;
+
+    private decimal PrecioHint =>
+        Servicios.Where(s => _serviciosSeleccionados.Contains(s.Id)).Sum(s => s.Precio)
+        + Productos.Where(p => _productosSeleccionados.Contains(p.Id)).Sum(p => p.PrecioVenta);
 
     protected override void OnParametersSet()
     {
         if (Existente is null) return;
-        _nombre = Existente.Nombre; _descripcion = Existente.Descripcion;
-        _precio = Existente.Precio; _descuento = Existente.Descuento;
-        _seleccionados = Existente.Servicios.Select(ps => ps.ServicioId).ToHashSet();
+        _nombre = Existente.Nombre;
+        _descripcion = Existente.Descripcion;
+        _precio = Existente.Precio;
+        _descuento = Existente.Descuento;
+        _comisionPct = Existente.ComisionPct;
+        _serviciosSeleccionados = Existente.Servicios.Select(ps => ps.ServicioId).ToHashSet();
+        _productosSeleccionados = Existente.Productos.Select(pp => pp.ProductoId).ToHashSet();
     }
 
-    private void Toggle(int id, bool check) { if (check) _seleccionados.Add(id); else _seleccionados.Remove(id); }
+    private void ToggleServicio(int id, bool check) { if (check) _serviciosSeleccionados.Add(id); else _serviciosSeleccionados.Remove(id); }
+    private void ToggleProducto(int id, bool check) { if (check) _productosSeleccionados.Add(id); else _productosSeleccionados.Remove(id); }
 
     private async Task Guardar()
     {
         if (string.IsNullOrWhiteSpace(_nombre)) { _error = "El nombre es requerido."; return; }
+
+        // Warn on zero price — first click shows warning, second click proceeds
+        if (_precio == 0 && !_confirmadoCeroPrecio)
+        {
+            _confirmadoCeroPrecio = true;
+            return;
+        }
+
         _saving = true; _error = null;
-        var ids = _seleccionados.ToList();
+        var svcIds = _serviciosSeleccionados.ToList();
+        var prodIds = _productosSeleccionados.ToList();
         if (Existente is null)
         {
-            var (ok, _, err) = await Svc.CrearAsync(new CrearPaqueteRequest(_nombre, _descripcion, _precio, _descuento, ids));
+            var (ok, _, err) = await Svc.CrearAsync(new CrearPaqueteRequest(_nombre, _descripcion, _precio, _descuento, svcIds, prodIds, _comisionPct));
             if (ok) { Snackbar.Add("Paquete creado.", Severity.Success); MudDialog.Close(); }
             else { _error = err ?? "Error."; _saving = false; }
         }
         else
         {
-            var (ok, err) = await Svc.ActualizarAsync(Existente.Id, new ActualizarPaqueteRequest(_nombre, _descripcion, _precio, _descuento, Existente.Activo, ids));
+            var (ok, err) = await Svc.ActualizarAsync(Existente.Id, new ActualizarPaqueteRequest(_nombre, _descripcion, _precio, _descuento, Existente.Activo, svcIds, prodIds, _comisionPct));
             if (ok) { Snackbar.Add("Paquete actualizado.", Severity.Success); MudDialog.Close(); }
             else { _error = err ?? "Error."; _saving = false; }
         }
     }
-
-    private static string Fmt(decimal v) => $"S/ {v:N2}";
 }

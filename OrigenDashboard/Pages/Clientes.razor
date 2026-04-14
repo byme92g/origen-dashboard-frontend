@@ -1,8 +1,8 @@
 @page "/clientes"
 @inject ClienteService Svc
-@inject IDialogService Dialog
+@inject MudBlazor.IDialogService Dialog
 @inject ISnackbar Snackbar
-@inject IJSRuntime JS
+@inject IConfiguration Config
 
 <PageTitle>Clientes · Origen</PageTitle>
 
@@ -47,21 +47,46 @@
             </tbody>
         </table>
     </div>
+    @if (_total > 0)
+    {
+        <div class="pagination-bar">
+            <button class="btn btn-outline btn-sm" disabled="@(_pagina <= 1)" @onclick="() => CambiarPagina(_pagina - 1)">‹ Anterior</button>
+            <span class="pagination-info">Página @_pagina de @_totalPaginas · @_total registros</span>
+            <button class="btn btn-outline btn-sm" disabled="@(_pagina >= _totalPaginas)" @onclick="() => CambiarPagina(_pagina + 1)">Siguiente ›</button>
+        </div>
+    }
 </div>
 
 @code {
     private List<ClienteDto> _clientes = [];
     private bool _loading = true;
+    private int _pagina = 1;
+    private int _total = 0;
+    private int _totalPaginas = 1;
+    private int _pageSize = 15;
 
-    protected override async Task OnInitializedAsync() => await Cargar();
+    protected override async Task OnInitializedAsync()
+    {
+        _pageSize = Config.GetValue<int>("Pagination:ClientesTable", 15);
+        await Cargar();
+    }
 
     private async Task Cargar()
     {
         _loading = true;
-        var (ok, data, _) = await Svc.ListarAsync();
-        _clientes = ok && data is not null ? data : [];
+        var (ok, data, _) = await Svc.ListarPaginadoAsync(_pagina, _pageSize);
+        if (ok && data is not null)
+        {
+            _total = data.Total;
+            _totalPaginas = Math.Max(1, (int)Math.Ceiling((double)_total / _pageSize));
+            if (_pagina > _totalPaginas) _pagina = _totalPaginas;
+            _clientes = data.Items.ToList();
+        }
+        else _clientes = [];
         _loading = false;
     }
+
+    private async Task CambiarPagina(int pagina) { _pagina = pagina; await Cargar(); }
 
     private async Task AbrirCrear()
     {
@@ -80,12 +105,21 @@
 
     private async Task Eliminar(ClienteDto c)
     {
-        var ok = await JS.InvokeAsync<bool>("confirm", $"¿Eliminar a {c.Nombre}?");
-        if (ok)
+        var parameters = new DialogParameters();
+        parameters.Add("ItemName", c.Nombre);
+        var dialog = await Dialog.ShowAsync<ConfirmDeleteDialog>("Confirmar", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
         {
             var (success, error) = await Svc.EliminarAsync(c.Id);
-            if (success) { Snackbar.Add("Cliente eliminado.", Severity.Success); await Cargar(); }
-            else Snackbar.Add(error ?? "Error al eliminar.", Severity.Error);
+            if (success) 
+            { 
+                Snackbar.Add("Cliente eliminado.", Severity.Success); 
+                await Cargar(); 
+            }
+            else 
+                Snackbar.Add(error ?? "Error al eliminar.", Severity.Error);
         }
     }
 }

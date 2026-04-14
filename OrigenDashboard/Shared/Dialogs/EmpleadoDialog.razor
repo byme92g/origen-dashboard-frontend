@@ -4,18 +4,37 @@
 <MudDialog>
     <TitleContent>@(Existente is null ? "Nuevo empleado" : "Editar empleado")</TitleContent>
     <DialogContent>
-        <div class="form-grid" style="min-width:420px;">
+        <div class="form-grid" style="min-width:440px;">
             <div class="form-group form-full">
                 <label class="form-label">Nombre completo *</label>
                 <input class="form-control" @bind="_nombre" placeholder="Nombre del empleado" />
             </div>
             <div class="form-group">
                 <label class="form-label">Cargo</label>
-                <input class="form-control" @bind="_cargo" placeholder="Estilista, colorista..." />
+                <select class="form-control" @bind="_cargo">
+                    <option value="">— Seleccionar —</option>
+                    <option>Estilista</option>
+                    <option>Colorista</option>
+                    <option>Manicurista</option>
+                    <option>Pedicurista</option>
+                    <option>Especialista en keratina</option>
+                    <option>Barbero</option>
+                    <option>Recepcionista</option>
+                    <option>Administrador</option>
+                    <option>Asistente</option>
+                </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Comisión (%)</label>
                 <input type="number" class="form-control" @bind="_comisionPct" step="0.5" min="0" max="100" />
+                <div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;">
+                    @foreach (var p in new[] { 0m, 5m, 10m, 15m, 20m })
+                    {
+                        <button type="button"
+                                class="pct-btn @(_comisionPct == p ? "pct-active" : "")"
+                                @onclick="() => _comisionPct = p">@p%</button>
+                    }
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Usuario de acceso</label>
@@ -36,6 +55,11 @@
         {
             <div style="background:#fdecea;color:#c0392b;padding:8px 12px;border-radius:6px;font-size:12px;margin-top:10px;">@_error</div>
         }
+        <style>
+            .pct-btn { padding:3px 10px;border-radius:14px;border:1.5px solid #d0d8e8;background:white;font-size:11px;font-weight:600;color:#5a6478;cursor:pointer;transition:all .12s; }
+            .pct-btn:hover { border-color:#1b3a60;color:#1b3a60; }
+            .pct-btn.pct-active { background:#1b3a60;border-color:#1b3a60;color:white; }
+        </style>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="() => MudDialog.Cancel()">Cancelar</MudButton>
@@ -61,8 +85,10 @@
     {
         if (Existente is not null)
         {
-            _nombre = Existente.Nombre; _cargo = Existente.Cargo;
-            _comisionPct = Existente.ComisionPct; _usuarioLogin = Existente.UsuarioLogin;
+            _nombre = Existente.Nombre;
+            _cargo = Existente.Cargo;
+            _comisionPct = Existente.ComisionPct;
+            _usuarioLogin = Existente.UsuarioLogin;
             _activo = Existente.Activo;
         }
     }

@@ -33,10 +33,11 @@ public record CrearProductoRequest(string Nombre, string Categoria, decimal Prec
 public record ActualizarProductoRequest(string Nombre, string Categoria, decimal PrecioVenta, int Stock, bool Activo);
 
 // ── Paquetes ──────────────────────────────────────────────────────────────
-public record PaqueteDto(int Id, string Nombre, string? Descripcion, decimal Precio, decimal Descuento, bool Activo, List<PaqueteServicioDto> Servicios);
+public record PaqueteDto(int Id, string Nombre, string? Descripcion, decimal Precio, decimal Descuento, decimal ComisionPct, bool Activo, List<PaqueteServicioDto> Servicios, List<PaqueteProductoDto> Productos);
 public record PaqueteServicioDto(int Id, int ServicioId, ServicioDto Servicio);
-public record CrearPaqueteRequest(string Nombre, string? Descripcion, decimal Precio, decimal Descuento, List<int> ServicioIds);
-public record ActualizarPaqueteRequest(string Nombre, string? Descripcion, decimal Precio, decimal Descuento, bool Activo, List<int> ServicioIds);
+public record PaqueteProductoDto(int Id, int ProductoId, ProductoDto Producto, int Cantidad);
+public record CrearPaqueteRequest(string Nombre, string? Descripcion, decimal Precio, decimal Descuento, List<int> ServicioIds, List<int> ProductoIds, decimal ComisionPct = 0);
+public record ActualizarPaqueteRequest(string Nombre, string? Descripcion, decimal Precio, decimal Descuento, bool Activo, List<int> ServicioIds, List<int> ProductoIds, decimal ComisionPct = 0);
 
 // ── Ingresos ──────────────────────────────────────────────────────────────
 public record IngresoDto(
@@ -48,6 +49,7 @@ public record IngresoDto(
     int? ProductoId, ProductoDto? Producto,
     int? PaqueteId, PaqueteDto? Paquete,
     string? ConceptoPersonalizado,
+    int Cantidad,
     decimal Monto, decimal Descuento,
     string MetodoPago, string? Referencia,
     decimal Comision, string? Observaciones
@@ -61,7 +63,8 @@ public record CrearIngresoRequest(
     string? ConceptoPersonalizado,
     decimal Monto, decimal Descuento,
     string MetodoPago, string? Referencia,
-    decimal Comision, string? Observaciones
+    decimal Comision, string? Observaciones,
+    int Cantidad = 1
 );
 
 // ── Egresos ───────────────────────────────────────────────────────────────
@@ -93,3 +96,6 @@ public record ActualizarUsuarioRequest(string NombreCompleto, string? Password, 
 
 // ── API wrapper ───────────────────────────────────────────────────────────
 public record ApiResponse<T>(bool Ok, T? Data, string? Error);
+
+// ── Paginación ────────────────────────────────────────────────────────────
+public record PagedResult<T>(IEnumerable<T> Items, int Total, int Page, int PageSize);

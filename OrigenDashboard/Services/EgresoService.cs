@@ -12,6 +12,14 @@ public class EgresoService(HttpClient http) : ApiBase(http)
         return GetAsync<List<EgresoDto>>(url);
     }
 
+    public Task<(bool ok, PagedResult<EgresoDto>? data, string? error)> ListarPaginadoAsync(DateTime? desde, DateTime? hasta, int page, int pageSize)
+    {
+        var url = $"/api/egresos?page={page}&pageSize={pageSize}";
+        if (desde.HasValue && hasta.HasValue)
+            url += $"&desde={desde:O}&hasta={hasta:O}";
+        return GetAsync<PagedResult<EgresoDto>>(url);
+    }
+
     public Task<(bool ok, EgresoDto? data, string? error)> CrearAsync(CrearEgresoRequest req) =>
         PostAsync<EgresoDto>("/api/egresos", req);
 

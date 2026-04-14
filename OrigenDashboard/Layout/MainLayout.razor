@@ -1,10 +1,12 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject AuthService Auth
 @inject NavigationManager Nav
 
 <MudThemeProvider Theme="_theme" />
 <MudSnackbarProvider />
 <MudDialogProvider />
+<MudPopoverProvider />
 
 @if (_loading)
 {
@@ -40,37 +42,39 @@ else
             <div class="sidebar-nav">
                 <div class="sidebar-section-label">Principal</div>
                 <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
-                    <span class="nav-icon">📊</span> Dashboard
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span> Dashboard
                 </NavLink>
+
+                <div class="sidebar-section-label">Finanzas &amp; Operaciones</div>
                 <NavLink class="nav-item" href="/ingresos">
-                    <span class="nav-icon">💰</span> Nuevo Ingreso
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></span> Ingresos
                 </NavLink>
                 <NavLink class="nav-item" href="/egresos">
-                    <span class="nav-icon">📤</span> Nuevo Egreso
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></span> Egresos
                 </NavLink>
                 <NavLink class="nav-item" href="/caja">
-                    <span class="nav-icon">🗃️</span> Control de Caja
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></span> Control de Caja
                 </NavLink>
 
                 <div class="sidebar-section-label">Gestión</div>
                 <NavLink class="nav-item" href="/clientes">
-                    <span class="nav-icon">👥</span> Clientes
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Clientes
                 </NavLink>
                 <NavLink class="nav-item" href="/servicios">
-                    <span class="nav-icon">✂️</span> Servicios &amp; Productos
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></span> Servicios &amp; Productos
                 </NavLink>
                 <NavLink class="nav-item" href="/empleados">
-                    <span class="nav-icon">👤</span> Empleados
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Empleados
                 </NavLink>
 
                 <div class="sidebar-section-label">Análisis</div>
                 <NavLink class="nav-item" href="/reportes">
-                    <span class="nav-icon">📈</span> Reportes
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> Reportes
                 </NavLink>
 
                 <div class="sidebar-section-label">Sistema</div>
                 <NavLink class="nav-item" href="/configuracion">
-                    <span class="nav-icon">⚙️</span> Configuración
+                    <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuración
                 </NavLink>
             </div>
 
@@ -83,7 +87,15 @@ else
 
         <div class="main-area">
             <div class="topbar">
-                <div class="topbar-title">@_pageTitle</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    @if (!_isHome)
+                    {
+                        <a href="/" class="topbar-back" title="Volver al inicio">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        </a>
+                    }
+                    <div class="topbar-title">@_pageTitle</div>
+                </div>
                 <div class="topbar-date">@DateTime.Now.ToString("dddd, d 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))</div>
             </div>
             <div class="page-content">
@@ -98,6 +110,20 @@ else
     private bool _authenticated = false;
     private UsuarioInfo? _usuario;
     private string _pageTitle = "Dashboard";
+    private bool _isHome = true;
+
+    private static readonly Dictionary<string, string> _pageTitles = new()
+    {
+        { "/", "Dashboard" },
+        { "/ingresos", "Ingresos" },
+        { "/egresos", "Egresos" },
+        { "/caja", "Control de Caja" },
+        { "/clientes", "Clientes" },
+        { "/servicios", "Servicios & Productos" },
+        { "/empleados", "Empleados" },
+        { "/reportes", "Reportes" },
+        { "/configuracion", "Configuración" },
+    };
 
     private readonly MudTheme _theme = new()
     {
@@ -106,6 +132,10 @@ else
             Primary = "#1b3a60",
             Secondary = "#a07838",
             AppbarBackground = "#1b3a60",
+            Success = "#2e7d5a",
+            Warning = "#d4860a",
+            Error = "#c0392b",
+            Info = "#2a4f80",
         }
     };
 
@@ -117,9 +147,28 @@ else
 
         _loading = false;
 
+        Nav.LocationChanged += OnLocationChanged;
+        UpdatePageState(Nav.Uri);
+
         if (!_authenticated && !Nav.Uri.Contains("/login"))
             Nav.NavigateTo("/login");
     }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        UpdatePageState(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdatePageState(string uri)
+    {
+        var path = new Uri(uri).AbsolutePath.TrimEnd('/');
+        if (string.IsNullOrEmpty(path)) path = "/";
+        _isHome = path == "/";
+        _pageTitle = _pageTitles.TryGetValue(path, out var title) ? title : "Origen";
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 
     private async Task LogoutAsync()
     {

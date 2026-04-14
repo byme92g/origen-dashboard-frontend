@@ -1,326 +1,1005 @@
 @page "/ingresos"
+@inject Microsoft.AspNetCore.Components.NavigationManager Nav
 @inject IngresoService IngresoSvc
+@inject IConfiguration Config
 @inject ClienteService ClienteSvc
 @inject EmpleadoService EmpleadoSvc
 @inject ServicioService ServicioSvc
 @inject ProductoService ProductoSvc
 @inject PaqueteService PaqueteSvc
 @inject ISnackbar Snackbar
+@inject MudBlazor.IDialogService Dialog
+@inject OrigenDashboard.Auth.AuthService Auth
 
 <PageTitle>Registrar Ingreso · Origen</PageTitle>
 
-<div class="card">
-    <div class="card-header">
-        <div class="card-title">Registrar Ingreso</div>
-        <span style="font-size:12px;color:#8a97b0;">@_fecha.ToString("dd MMM yyyy, HH:mm")</span>
+<style>
+.stepper-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(27,58,96,.10); padding: 24px; }
+.step-title { font-size: 1.2rem; font-weight: 600; color: #1b3a60; margin-bottom: 20px; }
+.step-description { font-size: 13px; color: #8a97b0; margin-bottom: 16px; }
+
+.tipo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 24px; }
+.tipo-btn {
+    padding: 14px 8px; border: 2px solid #d0d8e8; border-radius: 8px;
+    background: white; cursor: pointer; transition: all .15s; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.tipo-btn:hover { border-color: #1b3a60; background: #f0f4ff; }
+.tipo-btn.active { border-color: #1b3a60; background: #eef2fa; }
+.tipo-btn.active .tipo-icon-wrap { color: #1b3a60; }
+.tipo-btn.active .tipo-name { color: #1b3a60; font-weight: 700; }
+.tipo-icon-wrap { color: #8a97b0; transition: color .15s; }
+.tipo-name { font-size: 12px; font-weight: 500; color: #5a6478; display: block; transition: color .15s; }
+
+.item-info-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: -4px 0 16px; }
+.item-info-chip { background: #f0f4ff; border: 1px solid #c8d4f0; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: #1b3a60; white-space: nowrap; }
+.item-info-chip.green { background: #e8f5ee; border-color: #aad4bc; color: #1a5c35; }
+.item-info-chip.price { background: #e8f5ee; border-color: #aad4bc; color: #1a5c35; font-size: 13px; }
+.item-info-chip.warn { background: #fff8e7; border-color: #f0d080; color: #856404; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-full { grid-column: 1 / -1; }
+
+.pago-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; }
+.pago-btn {
+    padding: 14px 10px; border: 2px solid #d0d8e8; border-radius: 8px;
+    background: white; cursor: pointer; transition: all .15s; text-align: center; font-size: 11px;
+    font-weight: 600; color: #5a6478; display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.pago-btn:hover { border-color: #a07838; background: #fdf9f3; }
+.pago-btn.selected { border-color: #a07838; background: #fdf3e3; color: #a07838; }
+.pago-btn.selected svg { color: #a07838; }
+.pago-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; }
+.brand-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 8px; color: white; font-weight: 800; font-size: 17px;
+}
+
+.summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+.summary-label { color: #8a97b0; }
+.summary-value { font-weight: 600; color: #1b3a60; }
+
+/* ── Step 3 resumen card ─────────────────────────── */
+.resumen-final-card { background: #f8fafc; border: 1px solid #e0e6f0; border-left: 4px solid #1b3a60; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.resumen-final-header { font-size: 11px; font-weight: 700; color: #8a97b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+.resumen-final-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #edf0f5; font-size: 13px; }
+.resumen-final-row:last-child { border-bottom: none; }
+.resumen-final-label { color: #8a97b0; }
+.resumen-final-value { font-weight: 600; color: #1b3a60; }
+.resumen-final-total { padding-top: 14px; }
+.resumen-final-total .resumen-final-label { font-size: 13px; color: #5a6478; font-weight: 600; }
+.resumen-final-total .resumen-final-value { font-family: var(--font-heading, system-ui); font-size: 1.6rem; font-weight: 800; color: #1b3a60; }
+
+.step-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: space-between; }
+.btn { padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+.btn-primary { background: #1b3a60; color: white; }
+.btn-primary:hover { background: #142d4c; }
+.btn-secondary { background: #d0d8e8; color: #5a6478; }
+.btn-secondary:hover { background: #c0c8d8; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-outline { background: transparent !important; border: 1px solid #d0d8e8 !important; color: #1b3a60; }
+.btn-outline:hover { background: #f4f6fa !important; }
+.btn-sm { padding: 5px 10px !important; font-size: 12px !important; }
+
+.resumen-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.resumen-content {
+    background: white; border-radius: 12px; padding: 32px; max-width: 500px;
+    width: 90%; max-height: 90vh; overflow-y: auto;
+}
+.resumen-header {
+    text-align: center; margin-bottom: 24px; border-bottom: 1px solid #e8edf4; padding-bottom: 20px;
+}
+.resumen-titulo { font-size: 22px; font-weight: 700; color: #2e7d5a; margin-bottom: 4px; }
+.resumen-subtitulo { font-size: 12px; color: #8a97b0; }
+.resumen-section { margin-bottom: 20px; }
+.resumen-section-title { font-size: 11px; font-weight: 600; color: #8a97b0; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
+.resumen-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+.resumen-item-label { color: #5a6478; }
+.resumen-item-value { color: #1b3a60; font-weight: 600; }
+.resumen-item.total { border-top: 2px solid #e8edf4; padding-top: 12px; font-size: 16px; font-weight: 700; color: #2e7d5a; margin-top: 12px; }
+.resumen-item.vuelto { color: #a07838; font-weight: 700; font-size: 14px; }
+.resumen-buttons { display: flex; gap: 12px; margin-top: 24px; }
+.resumen-buttons button { flex: 1; padding: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: all .15s; }
+.resumen-btn-imprimir { background: #f0f4f8; color: #5a6478; }
+.resumen-btn-imprimir:hover { background: #e8edf4; }
+.resumen-btn-nueva { background: #2e7d5a; color: white; }
+.resumen-btn-nueva:hover { background: #1f5c3f; }
+
+.stepper-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.progress-step { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.progress-num { width: 28px; height: 28px; border-radius: 50%; background: #e8edf4; color: #5a6478;
+    display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.progress-num.active { background: #1b3a60; color: white; }
+.progress-num.completed { background: #2e7d5a; color: white; }
+.progress-line { flex: 1; height: 2px; background: #e8edf4; }
+.progress-line.active { background: #1b3a60; }
+
+/* ── Historial ────────────────────────────────────── */
+.hist-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.hist-title { font-size: 1.4rem; font-weight: 700; color: #1b3a60; }
+.hist-subtitle { font-size: 13px; color: #8a97b0; margin-top: 2px; }
+.hist-filters { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(27,58,96,.10); padding: 16px; margin-bottom: 16px; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.hist-filter-label { font-size: 11px; font-weight: 600; color: #8a97b0; display: block; margin-bottom: 4px; text-transform: uppercase; }
+.hist-filter-input { border: 1.5px solid #d0d8e8; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: #1b3a60; outline: none; }
+.hist-filter-input:focus { border-color: #a07838; }
+.hist-table-wrap { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(27,58,96,.10); overflow: hidden; }
+.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-table th { background: #f8fafc; color: #8a97b0; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 16px; text-align: left; white-space: nowrap; }
+.hist-table td { padding: 11px 16px; border-top: 1px solid #f0f4f8; color: #1b3a60; vertical-align: middle; }
+.hist-table tr:hover td { background: #fafbfc; }
+.hist-concepto { font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-monto { font-weight: 700; color: #2e7d5a; white-space: nowrap; }
+.hist-empty { text-align: center; padding: 48px 24px; color: #8a97b0; }
+.hist-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.metodo-badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+.metodo-efectivo { background: #e8f5e9; color: #2e7d32; }
+.metodo-yape { background: #ede7f6; color: #6b21a8; }
+.metodo-plin { background: #e0f7fa; color: #00838f; }
+.metodo-transferencia { background: #e3f2fd; color: #1565c0; }
+.metodo-pos { background: #fff3e0; color: #e65100; }
+.btn-icon-sm { background: none; border: none; cursor: pointer; color: #8a97b0; padding: 4px 6px; border-radius: 4px; transition: color .15s; }
+.btn-icon-sm:hover { color: #c0392b; background: #fdecea; }
+</style>
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+@if (!ShowForm)
+{
+    <!-- ── HISTORIAL ──────────────────────────── -->
+    <div class="hist-header">
+        <div>
+            <div class="hist-title">Ingresos</div>
+            <div class="hist-subtitle">Historial de transacciones registradas</div>
+        </div>
+        <button class="btn btn-primary" @onclick="() => ShowForm = true">+ Nuevo Ingreso</button>
     </div>
-    <div class="card-body">
 
-        @* ── Tipo ── *@
-        <span class="form-section-label">Tipo de cobro</span>
-        <div class="chip-select" style="margin-bottom:20px;">
-            <div class="chip-opt @(_tipo=="servicio"?"active":"")"   @onclick='()=>SetTipo("servicio")'>  ✂️ Servicio</div>
-            <div class="chip-opt @(_tipo=="producto"?"active":"")"   @onclick='()=>SetTipo("producto")'>  📦 Producto</div>
-            <div class="chip-opt @(_tipo=="paquete"?"active":"")"    @onclick='()=>SetTipo("paquete")'>   🎁 Paquete</div>
-            <div class="chip-opt @(_tipo=="personalizado"?"active":"")" @onclick='()=>SetTipo("personalizado")'>✏️ Personalizado</div>
+    <div class="hist-filters">
+        <div>
+            <span class="hist-filter-label">Desde</span>
+            <input type="date" class="hist-filter-input" @bind="FilterDesde" />
         </div>
+        <div>
+            <span class="hist-filter-label">Hasta</span>
+            <input type="date" class="hist-filter-input" @bind="FilterHasta" />
+        </div>
+        <button class="btn btn-secondary" @onclick="FiltrarHistorial" style="height:38px;">Filtrar</button>
+    </div>
 
-        @* ── Empleado ── *@
-        <span class="form-section-label">Empleado responsable</span>
-        <div class="avatar-chips" style="margin-bottom:20px;">
-            @foreach (var e in _empleados)
-            {
-                <div class="avatar-chip @(_empleadoId==e.Id.ToString()?"active":"")"
-                     @onclick="()=>SeleccionarEmpleado(e.Id.ToString())">
-                    <div class="av">@Iniciales(e.Nombre)</div>
-                    @e.Nombre.Split(' ')[0]
+    <div class="hist-table-wrap">
+        @if (IsLoadingHistorial)
+        {
+            <div class="hist-empty"><div>Cargando...</div></div>
+        }
+        else if (!Historial.Any())
+        {
+            <div class="hist-empty">
+                <div class="hist-empty-icon" style="color:#c0cedc;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
                 </div>
-            }
-            @if (!_empleados.Any())
-            {
-                <span style="font-size:13px;color:#8a97b0;">Sin empleados registrados</span>
-            }
-        </div>
-
-        @* ── Cliente ── *@
-        <div class="form-grid" style="margin-bottom:20px;">
-            <div class="form-group">
-                <label class="form-label">Cliente</label>
-                <select class="form-control" @bind="_clienteId">
-                    <option value="">— Sin cliente —</option>
-                    @foreach (var c in _clientes)
-                    {
-                        <option value="@c.Id">@c.Nombre</option>
-                    }
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Fecha y hora</label>
-                <input type="datetime-local" class="form-control" @bind="_fecha" />
-            </div>
-        </div>
-
-        @* ── Item selector ── *@
-        @if (_tipo == "servicio")
-        {
-            <span class="form-section-label">Servicio</span>
-            <div class="item-cards" style="margin-bottom:20px;">
-                @foreach (var s in _servicios.Where(s => s.Activo))
-                {
-                    <div class="item-card @(_servicioId==s.Id.ToString()?"active":"")"
-                         @onclick="()=>SeleccionarServicio(s.Id.ToString())">
-                        <div class="ic-name">@s.Nombre</div>
-                        <div class="ic-price">S/ @s.Precio.ToString("N2")</div>
-                        <div class="ic-meta">@s.DuracionMin min · @s.ComisionPct%</div>
-                    </div>
-                }
-            </div>
-        }
-        else if (_tipo == "producto")
-        {
-            <span class="form-section-label">Producto</span>
-            <div class="item-cards" style="margin-bottom:20px;">
-                @foreach (var p in _productos.Where(p => p.Activo))
-                {
-                    <div class="item-card @(_productoId==p.Id.ToString()?"active":"")"
-                         @onclick="()=>SeleccionarProducto(p.Id.ToString())">
-                        <div class="ic-name">@p.Nombre</div>
-                        <div class="ic-price">S/ @p.PrecioVenta.ToString("N2")</div>
-                        <div class="ic-meta">@p.Categoria</div>
-                    </div>
-                }
-            </div>
-        }
-        else if (_tipo == "paquete")
-        {
-            <span class="form-section-label">Paquete</span>
-            <div class="item-cards" style="margin-bottom:20px;">
-                @foreach (var p in _paquetes.Where(p => p.Activo))
-                {
-                    <div class="item-card @(_paqueteId==p.Id.ToString()?"active":"")"
-                         @onclick="()=>SeleccionarPaquete(p.Id.ToString())">
-                        <div class="ic-name">@p.Nombre</div>
-                        <div class="ic-price">S/ @p.Precio.ToString("N2")</div>
-                        @if (p.Descuento > 0)
-                        {
-                            <div class="ic-meta" style="color:#2e7d5a;">Dcto: S/ @p.Descuento.ToString("N2")</div>
-                        }
-                    </div>
-                }
+                <div>Sin ingresos en el período seleccionado</div>
             </div>
         }
         else
         {
-            <div class="form-group" style="margin-bottom:20px;">
-                <label class="form-label">Concepto</label>
-                <input class="form-control" @bind="_concepto" placeholder="Descripción del cobro" />
-            </div>
-        }
-
-        @* ── Dinero ── *@
-        <span class="form-section-label">Montos</span>
-        <div class="money-row">
-            <div class="money-field">
-                <label>Monto (S/)</label>
-                <input type="number" class="money-input" @bind="_monto" @bind:event="oninput"
-                       step="0.50" min="0" placeholder="0.00" />
-            </div>
-            <div class="money-field">
-                <label>Descuento (S/)</label>
-                <input type="number" class="money-input" @bind="_descuento" @bind:event="oninput"
-                       step="0.50" min="0" placeholder="0.00" />
-            </div>
-        </div>
-        <div class="money-total-banner">
-            <span class="mtb-label">Total a cobrar</span>
-            <span class="mtb-amount">S/ @((_monto - _descuento).ToString("N2"))</span>
-        </div>
-        @if (_comision > 0)
-        {
-            <div class="money-comision-hint">Comisión estimada: S/ @_comision.ToString("N2")</div>
-        }
-
-        @* ── Método de pago ── *@
-        <span class="form-section-label">Método de pago</span>
-        <div class="pago-grid" style="margin-bottom:16px;">
-            @foreach (var m in _metodos)
+            <table class="hist-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
+                        <th>Empleado</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Método</th>
+                        @if (IsAdmin) { <th></th> }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ing in Historial)
+                    {
+                        <tr>
+                            <td style="color:#8a97b0; white-space:nowrap;">@ing.Fecha.ToString("dd/MM/yy HH:mm")</td>
+                            <td class="hist-concepto">@GetConceptoDto(ing)</td>
+                            <td style="color:#5a6478;">@(ing.Empleado?.Nombre ?? "—")</td>
+                            <td style="color:#5a6478;">@(ing.Cliente?.Nombre ?? "—")</td>
+                            <td class="hist-monto">S/. @((ing.Monto - ing.Descuento).ToString("N2"))</td>
+                            <td>
+                                <span class="metodo-badge metodo-@ing.MetodoPago.ToLower()">@ing.MetodoPago</span>
+                            </td>
+                            @if (IsAdmin)
+                            {
+                                <td>
+                                    <button class="btn-icon-sm" title="Eliminar" @onclick="() => EliminarIngreso(ing)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (_totalHistorial > 0)
             {
-                <div class="pago-option @(_metodoPago==m?"selected":"")" @onclick="()=>_metodoPago=m">
-                    <div class="pago-icon">@_pagoIconos[m]</div>
-                    <div>@_pagoLabels[m]</div>
+                <div class="pagination-bar">
+                    <button class="btn btn-outline btn-sm" disabled="@(_paginaHistorial <= 1)" @onclick="() => CambiarPaginaHistorial(_paginaHistorial - 1)">‹ Anterior</button>
+                    <span class="pagination-info">Página @_paginaHistorial de @_totalPaginasHistorial · @_totalHistorial registros</span>
+                    <button class="btn btn-outline btn-sm" disabled="@(_paginaHistorial >= _totalPaginasHistorial)" @onclick="() => CambiarPaginaHistorial(_paginaHistorial + 1)">Siguiente ›</button>
                 </div>
             }
-        </div>
+        }
+    </div>
+}
+else
+{
+    <div style="margin-bottom:16px;">
+        <button class="btn btn-secondary" @onclick="() => ShowForm = false" style="display:flex;align-items:center;gap:6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Volver al historial
+        </button>
+    </div>
 
-        @if (_metodoPago is "transferencia" or "pos" or "yape" or "plin")
+    <!-- Progress Tracker -->
+    <div class="stepper-progress">
+        <div class="progress-step">
+            <div class="progress-num @(CurrentStep == 1 ? "active" : CurrentStep > 1 ? "completed" : "")">1</div>
+            <span>Tipo</span>
+        </div>
+        <div class="progress-line @(CurrentStep > 1 ? "active" : "")"></div>
+        <div class="progress-step">
+            <div class="progress-num @(CurrentStep == 2 ? "active" : CurrentStep > 2 ? "completed" : "")">2</div>
+            <span>Involucrados</span>
+        </div>
+        <div class="progress-line @(CurrentStep > 2 ? "active" : "")"></div>
+        <div class="progress-step">
+            <div class="progress-num @(CurrentStep == 3 ? "active" : "")">3</div>
+            <span>Pago</span>
+        </div>
+    </div>
+
+    <div class="stepper-card">
+        <!-- PASO 1: TIPO DE COBRO -->
+        @if (CurrentStep == 1)
         {
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label">N° de referencia / operación</label>
-                <input class="form-control" @bind="_referencia" placeholder="Número de operación" />
+            <div class="step-title">Paso 1: ¿Tipo de Cobro?</div>
+            <p class="step-description">Selecciona qué tipo de ingreso es esta transacción</p>
+
+            <div class="tipo-grid">
+                <button class="tipo-btn @(SelectedTipo == "servicio" ? "active" : "")" @onclick="@(() => SelectTipo("servicio"))">
+                    <span class="tipo-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4S2 3.79 2 6s1.79 4 4 4c.59 0 1.14-.13 1.64-.36L10 12l-2.36 2.36C7.14 14.13 6.59 14 6 14c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4c0-.59-.13-1.14-.36-1.64L12 14l7 7h3v-1L9.64 7.64zM6 8c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm0 12c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm6-7.5c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5zM19 3l-6 6 2 2 7-7V3z"/></svg>
+                    </span>
+                    <span class="tipo-name">Servicio</span>
+                </button>
+                <button class="tipo-btn @(SelectedTipo == "producto" ? "active" : "")" @onclick="@(() => SelectTipo("producto"))">
+                    <span class="tipo-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-6-2v2h-4V5h4zM4 20V9h16v11H4z"/></svg>
+                    </span>
+                    <span class="tipo-name">Producto</span>
+                </button>
+                <button class="tipo-btn @(SelectedTipo == "paquete" ? "active" : "")" @onclick="@(() => SelectTipo("paquete"))">
+                    <span class="tipo-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>
+                    </span>
+                    <span class="tipo-name">Paquete</span>
+                </button>
+                <button class="tipo-btn @(SelectedTipo == "personalizado" ? "active" : "")" @onclick="@(() => SelectTipo("personalizado"))">
+                    <span class="tipo-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    </span>
+                    <span class="tipo-name">Personalizado</span>
+                </button>
+            </div>
+
+            @if (SelectedTipo == "servicio" && Servicios.Any())
+            {
+                <div class="form-row form-full">
+                    <MudSelect T="int" Label="Selecciona un servicio" @bind-Value="SelectedServicioId">
+                        <MudSelectItem Value="0">-- Selecciona --</MudSelectItem>
+                        @foreach (var srv in Servicios.Where(s => s.Activo))
+                        {
+                            <MudSelectItem Value="@srv.Id">@srv.Nombre - S/. @srv.Precio (@srv.Categoria)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </div>
+                @if (SelectedServicio != null)
+                {
+                    <div class="item-info-bar">
+                        <span class="item-info-chip price">S/. @SelectedServicio.Precio.ToString("N2")</span>
+                        @if (SelectedServicio.ComisionPct > 0) { <span class="item-info-chip">@SelectedServicio.ComisionPct% comisión</span> }
+                        <span class="item-info-chip">@SelectedServicio.DuracionMin min</span>
+                    </div>
+                }
+            }
+            else if (SelectedTipo == "producto" && Productos.Any())
+            {
+                <div class="form-row form-full">
+                    <MudSelect T="int" Label="Selecciona un producto" @bind-Value="SelectedProductoId">
+                        <MudSelectItem Value="0">-- Selecciona --</MudSelectItem>
+                        @foreach (var prod in Productos.Where(p => p.Activo && p.Stock > 0))
+                        {
+                            <MudSelectItem Value="@prod.Id">@prod.Nombre - S/. @prod.PrecioVenta (Stock: @prod.Stock)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </div>
+                @if (SelectedProducto != null)
+                {
+                    <div class="form-row form-full">
+                        <MudNumericField T="int" Label="Cantidad" @bind-Value="ProductoCantidad" Min="1" Max="SelectedProducto.Stock"></MudNumericField>
+                    </div>
+                    <div class="item-info-bar">
+                        <span class="item-info-chip">S/. @SelectedProducto.PrecioVenta.ToString("N2") c/u</span>
+                        <span class="item-info-chip price">Subtotal: S/. @((SelectedProducto.PrecioVenta * ProductoCantidad).ToString("N2"))</span>
+                        <span class="item-info-chip">Stock: @SelectedProducto.Stock</span>
+                    </div>
+                }
+            }
+            else if (SelectedTipo == "paquete" && Paquetes.Any())
+            {
+                <div class="form-row form-full">
+                    <MudSelect T="int" Label="Selecciona un paquete" @bind-Value="SelectedPaqueteId">
+                        <MudSelectItem Value="0">-- Selecciona --</MudSelectItem>
+                        @foreach (var paq in Paquetes.Where(p => p.Activo))
+                        {
+                            <MudSelectItem Value="@paq.Id">@paq.Nombre - S/. @paq.Precio</MudSelectItem>
+                        }
+                    </MudSelect>
+                </div>
+                @if (SelectedPaquete != null)
+                {
+                    <div class="item-info-bar">
+                        <span class="item-info-chip">S/. @SelectedPaquete.Precio.ToString("N2")</span>
+                        @if (SelectedPaquete.Descuento > 0)
+                        {
+                            <span class="item-info-chip warn">-S/. @SelectedPaquete.Descuento.ToString("N2") dcto</span>
+                        }
+                        <span class="item-info-chip price">Total: S/. @((SelectedPaquete.Precio - SelectedPaquete.Descuento).ToString("N2"))</span>
+                        @if (SelectedPaquete.ComisionPct > 0) { <span class="item-info-chip">@SelectedPaquete.ComisionPct% comisión</span> }
+                    </div>
+                }
+            }
+            else if (SelectedTipo == "personalizado")
+            {
+                <div class="form-row form-full">
+                    <MudTextField T="string" Label="Descripción" @bind-Value="PersonalizadoDesc" Placeholder="Ej: Diseño especial, consulta, etc."></MudTextField>
+                </div>
+                <div class="form-row form-full">
+                    <MudNumericField T="decimal" Label="Monto (S/.)" @bind-Value="PersonalizadoMonto" Min="0" Step="0.5m"></MudNumericField>
+                </div>
+                @if (PersonalizadoMonto > 0)
+                {
+                    <div class="item-info-bar">
+                        <span class="item-info-chip price">S/. @PersonalizadoMonto.ToString("N2")</span>
+                    </div>
+                }
+            }
+
+            <div class="step-buttons">
+                <div></div>
+                <button class="btn btn-primary" @onclick="GoToStep2" disabled="@(SelectedTipo == null || !ValidateStep1())">
+                    Siguiente
+                </button>
             </div>
         }
 
-        <div class="form-group" style="margin-bottom:20px;">
-            <label class="form-label">Observaciones</label>
-            <textarea class="form-control" @bind="_obs" placeholder="Notas del servicio, estado del cabello, productos usados..."></textarea>
-        </div>
-
-        @if (_error is not null)
+        <!-- PASO 2: INVOLUCRADOS -->
+        @if (CurrentStep == 2)
         {
-            <div style="background:#fdecea;color:#c0392b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">@_error</div>
+            <div class="step-title">Paso 2: Involucrados en la Transacción</div>
+            <p class="step-description">Selecciona cliente y empleado responsable</p>
+
+            <div class="form-row form-full" style="align-items:flex-end; gap: 8px;">
+                <div style="flex:1;">
+                    <MudSelect T="int" Label="Cliente (opcional)" @bind-Value="SelectedClienteId">
+                        <MudSelectItem Value="0">-- Sin cliente --</MudSelectItem>
+                        @foreach (var cli in Clientes)
+                        {
+                            <MudSelectItem Value="@cli.Id">@cli.Nombre (@cli.Telefono)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </div>
+                <button class="btn btn-secondary" @onclick="AbrirNuevoCliente" title="Nuevo cliente" style="white-space:nowrap; height:56px;">
+                    + Nuevo
+                </button>
+            </div>
+
+            <div class="form-row form-full">
+                <MudSelect T="int" Label="Empleado (responsable)" @bind-Value="SelectedEmpleadoId">
+                    <MudSelectItem Value="0">-- Selecciona --</MudSelectItem>
+                    @foreach (var emp in Empleados.Where(e => e.Activo))
+                    {
+                        <MudSelectItem Value="@emp.Id">@emp.Nombre (@emp.Cargo)</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+
+            @if (SelectedCliente != null && !string.IsNullOrEmpty(SelectedCliente.Email))
+            {
+                <div class="item-info-bar" style="margin-top:-8px;">
+                    <span class="item-info-chip">@SelectedCliente.Email</span>
+                </div>
+            }
+
+            @if (SelectedEmpleado != null)
+            {
+                <div class="item-info-bar" style="margin-top:-8px;">
+                    <span class="item-info-chip">@SelectedEmpleado.Cargo</span>
+                    @if (SelectedEmpleado.ComisionPct > 0) { <span class="item-info-chip">@SelectedEmpleado.ComisionPct% comisión base</span> }
+                </div>
+            }
+
+            <div class="step-buttons">
+                <button class="btn btn-secondary" @onclick="GoToStep1">Atrás</button>
+                <button class="btn btn-primary" @onclick="GoToStep3" disabled="@(SelectedEmpleadoId == 0)">
+                    Siguiente
+                </button>
+            </div>
         }
 
-        <div class="d-flex gap-8" style="justify-content:flex-end;">
-            <button class="btn btn-outline" @onclick="Limpiar">Limpiar</button>
-            <button class="btn btn-gold" @onclick="Registrar" disabled="@_saving">
-                @(_saving ? "Registrando..." : "✓ Registrar ingreso")
-            </button>
-        </div>
+        <!-- PASO 3: TIPO DE PAGO -->
+        @if (CurrentStep == 3)
+        {
+            <div class="step-title">Paso 3: Método de Pago</div>
+            <p class="step-description">Confirma los detalles y registra el ingreso</p>
+
+            <div class="form-row form-full">
+                <label style="font-size: 12px; font-weight: 500; color: #5a6478; margin-bottom: 12px; display: block;">Método de Pago</label>
+                <div class="pago-grid">
+                    <button class="pago-btn @(SelectedMetodoPago == "efectivo" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("efectivo"))'>
+                        <div class="pago-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                                <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                            </svg>
+                        </div>
+                        <span>Efectivo</span>
+                    </button>
+                    <button class="pago-btn @(SelectedMetodoPago == "transferencia" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("transferencia"))'>
+                        <div class="pago-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                                <path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/>
+                            </svg>
+                        </div>
+                        <span>Transferencia</span>
+                    </button>
+                    <button class="pago-btn @(SelectedMetodoPago == "yape" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("yape"))'>
+                        <div class="pago-icon">
+                            <span class="brand-badge" style="background:#6B21A8;">Y</span>
+                        </div>
+                        <span>Yape</span>
+                    </button>
+                    <button class="pago-btn @(SelectedMetodoPago == "plin" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("plin"))'>
+                        <div class="pago-icon">
+                            <span class="brand-badge" style="background:#00B4D8;">P</span>
+                        </div>
+                        <span>Plin</span>
+                    </button>
+                    <button class="pago-btn @(SelectedMetodoPago == "pos" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("pos"))'>
+                        <div class="pago-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                                <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                            </svg>
+                        </div>
+                        <span>POS</span>
+                    </button>
+                </div>
+            </div>
+
+            @if (SelectedMetodoPago == "efectivo")
+            {
+                <div class="form-row form-full">
+                    <MudNumericField T="decimal" Label="Monto Recibido (S/.)" @bind-Value="MontoRecibido" Min="0" Step="0.50m"></MudNumericField>
+                </div>
+                @if (MontoRecibido > 0 && (GetMontoTotal() - DescuentoAdicional) > 0)
+                {
+                    var vuelto = MontoRecibido - (GetMontoTotal() - DescuentoAdicional);
+                    <div style="background: #eaf0f8; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                        <div class="summary-row">
+                            <span class="summary-label">Vuelto:</span>
+                            <span style="font-weight: 700; color: @(vuelto >= 0 ? "#2e7d5a" : "#c0392b");">
+                                @(vuelto >= 0 ? "+" : "")S/. @vuelto.ToString("N2")
+                            </span>
+                        </div>
+                    </div>
+                }
+            }
+
+            @if (SelectedMetodoPago is "yape" or "plin" or "transferencia")
+            {
+                <div class="form-row form-full">
+                    <MudTextField T="string" Label="N° de operación / Referencia" @bind-Value="Referencia"
+                        Placeholder="@(SelectedMetodoPago == "transferencia" ? "N° de transferencia bancaria" : $"Código de operación {SelectedMetodoPago}")">
+                    </MudTextField>
+                </div>
+            }
+
+            <div class="form-row form-full">
+                <MudNumericField T="decimal" Label="Descuento adicional (S/.)" @bind-Value="DescuentoAdicional" Min="0" Max="@GetMontoTotal()" Step="0.5m"></MudNumericField>
+            </div>
+            @if (DescuentoAdicional > GetMontoTotal())
+            {
+                <div style="background:#fdecea;color:#c0392b;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    El descuento no puede superar el monto total. Máximo: S/. @GetMontoTotal().ToString("N2")
+                </div>
+            }
+
+            <div class="form-row form-full">
+                <MudTextField T="string" Label="Observaciones" @bind-Value="Observaciones" Multiline="true" Lines="3" Placeholder="Notas adicionales..."></MudTextField>
+            </div>
+
+            <!-- Resumen Final -->
+            <div class="resumen-final-card">
+                <div class="resumen-final-header">Resumen del cobro</div>
+                <div class="resumen-final-row">
+                    <span class="resumen-final-label">Concepto</span>
+                    <span class="resumen-final-value">@GetConcepto()</span>
+                </div>
+                @if (SelectedCliente != null)
+                {
+                    <div class="resumen-final-row">
+                        <span class="resumen-final-label">Cliente</span>
+                        <span class="resumen-final-value">@SelectedCliente.Nombre</span>
+                    </div>
+                }
+                @if (SelectedEmpleado != null)
+                {
+                    <div class="resumen-final-row">
+                        <span class="resumen-final-label">Atendido por</span>
+                        <span class="resumen-final-value">@SelectedEmpleado.Nombre</span>
+                    </div>
+                }
+                @if (SelectedMetodoPago != null)
+                {
+                    <div class="resumen-final-row">
+                        <span class="resumen-final-label">Método de pago</span>
+                        <span class="resumen-final-value">@GetNombreMetodoPago(SelectedMetodoPago)</span>
+                    </div>
+                }
+                @if (DescuentoAdicional > 0)
+                {
+                    <div class="resumen-final-row">
+                        <span class="resumen-final-label">Descuento adicional</span>
+                        <span class="resumen-final-value" style="color:#856404;">-S/. @DescuentoAdicional.ToString("N2")</span>
+                    </div>
+                }
+                <div class="resumen-final-row resumen-final-total">
+                    <span class="resumen-final-label">Total a cobrar</span>
+                    <span class="resumen-final-value" style="@(DescuentoAdicional > GetMontoTotal() ? "color:#c0392b;" : "")">
+                        S/. @(Math.Max(0, GetMontoTotal() - DescuentoAdicional).ToString("N2"))
+                    </span>
+                </div>
+            </div>
+
+            <div class="step-buttons">
+                <button class="btn btn-secondary" @onclick="GoToStep2">Atrás</button>
+                <button class="btn btn-primary" @onclick="GuardarIngreso" disabled="@(SelectedMetodoPago == null || IsSubmitting || DescuentoAdicional > GetMontoTotal())">
+                    @if (IsSubmitting) { <span>Guardando...</span> } else { <span>Registrar ingreso</span> }
+                </button>
+            </div>
+        }
     </div>
+}
 </div>
 
+@if (ShowResumen)
+{
+    <div class="resumen-modal">
+        <div class="resumen-content">
+            <div class="resumen-header">
+                <div style="font-size: 52px; line-height: 1; margin-bottom: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2e7d5a" width="56" height="56">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                <div class="resumen-titulo">¡Ingreso Registrado!</div>
+                <div class="resumen-subtitulo">@ResumenFecha.ToString("dd/MM/yyyy") · @ResumenFecha.ToString("hh:mm tt") · Origen Salón</div>
+            </div>
+
+            <div class="resumen-section">
+                <div class="resumen-section-title">Detalle del Cobro</div>
+                <div class="resumen-item">
+                    <span class="resumen-item-label">Concepto</span>
+                    <span class="resumen-item-value">@ResumenConcepto</span>
+                </div>
+                <div class="resumen-item">
+                    <span class="resumen-item-label">Tipo</span>
+                    <span class="resumen-item-value">@(char.ToUpper(ResumenTipo[0]) + ResumenTipo[1..])</span>
+                </div>
+                @if (!string.IsNullOrEmpty(ResumenEmpleado))
+                {
+                    <div class="resumen-item">
+                        <span class="resumen-item-label">Atendido por</span>
+                        <span class="resumen-item-value">@ResumenEmpleado</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(ResumenCliente))
+                {
+                    <div class="resumen-item">
+                        <span class="resumen-item-label">Cliente</span>
+                        <span class="resumen-item-value">@ResumenCliente</span>
+                    </div>
+                }
+            </div>
+
+            <div class="resumen-section">
+                <div class="resumen-section-title">Pago</div>
+                <div class="resumen-item">
+                    <span class="resumen-item-label">Subtotal</span>
+                    <span class="resumen-item-value">S/. @ResumenMonto.ToString("N2")</span>
+                </div>
+                @if (ResumenDescuento > 0)
+                {
+                    <div class="resumen-item">
+                        <span class="resumen-item-label">Descuento</span>
+                        <span class="resumen-item-value" style="color:#c0392b;">-S/. @ResumenDescuento.ToString("N2")</span>
+                    </div>
+                }
+                <div class="resumen-item total">
+                    <span>Total Cobrado</span>
+                    <span>S/. @ResumenTotal.ToString("N2")</span>
+                </div>
+                <div class="resumen-item" style="margin-top: 8px;">
+                    <span class="resumen-item-label">Método de pago</span>
+                    <span class="resumen-item-value">@GetNombreMetodoPago(ResumenMetodoPago)</span>
+                </div>
+                @if (ResumenMetodoPago == "efectivo" && ResumenMontoRecibido > 0)
+                {
+                    <div class="resumen-item">
+                        <span class="resumen-item-label">Monto recibido</span>
+                        <span class="resumen-item-value">S/. @ResumenMontoRecibido.ToString("N2")</span>
+                    </div>
+                    <div class="resumen-item vuelto">
+                        <span>Vuelto</span>
+                        <span>S/. @((ResumenMontoRecibido - ResumenTotal).ToString("N2"))</span>
+                    </div>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(ResumenObservaciones))
+            {
+                <div class="resumen-section">
+                    <div class="resumen-section-title">Observaciones</div>
+                    <div style="font-size: 13px; color: #5a6478;">@ResumenObservaciones</div>
+                </div>
+            }
+
+            <div class="resumen-buttons">
+                <button class="resumen-btn-imprimir" @onclick="ImprimirBoleta">Imprimir</button>
+                <button class="resumen-btn-nueva" @onclick="NuevaTransaccion">Nueva Transacción</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
-    private List<ClienteDto>  _clientes  = [];
-    private List<EmpleadoDto> _empleados = [];
-    private List<ServicioDto> _servicios = [];
-    private List<ProductoDto> _productos = [];
-    private List<PaqueteDto>  _paquetes  = [];
+    // ── Vista ─────────────────────────────────────────────
+    private bool ShowForm = false;
+    private bool IsLoadingHistorial = true;
+    private List<IngresoDto> Historial = new();
+    private DateTime FilterDesde = DateTime.Today.AddDays(-30);
+    private DateTime FilterHasta = DateTime.Today;
+    private bool IsAdmin = false;
 
-    private DateTime _fecha       = DateTime.Now;
-    private string?  _empleadoId;
-    private string?  _clienteId;
-    private string   _tipo        = "servicio";
-    private string?  _servicioId;
-    private string?  _productoId;
-    private string?  _paqueteId;
-    private string?  _concepto;
-    private decimal  _monto       = 0;
-    private decimal  _descuento   = 0;
-    private decimal  _comision    = 0;
-    private string   _metodoPago  = "efectivo";
-    private string?  _referencia;
-    private string?  _obs;
-    private bool     _saving      = false;
-    private string?  _error;
+    // Paginación historial
+    private int _paginaHistorial = 1;
+    private int _totalHistorial = 0;
+    private int _totalPaginasHistorial = 1;
+    private int _historialPageSize = 10;
 
-    private readonly string[] _metodos = ["efectivo", "transferencia", "pos", "yape", "plin", "otro"];
+    private int CurrentStep = 1;
+    private bool IsSubmitting = false;
 
-    private static readonly Dictionary<string, string> _pagoIconos = new()
-    {
-        ["efectivo"] = "💵", ["transferencia"] = "🏦", ["pos"] = "💳",
-        ["yape"] = "📱", ["plin"] = "📲", ["otro"] = "💬"
-    };
-    private static readonly Dictionary<string, string> _pagoLabels = new()
-    {
-        ["efectivo"] = "Efectivo", ["transferencia"] = "Transfer.", ["pos"] = "POS/Tarjeta",
-        ["yape"] = "Yape", ["plin"] = "Plin", ["otro"] = "Otro"
-    };
+    // Paso 1: Tipo de Cobro
+    private string SelectedTipo;
+    private int SelectedServicioId;
+    private int SelectedProductoId;
+    private int ProductoCantidad = 1;
+    private int SelectedPaqueteId;
+    private string PersonalizadoDesc;
+    private decimal PersonalizadoMonto;
+
+    // Paso 2: Involucrados
+    private int SelectedClienteId;
+    private int SelectedEmpleadoId;
+
+    // Paso 3: Pago
+    private string SelectedMetodoPago;
+    private decimal MontoRecibido;
+    private decimal DescuentoAdicional;
+    private string Referencia;
+    private string Observaciones;
+
+    // Modal de resumen post-registro
+    private bool ShowResumen = false;
+    private string ResumenTipo;
+    private string ResumenConcepto;
+    private decimal ResumenMonto;
+    private decimal ResumenDescuento;
+    private decimal ResumenTotal;
+    private string ResumenMetodoPago;
+    private decimal ResumenMontoRecibido;
+    private string ResumenEmpleado;
+    private string ResumenCliente;
+    private string ResumenObservaciones;
+    private DateTime ResumenFecha;
+
+    // Datos
+    private List<ServicioDto> Servicios = new();
+    private List<ProductoDto> Productos = new();
+    private List<PaqueteDto> Paquetes = new();
+    private List<ClienteDto> Clientes = new();
+    private List<EmpleadoDto> Empleados = new();
+
+    private ServicioDto SelectedServicio => Servicios.FirstOrDefault(s => s.Id == SelectedServicioId);
+    private ProductoDto SelectedProducto => Productos.FirstOrDefault(p => p.Id == SelectedProductoId);
+    private PaqueteDto SelectedPaquete => Paquetes.FirstOrDefault(p => p.Id == SelectedPaqueteId);
+    private ClienteDto SelectedCliente => Clientes.FirstOrDefault(c => c.Id == SelectedClienteId);
+    private EmpleadoDto SelectedEmpleado => Empleados.FirstOrDefault(e => e.Id == SelectedEmpleadoId);
 
     protected override async Task OnInitializedAsync()
     {
-        var t1 = ClienteSvc.ListarAsync();
-        var t2 = EmpleadoSvc.ListarAsync();
-        var t3 = ServicioSvc.ListarAsync();
-        var t4 = ProductoSvc.ListarAsync();
-        var t5 = PaqueteSvc.ListarAsync();
-        await Task.WhenAll(t1, t2, t3, t4, t5);
-        _clientes  = (await t1).data ?? [];
-        _empleados = (await t2).data?.Where(e => e.Activo).ToList() ?? [];
-        _servicios = (await t3).data ?? [];
-        _productos = (await t4).data ?? [];
-        _paquetes  = (await t5).data ?? [];
+        _historialPageSize = Config.GetValue<int>("Pagination:IngresosTable", 10);
+
+        // Abrir formulario directamente si viene con ?nuevo=1 (desde dashboard)
+        var uri = new Uri(Nav.Uri);
+        var qs = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        if (qs["nuevo"] == "1") ShowForm = true;
+
+        var userTask = Auth.GetUsuarioAsync();
+        await Task.WhenAll(
+            CargarServicios(),
+            CargarProductos(),
+            CargarPaquetes(),
+            CargarClientes(),
+            CargarEmpleados(),
+            CargarHistorial()
+        );
+        var user = await userTask;
+        IsAdmin = user?.Rol == "admin";
     }
 
-    private void SetTipo(string tipo)
+    private async Task CargarHistorial()
     {
-        _tipo = tipo;
-        _servicioId = null; _productoId = null; _paqueteId = null;
-        _concepto = null; _monto = 0; _comision = 0;
-    }
-
-    private void SeleccionarEmpleado(string id)
-    {
-        _empleadoId = _empleadoId == id ? null : id;
-        RecalcularComision();
-    }
-
-    private void SeleccionarServicio(string id)
-    {
-        _servicioId = _servicioId == id ? null : id;
-        if (int.TryParse(_servicioId, out var sid))
+        IsLoadingHistorial = true;
+        var hasta = FilterHasta.Date.AddDays(1).AddSeconds(-1);
+        var (ok, data, _) = await IngresoSvc.ListarPaginadoAsync(FilterDesde.Date, hasta, _paginaHistorial, _historialPageSize);
+        if (ok && data is not null)
         {
-            var s = _servicios.FirstOrDefault(x => x.Id == sid);
-            if (s is not null) { _monto = s.Precio; RecalcularComision(s.ComisionPct); }
+            _totalHistorial = data.Total;
+            _totalPaginasHistorial = Math.Max(1, (int)Math.Ceiling((double)_totalHistorial / _historialPageSize));
+            if (_paginaHistorial > _totalPaginasHistorial) _paginaHistorial = _totalPaginasHistorial;
+            Historial = data.Items.ToList();
         }
-        else { _monto = 0; _comision = 0; }
+        else Historial = new();
+        IsLoadingHistorial = false;
     }
 
-    private void SeleccionarProducto(string id)
+    private async Task CambiarPaginaHistorial(int pagina) { _paginaHistorial = pagina; await CargarHistorial(); }
+
+    private async Task FiltrarHistorial() { _paginaHistorial = 1; await CargarHistorial(); }
+
+    private async Task EliminarIngreso(IngresoDto ing)
     {
-        _productoId = _productoId == id ? null : id;
-        if (int.TryParse(_productoId, out var pid))
+        var parameters = new DialogParameters();
+        parameters.Add("ItemName", GetConceptoDto(ing));
+        var dialog = await Dialog.ShowAsync<ConfirmDeleteDialog>("Confirmar", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
         {
-            var p = _productos.FirstOrDefault(x => x.Id == pid);
-            if (p is not null) { _monto = p.PrecioVenta; _comision = 0; }
+            var (ok, error) = await IngresoSvc.EliminarAsync(ing.Id);
+            if (ok)
+            {
+                Historial.RemoveAll(i => i.Id == ing.Id);
+                Snackbar.Add("Ingreso eliminado", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(error ?? "No se pudo eliminar el ingreso", Severity.Error);
+            }
         }
-        else { _monto = 0; }
     }
 
-    private void SeleccionarPaquete(string id)
-    {
-        _paqueteId = _paqueteId == id ? null : id;
-        if (int.TryParse(_paqueteId, out var pqid))
+    private static string GetConceptoDto(IngresoDto i) =>
+        i.Tipo switch
         {
-            var p = _paquetes.FirstOrDefault(x => x.Id == pqid);
-            if (p is not null) { _monto = p.Precio; _descuento = p.Descuento; _comision = 0; }
-        }
-        else { _monto = 0; _descuento = 0; }
+            "servicio"     => i.Servicio?.Nombre ?? "Servicio",
+            "producto"     => i.Cantidad > 1 ? $"{i.Cantidad}x {i.Producto?.Nombre}" : (i.Producto?.Nombre ?? "Producto"),
+            "paquete"      => i.Paquete?.Nombre ?? "Paquete",
+            "personalizado"=> i.ConceptoPersonalizado ?? "Personalizado",
+            _              => "—"
+        };
+
+    private async Task AbrirNuevoCliente()
+    {
+        var dlg = await Dialog.ShowAsync<Shared.Dialogs.ClienteDialog>("Nuevo cliente");
+        var res = await dlg.Result;
+        if (res?.Canceled == false)
+            await CargarClientes();  // refresca la lista para que aparezca el nuevo
     }
 
-    private void RecalcularComision(decimal pctSugerido = 0)
+    private async Task CargarServicios()
     {
-        if (!int.TryParse(_empleadoId, out var eid)) { _comision = 0; return; }
-        var emp = _empleados.FirstOrDefault(e => e.Id == eid);
-        var pct = emp?.ComisionPct > 0 ? emp.ComisionPct : pctSugerido;
-        _comision = pct > 0 ? Math.Round(_monto * pct / 100, 2) : 0;
+        var result = await ServicioSvc.ListarAsync();
+        Servicios = result.data ?? new();
     }
 
-    private async Task Registrar()
+    private async Task CargarProductos()
     {
-        _error = null;
-        if (_monto <= 0) { _error = "El monto debe ser mayor a 0."; return; }
+        var result = await ProductoSvc.ListarAsync();
+        Productos = result.data ?? new();
+    }
 
-        _saving = true;
+    private async Task CargarPaquetes()
+    {
+        var result = await PaqueteSvc.ListarAsync();
+        Paquetes = result.data ?? new();
+    }
+
+    private async Task CargarClientes()
+    {
+        var result = await ClienteSvc.ListarAsync();
+        Clientes = result.data ?? new();
+    }
+
+    private async Task CargarEmpleados()
+    {
+        var result = await EmpleadoSvc.ListarAsync();
+        Empleados = result.data ?? new();
+    }
+
+    private void SelectTipo(string tipo)
+    {
+        SelectedTipo = tipo;
+        SelectedServicioId = 0;
+        SelectedProductoId = 0;
+        SelectedPaqueteId = 0;
+        ProductoCantidad = 1;
+        PersonalizadoDesc = null;
+        PersonalizadoMonto = 0;
+    }
+
+    private void SelectMetodoPago(string metodo)
+    {
+        SelectedMetodoPago = metodo;
+        if (metodo != "efectivo") MontoRecibido = 0;
+    }
+
+    private bool ValidateStep1()
+    {
+        return SelectedTipo switch
+        {
+            "servicio" => SelectedServicioId > 0,
+            "producto" => SelectedProductoId > 0 && ProductoCantidad > 0,
+            "paquete" => SelectedPaqueteId > 0,
+            "personalizado" => PersonalizadoMonto > 0 && !string.IsNullOrEmpty(PersonalizadoDesc),
+            _ => false
+        };
+    }
+
+    private decimal GetMontoTotal()
+    {
+        return SelectedTipo switch
+        {
+            "servicio" => SelectedServicio?.Precio ?? 0m,
+            "producto" => ((SelectedProducto?.PrecioVenta ?? 0m) * ProductoCantidad),
+            "paquete" => ((SelectedPaquete?.Precio ?? 0m) - (SelectedPaquete?.Descuento ?? 0m)),
+            "personalizado" => PersonalizadoMonto,
+            _ => 0m
+        };
+    }
+
+    private void GoToStep1() => CurrentStep = 1;
+    private void GoToStep2() => CurrentStep = 2;
+    private void GoToStep3() => CurrentStep = 3;
+
+    private decimal GetComision()
+    {
+        var pct = SelectedTipo switch
+        {
+            "servicio" => SelectedServicio?.ComisionPct ?? 0m,
+            "paquete"  => SelectedPaquete?.ComisionPct ?? 0m,
+            _          => 0m
+        };
+        return pct > 0 ? Math.Round(GetMontoTotal() * pct / 100m, 2) : 0m;
+    }
+
+    private string GetConcepto() => SelectedTipo switch
+    {
+        "servicio"     => SelectedServicio?.Nombre ?? "",
+        "producto"     => SelectedProducto != null ? $"{ProductoCantidad}x {SelectedProducto.Nombre}" : "",
+        "paquete"      => SelectedPaquete?.Nombre ?? "",
+        "personalizado"=> PersonalizadoDesc ?? "",
+        _              => ""
+    };
+
+    private static string GetNombreMetodoPago(string metodo) => metodo switch
+    {
+        "efectivo"      => "Efectivo",
+        "transferencia" => "Transferencia",
+        "yape"          => "Yape",
+        "plin"          => "Plin",
+        "pos"           => "POS",
+        _               => metodo
+    };
+
+    private void NuevaTransaccion()
+    {
+        ShowResumen = false;
+        ShowForm = false;
+        _ = CargarHistorial();
+        CurrentStep = 1;
+        SelectedTipo = null;
+        SelectedServicioId = 0;
+        SelectedProductoId = 0;
+        SelectedPaqueteId = 0;
+        SelectedClienteId = 0;
+        SelectedEmpleadoId = 0;
+        SelectedMetodoPago = null;
+        MontoRecibido = 0;
+        DescuentoAdicional = 0;
+        Referencia = null;
+        Observaciones = null;
+        PersonalizadoDesc = null;
+        PersonalizadoMonto = 0;
+        ProductoCantidad = 1;
+    }
+
+    private void ImprimirBoleta()
+    {
+        Snackbar.Add("Función de impresión próximamente", Severity.Info);
+    }
+
+    private async Task GuardarIngreso()
+    {
+        IsSubmitting = true;
+
+        var descuentoFinal = Math.Min(DescuentoAdicional, GetMontoTotal());
         var req = new CrearIngresoRequest(
-            _fecha,
-            int.TryParse(_clienteId, out var cid) ? cid : null,
-            int.TryParse(_empleadoId, out var eid) ? eid : null,
-            _tipo,
-            int.TryParse(_servicioId, out var sid) ? sid : null,
-            int.TryParse(_productoId, out var pid) ? pid : null,
-            int.TryParse(_paqueteId, out var pqid) ? pqid : null,
-            _concepto,
-            _monto, _descuento, _metodoPago, _referencia, _comision, _obs
+            DateTime.Now,
+            SelectedClienteId > 0 ? SelectedClienteId : null,
+            SelectedEmpleadoId,
+            SelectedTipo,
+            SelectedServicioId > 0 ? SelectedServicioId : null,
+            SelectedProductoId > 0 ? SelectedProductoId : null,
+            SelectedPaqueteId > 0 ? SelectedPaqueteId : null,
+            PersonalizadoDesc,
+            GetMontoTotal(),
+            descuentoFinal,
+            SelectedMetodoPago,
+            string.IsNullOrWhiteSpace(Referencia) ? null : Referencia,
+            GetComision(),
+            Observaciones,
+            SelectedTipo == "producto" ? ProductoCantidad : 1
         );
 
-        var (ok, _, error) = await IngresoSvc.CrearAsync(req);
-        if (ok) { Snackbar.Add("Ingreso registrado correctamente.", Severity.Success); Limpiar(); }
-        else _error = error ?? "Error al registrar.";
-        _saving = false;
-    }
+        var (success, _, error) = await IngresoSvc.CrearAsync(req);
 
-    private void Limpiar()
-    {
-        _fecha = DateTime.Now; _empleadoId = null; _clienteId = null;
-        _tipo = "servicio"; _servicioId = null; _productoId = null; _paqueteId = null;
-        _concepto = null; _monto = 0; _descuento = 0; _comision = 0;
-        _metodoPago = "efectivo"; _referencia = null; _obs = null; _error = null;
-    }
+        if (success)
+        {
+            ResumenTipo = SelectedTipo;
+            ResumenConcepto = GetConcepto();
+            ResumenMonto = GetMontoTotal();
+            ResumenDescuento = descuentoFinal;
+            ResumenTotal = GetMontoTotal() - descuentoFinal;
+            ResumenMetodoPago = SelectedMetodoPago;
+            ResumenMontoRecibido = MontoRecibido;
+            ResumenEmpleado = SelectedEmpleado?.Nombre;
+            ResumenCliente = SelectedCliente?.Nombre;
+            ResumenObservaciones = Observaciones;
+            ResumenFecha = DateTime.Now;
+            ShowResumen = true;
+        }
+        else
+        {
+            Snackbar.Add(error ?? "Error al registrar ingreso", Severity.Error);
+        }
 
-    private static string Iniciales(string nombre)
-    {
-        var p = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return p.Length >= 2 ? $"{p[0][0]}{p[1][0]}".ToUpper()
-                             : nombre.Length > 0 ? nombre[0].ToString().ToUpper() : "?";
+        IsSubmitting = false;
     }
 }

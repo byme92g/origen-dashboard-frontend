@@ -1,8 +1,8 @@
 @page "/configuracion"
 @inject UsuarioService UsuarioSvc
-@inject IDialogService Dialog
+@inject MudBlazor.IDialogService Dialog
 @inject ISnackbar Snackbar
-@inject IJSRuntime JS
+@inject IConfiguration Config
 
 <PageTitle>Configuración · Origen</PageTitle>
 
@@ -36,6 +36,14 @@
                     </tbody>
                 </table>
             </div>
+            @if (_total > 0)
+            {
+                <div class="pagination-bar">
+                    <button class="btn btn-outline btn-sm" disabled="@(_pagina <= 1)" @onclick="() => CambiarPagina(_pagina - 1)">‹ Anterior</button>
+                    <span class="pagination-info">Página @_pagina de @_totalPaginas · @_total registros</span>
+                    <button class="btn btn-outline btn-sm" disabled="@(_pagina >= _totalPaginas)" @onclick="() => CambiarPagina(_pagina + 1)">Siguiente ›</button>
+                </div>
+            }
         </div>
     </MudTabPanel>
 
@@ -55,14 +63,31 @@
 
 @code {
     private List<UsuarioDto> _usuarios = [];
+    private int _pagina = 1;
+    private int _total = 0;
+    private int _totalPaginas = 1;
+    private int _pageSize = 15;
 
-    protected override async Task OnInitializedAsync() => await Cargar();
+    protected override async Task OnInitializedAsync()
+    {
+        _pageSize = Config.GetValue<int>("Pagination:UsuariosTable", 15);
+        await Cargar();
+    }
 
     private async Task Cargar()
     {
-        var (ok, data, _) = await UsuarioSvc.ListarAsync();
-        _usuarios = ok && data is not null ? data : [];
+        var (ok, data, _) = await UsuarioSvc.ListarPaginadoAsync(_pagina, _pageSize);
+        if (ok && data is not null)
+        {
+            _total = data.Total;
+            _totalPaginas = Math.Max(1, (int)Math.Ceiling((double)_total / _pageSize));
+            if (_pagina > _totalPaginas) _pagina = _totalPaginas;
+            _usuarios = data.Items.ToList();
+        }
+        else _usuarios = [];
     }
+
+    private async Task CambiarPagina(int pagina) { _pagina = pagina; await Cargar(); }
 
     private async Task AbrirCrear()
     {
@@ -79,7 +104,9 @@
 
     private async Task Eliminar(UsuarioDto u)
     {
-        if (await JS.InvokeAsync<bool>("confirm", $"¿Eliminar el usuario '{u.NombreUsuario}'?"))
+        var par = new DialogParameters<Shared.ConfirmDeleteDialog> { { x => x.ItemName, u.NombreUsuario } };
+        var dlg = await Dialog.ShowAsync<Shared.ConfirmDeleteDialog>("Confirmar", par);
+        if ((await dlg.Result)?.Canceled == false)
         {
             var (ok, error) = await UsuarioSvc.EliminarAsync(u.Id);
             if (ok) { Snackbar.Add("Usuario eliminado.", Severity.Success); await Cargar(); }
