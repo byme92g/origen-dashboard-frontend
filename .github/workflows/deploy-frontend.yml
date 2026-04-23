@@ -1,0 +1,101 @@
+name: Deploy Frontend
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_vuln_scan:
+        description: 'Ejecutar el scan de vulnerabilidades (HIGH/CRITICAL)'
+        type: boolean
+        default: true
+
+env:
+  IMAGE_NAME: origen-frontend
+  COMPOSE_FILE: /opt/origen/docker-compose.yml
+
+jobs:
+  build:
+    name: Build & Scan
+    runs-on: ubuntu-latest
+    environment: PROD
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore ./OrigenDashboard
+
+      - name: Build
+        run: dotnet build ./OrigenDashboard --no-restore
+
+      # - name: Test
+      #   run: dotnet test <ruta-proyecto-tests> --verbosity normal
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME:latest ./OrigenDashboard
+
+      - name: Scan image for vulnerabilities
+        if: ${{ inputs.run_vuln_scan == true }}
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+      - name: Save image as tarball
+        run: docker save $IMAGE_NAME:latest | gzip > image.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar.gz
+          retention-days: 1
+
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    environment: PROD
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Copy image to VPS
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ vars.VPS_PORT }}
+          source: image.tar.gz
+          target: /tmp/
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ vars.VPS_PORT }}
+          script: |
+            set -e
+
+            docker load < /tmp/image.tar.gz
+            rm /tmp/image.tar.gz
+
+            docker compose -f ${{ env.COMPOSE_FILE }} up -d --no-deps frontend
+
+            docker image prune -f

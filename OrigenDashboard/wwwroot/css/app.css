@@ -160,7 +160,7 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 600; }
 .kpi-card.red .kpi-icon { background: rgba(192,57,43,.1); color: #c0392b; }
 .kpi-card.amber .kpi-icon { background: rgba(212,134,10,.1); color: #d4860a; }
 .kpi-label { font-size: 11px; color: #8a97b0; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
-.kpi-value { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--navy); line-height: 1.1; }
+.kpi-value { font-family: var(--font-body); font-size: 1.4rem; font-weight: 700; color: var(--navy); line-height: 1.1; }
 
 /* ── Cards ───────────────────────────────────────────────────────────────── */
 .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; }
@@ -226,6 +226,16 @@ textarea.form-control { resize: vertical; min-height: 70px; }
 .login-logo-text { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 700; color: var(--navy); }
 .login-logo-sub { font-size: 11px; color: #8a97b0; text-transform: uppercase; letter-spacing: .1em; margin-top: 2px; }
 
+/* ── Font consistency for data content ──────────────────────────────────── */
+.data-table td, .data-table th,
+.hist-table td, .hist-table th,
+.kpi-label, .kpi-value,
+.badge, .pagination-info,
+.topbar-date { font-family: var(--font-body); }
+
+/* ── Two-column responsive grid ─────────────────────────────────────────── */
+.two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
 /* ── Utilities ───────────────────────────────────────────────────────────── */
 .text-muted { color: #8a97b0; }
 .text-right { text-align: right; }
@@ -238,11 +248,92 @@ textarea.form-control { resize: vertical; min-height: 70px; }
 .justify-between { justify-content: space-between; }
 .gap-8 { gap: 8px; }
 
+/* ── Mobile sidebar toggle ───────────────────────────────────────────────── */
+.topbar-hamburger {
+    display: none;
+    align-items: center; justify-content: center;
+    width: 34px; height: 34px; flex-shrink: 0;
+    border: none; background: transparent; border-radius: 6px;
+    cursor: pointer; color: var(--navy); padding: 0;
+    transition: background .15s;
+}
+.topbar-hamburger:hover { background: #eef2fa; }
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 499;
+}
+.sidebar-backdrop.open { display: block; }
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-    .sidebar { display: none; }
+    /* Sidebar drawer */
+    .sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+        z-index: 500;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .topbar-hamburger { display: flex; }
+
+    /* Layout */
+    .topbar { padding: 0 12px; }
+    .topbar-date { display: none; }
+    .page-content { padding: 16px; }
+
+    /* Dashboard — hide stats section on mobile (belongs in Reportes) */
+    .dashboard-stats { display: none; }
+
+    /* Quick actions — 3 per row so 6 items fit in 2 rows */
+    .quick-actions { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .quick-action { padding: 14px 8px 12px; }
+    .qa-icon-wrap { width: 38px; height: 38px; }
+    .qa-label { font-size: 11px; }
+
+    /* KPI grid — 2 columns, cards shrink to fit */
+    .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .kpi-card { padding: 12px; gap: 10px; min-width: 0; overflow: hidden; }
+    .kpi-icon { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
+    .kpi-value { font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .kpi-label { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Two-column grids collapse to one */
+    .two-col-grid { grid-template-columns: 1fr; }
+
+    /* Tables — horizontal scroll */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .hist-table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    .data-table { min-width: 460px; }
+    .hist-table { min-width: 520px; font-family: var(--font-body); }
+    .hist-table td, .hist-table th { padding: 10px 12px; font-family: var(--font-body); }
+
+    /* Cards */
+    .card-header { flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
+    .card-body { padding: 16px; }
+
+    /* Historial filters — stack vertically (override component inline style with !important) */
+    .hist-filters { flex-direction: column !important; align-items: stretch !important; gap: 10px; padding: 14px !important; }
+    .hist-filters > div { width: 100%; }
+    .hist-filter-input { width: 100% !important; box-sizing: border-box; padding: 8px 10px !important; -webkit-appearance: none; appearance: none; }
+
+    /* Form grids */
     .form-grid { grid-template-columns: 1fr; }
-    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .form-row { grid-template-columns: 1fr !important; }
+    .money-row { grid-template-columns: 1fr; }
+    .pago-grid { grid-template-columns: repeat(3, 1fr); }
+
+    /* Pagination — stack on mobile */
+    .pagination-bar { flex-direction: column; align-items: center; gap: 8px; padding: 12px; }
+    .pagination-info { order: -1; }
+
+    /* Catalog & packages */
+    .catalog-grid { grid-template-columns: repeat(2, 1fr); }
+    .pkg-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Quick Actions (Dashboard) ───────────────────────────────────────────── */

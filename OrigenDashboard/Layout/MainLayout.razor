@@ -22,7 +22,8 @@ else if (!_authenticated)
 else
 {
     <div class="app-shell">
-        <nav class="sidebar">
+        <div class="sidebar-backdrop @(_sidebarOpen ? "open" : "")" @onclick="CloseSidebar"></div>
+        <nav class="sidebar @(_sidebarOpen ? "open" : "")" @onclick:stopPropagation="true">
             <div class="sidebar-logo">
                 <span class="sidebar-logo-text">Origen</span>
                 <span class="sidebar-logo-sub">Sistema Administrativo</span>
@@ -88,6 +89,9 @@ else
         <div class="main-area">
             <div class="topbar">
                 <div style="display:flex;align-items:center;gap:10px;">
+                    <button class="topbar-hamburger" @onclick="ToggleSidebar" title="Menú">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
                     @if (!_isHome)
                     {
                         <a href="/" class="topbar-back" title="Volver al inicio">
@@ -111,6 +115,10 @@ else
     private UsuarioInfo? _usuario;
     private string _pageTitle = "Dashboard";
     private bool _isHome = true;
+    private bool _sidebarOpen = false;
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+    private void CloseSidebar() => _sidebarOpen = false;
 
     private static readonly Dictionary<string, string> _pageTitles = new()
     {
@@ -157,6 +165,7 @@ else
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         UpdatePageState(e.Location);
+        _sidebarOpen = false;
         InvokeAsync(StateHasChanged);
     }
 
