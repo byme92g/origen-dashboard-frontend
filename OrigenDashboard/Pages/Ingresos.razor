@@ -237,15 +237,8 @@
 }
 else
 {
-    <div style="margin-bottom:16px;">
-        <button class="btn btn-secondary" @onclick="() => ShowForm = false" style="display:flex;align-items:center;gap:6px;">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-            Volver al historial
-        </button>
-    </div>
-
     <!-- Progress Tracker -->
-    <div class="stepper-progress">
+    <div class="stepper-progress" style="align-items:center;">
         <div class="progress-step">
             <div class="progress-num @(CurrentStep == 1 ? "active" : CurrentStep > 1 ? "completed" : "")">1</div>
             <span>Tipo</span>
@@ -260,6 +253,12 @@ else
             <div class="progress-num @(CurrentStep == 3 ? "active" : "")">3</div>
             <span>Pago</span>
         </div>
+        <button @onclick="() => ShowForm = false"
+                style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:#8a97b0;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;transition:color .15s;"
+                onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#8a97b0'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Cancelar
+        </button>
     </div>
 
     <div class="stepper-card">
@@ -390,196 +389,237 @@ else
         <!-- PASO 2: INVOLUCRADOS -->
         @if (CurrentStep == 2)
         {
-            <div class="step-title">Paso 2: Involucrados en la Transacción</div>
-            <p class="step-description">Selecciona cliente y empleado responsable</p>
+            <div class="step-title">Paso 2: Involucrados</div>
+            <p class="step-description">Selecciona el cliente atendido y el empleado responsable (ambos opcionales)</p>
 
-            <div class="form-row form-full" style="align-items:flex-end; gap: 8px;">
-                <div style="flex:1;">
-                    <MudSelect T="int" Label="Cliente (opcional)" @bind-Value="SelectedClienteId">
-                        <MudSelectItem Value="0">-- Sin cliente --</MudSelectItem>
-                        @foreach (var cli in Clientes)
-                        {
-                            <MudSelectItem Value="@cli.Id">@cli.Nombre (@cli.Telefono)</MudSelectItem>
-                        }
-                    </MudSelect>
-                </div>
-                <button class="btn btn-secondary" @onclick="AbrirNuevoCliente" title="Nuevo cliente" style="white-space:nowrap; height:56px;">
-                    + Nuevo
+            @* ── Cliente ── *@
+            <div style="margin-bottom:16px;">
+                <MudSelect T="int" Label="Cliente (opcional)" @bind-Value="SelectedClienteId">
+                    <MudSelectItem Value="0">-- Sin cliente --</MudSelectItem>
+                    @foreach (var cli in Clientes)
+                    {
+                        <MudSelectItem Value="@cli.Id">@cli.Nombre@(cli.Telefono != null ? $" · {cli.Telefono}" : "")</MudSelectItem>
+                    }
+                </MudSelect>
+                <button class="btn btn-outline btn-sm" @onclick="AbrirNuevoCliente"
+                        style="margin-top:6px;font-size:12px;color:#1b3a60;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Agregar nuevo cliente
                 </button>
             </div>
 
-            <div class="form-row form-full">
-                <MudSelect T="int" Label="Empleado (responsable)" @bind-Value="SelectedEmpleadoId">
-                    <MudSelectItem Value="0">-- Selecciona --</MudSelectItem>
-                    @foreach (var emp in Empleados.Where(e => e.Activo))
-                    {
-                        <MudSelectItem Value="@emp.Id">@emp.Nombre (@emp.Cargo)</MudSelectItem>
-                    }
-                </MudSelect>
+            @* ── Empleado ── *@
+            <div style="margin-bottom:20px;">
+                @if (_empleadoBloqueado)
+                {
+                    <label style="font-size:12px;font-weight:500;color:#5a6478;display:block;margin-bottom:6px;">Empleado responsable</label>
+                    <div style="padding:12px 14px;background:#eef3fb;border-radius:6px;border:1.5px solid #c8d4f0;font-weight:600;color:#1b3a60;display:flex;align-items:center;gap:8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        @SelectedEmpleado?.Nombre
+                        <span style="font-size:11px;color:#8a97b0;font-weight:400;margin-left:2px;">· sesión activa</span>
+                    </div>
+                }
+                else
+                {
+                    <MudSelect T="int" Label="Empleado responsable (opcional)" @bind-Value="SelectedEmpleadoId">
+                        <MudSelectItem Value="0">-- Sin asignar --</MudSelectItem>
+                        @foreach (var emp in Empleados.Where(e => e.Activo))
+                        {
+                            <MudSelectItem Value="@emp.Id">@emp.Nombre · @emp.Cargo</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
             </div>
-
-            @if (SelectedCliente != null && !string.IsNullOrEmpty(SelectedCliente.Email))
-            {
-                <div class="item-info-bar" style="margin-top:-8px;">
-                    <span class="item-info-chip">@SelectedCliente.Email</span>
-                </div>
-            }
-
-            @if (SelectedEmpleado != null)
-            {
-                <div class="item-info-bar" style="margin-top:-8px;">
-                    <span class="item-info-chip">@SelectedEmpleado.Cargo</span>
-                    @if (SelectedEmpleado.ComisionPct > 0) { <span class="item-info-chip">@SelectedEmpleado.ComisionPct% comisión base</span> }
-                </div>
-            }
 
             <div class="step-buttons">
                 <button class="btn btn-secondary" @onclick="GoToStep1">Atrás</button>
-                <button class="btn btn-primary" @onclick="GoToStep3" disabled="@(SelectedEmpleadoId == 0)">
+                <button class="btn btn-primary" @onclick="GoToStep3">
                     Siguiente
                 </button>
             </div>
         }
 
-        <!-- PASO 3: TIPO DE PAGO -->
+        <!-- PASO 3: MÉTODO DE PAGO -->
         @if (CurrentStep == 3)
         {
             <div class="step-title">Paso 3: Método de Pago</div>
-            <p class="step-description">Confirma los detalles y registra el ingreso</p>
+            <p class="step-description">Elige cómo paga el cliente y confirma el cobro</p>
 
-            <div class="form-row form-full">
-                <label style="font-size: 12px; font-weight: 500; color: #5a6478; margin-bottom: 12px; display: block;">Método de Pago</label>
-                <div class="pago-grid">
-                    <button class="pago-btn @(SelectedMetodoPago == "efectivo" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("efectivo"))'>
-                        <div class="pago-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
-                                <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
-                            </svg>
-                        </div>
-                        <span>Efectivo</span>
-                    </button>
-                    <button class="pago-btn @(SelectedMetodoPago == "transferencia" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("transferencia"))'>
-                        <div class="pago-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
-                                <path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/>
-                            </svg>
-                        </div>
-                        <span>Transferencia</span>
-                    </button>
-                    <button class="pago-btn @(SelectedMetodoPago == "yape" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("yape"))'>
-                        <div class="pago-icon">
-                            <span class="brand-badge" style="background:#6B21A8;">Y</span>
-                        </div>
-                        <span>Yape</span>
-                    </button>
-                    <button class="pago-btn @(SelectedMetodoPago == "plin" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("plin"))'>
-                        <div class="pago-icon">
-                            <span class="brand-badge" style="background:#00B4D8;">P</span>
-                        </div>
-                        <span>Plin</span>
-                    </button>
-                    <button class="pago-btn @(SelectedMetodoPago == "pos" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("pos"))'>
-                        <div class="pago-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
-                                <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-                            </svg>
-                        </div>
-                        <span>POS</span>
-                    </button>
-                </div>
-            </div>
+            <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start;">
 
-            @if (SelectedMetodoPago == "efectivo")
-            {
-                <div class="form-row form-full">
-                    <MudNumericField T="decimal" Label="Monto Recibido (S/.)" @bind-Value="MontoRecibido" Min="0" Step="0.50m"></MudNumericField>
+                <!-- ── Columna izquierda: formulario ── -->
+                <div>
+                    @* Método de pago *@
+                    <div style="margin-bottom:18px;">
+                        <label style="font-size:11px;font-weight:600;color:#5a6478;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:10px;">Método de pago</label>
+                        <div class="pago-grid">
+                            <button class="pago-btn @(SelectedMetodoPago == "efectivo" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("efectivo"))'>
+                                <div class="pago-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                                </div>
+                                <span>Efectivo</span>
+                            </button>
+                            <button class="pago-btn @(SelectedMetodoPago == "transferencia" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("transferencia"))'>
+                                <div class="pago-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>
+                                </div>
+                                <span>Transferencia</span>
+                            </button>
+                            <button class="pago-btn @(SelectedMetodoPago == "yape" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("yape"))'>
+                                <div class="pago-icon"><span class="brand-badge" style="background:#6B21A8;">Y</span></div>
+                                <span>Yape</span>
+                            </button>
+                            <button class="pago-btn @(SelectedMetodoPago == "plin" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("plin"))'>
+                                <div class="pago-icon"><span class="brand-badge" style="background:#00B4D8;">P</span></div>
+                                <span>Plin</span>
+                            </button>
+                            <button class="pago-btn @(SelectedMetodoPago == "pos" ? "selected" : "")" @onclick='@(() => SelectMetodoPago("pos"))'>
+                                <div class="pago-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+                                </div>
+                                <span>POS</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    @* Monto recibido (solo efectivo) — grande y prominente *@
+                    @if (SelectedMetodoPago == "efectivo")
+                    {
+                        var totalCobrar = GetMontoTotal() - Math.Min(DescuentoAdicional, GetMontoTotal());
+                        var vueltoCalc = MontoRecibido - totalCobrar;
+                        <div style="margin-bottom:16px;">
+                            <label style="font-size:11px;font-weight:700;color:#5a6478;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px;">Monto recibido (S/.)</label>
+                            <div style="position:relative;">
+                                <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:1.5rem;font-weight:700;color:#8a97b0;pointer-events:none;font-family:var(--font-heading);">S/</span>
+                                <input type="number" step="0.5" min="0" max="@MaxMontoRecibido"
+                                    @bind="MontoRecibido" @bind:event="oninput"
+                                    style="width:100%;padding:16px 16px 16px 52px;font-size:2rem;font-weight:800;font-family:var(--font-heading);color:var(--navy);border:2.5px solid @(MontoRecibido > 0 && MontoRecibido >= totalCobrar ? "#2e7d5a" : "#d0d8e8");border-radius:10px;outline:none;background:white;transition:border-color .15s;" />
+                            </div>
+                            @if (MontoRecibido > 0 && MontoRecibido < totalCobrar)
+                            {
+                                <div style="color:#c0392b;font-size:12px;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:5px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                    Monto insuficiente. Faltan S/. @((totalCobrar - MontoRecibido).ToString("N2"))
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @* Referencia (para transferencia/yape/plin) *@
+                    @if (SelectedMetodoPago is "yape" or "plin" or "transferencia")
+                    {
+                        <div style="margin-bottom:16px;">
+                            <MudTextField T="string" Label="N° de operación / Referencia" @bind-Value="Referencia"
+                                Placeholder="@(SelectedMetodoPago == "transferencia" ? "N° de transferencia bancaria" : $"Código de operación {SelectedMetodoPago}")">
+                            </MudTextField>
+                        </div>
+                    }
+
+                    @* Descuento adicional *@
+                    <div style="margin-bottom:16px;">
+                        <MudNumericField T="decimal" Label="Descuento adicional (S/.)" @bind-Value="DescuentoAdicional" Min="0" Max="@GetMontoTotal()" Step="0.5m"></MudNumericField>
+                    </div>
+                    @if (DescuentoAdicional > GetMontoTotal())
+                    {
+                        <div style="background:#fdecea;color:#c0392b;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            El descuento no puede superar el monto total. Máximo: S/. @GetMontoTotal().ToString("N2")
+                        </div>
+                    }
+
+                    @* Observaciones *@
+                    <div style="margin-bottom:8px;">
+                        <MudTextField T="string" Label="Observaciones (opcional)" @bind-Value="Observaciones" Multiline="true" Lines="2" Placeholder="Notas adicionales..."></MudTextField>
+                    </div>
+
+                    <div style="margin-top:20px;">
+                        <button class="btn btn-secondary" @onclick="GoToStep2">Atrás</button>
+                    </div>
                 </div>
-                @if (MontoRecibido > 0 && (GetMontoTotal() - DescuentoAdicional) > 0)
-                {
-                    var vuelto = MontoRecibido - (GetMontoTotal() - DescuentoAdicional);
-                    <div style="background: #eaf0f8; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
-                        <div class="summary-row">
-                            <span class="summary-label">Vuelto:</span>
-                            <span style="font-weight: 700; color: @(vuelto >= 0 ? "#2e7d5a" : "#c0392b");">
-                                @(vuelto >= 0 ? "+" : "")S/. @vuelto.ToString("N2")
+
+                <!-- ── Columna derecha: resumen ── -->
+                <div style="position:sticky;top:16px;">
+                    <div class="resumen-final-card">
+                        <div class="resumen-final-header">Resumen del cobro</div>
+
+                        <div class="resumen-final-row">
+                            <span class="resumen-final-label">Concepto</span>
+                            <span class="resumen-final-value">@GetConcepto()</span>
+                        </div>
+                        @if (SelectedCliente != null)
+                        {
+                            <div class="resumen-final-row">
+                                <span class="resumen-final-label">Cliente</span>
+                                <span class="resumen-final-value">@SelectedCliente.Nombre</span>
+                            </div>
+                        }
+                        @if (SelectedEmpleado != null)
+                        {
+                            <div class="resumen-final-row">
+                                <span class="resumen-final-label">Atendido por</span>
+                                <span class="resumen-final-value">@SelectedEmpleado.Nombre</span>
+                            </div>
+                        }
+                        @if (SelectedMetodoPago != null)
+                        {
+                            <div class="resumen-final-row">
+                                <span class="resumen-final-label">Método</span>
+                                <span class="resumen-final-value">@GetNombreMetodoPago(SelectedMetodoPago)</span>
+                            </div>
+                        }
+                        @if (DescuentoAdicional > 0 && DescuentoAdicional <= GetMontoTotal())
+                        {
+                            <div class="resumen-final-row">
+                                <span class="resumen-final-label">Descuento</span>
+                                <span class="resumen-final-value" style="color:#856404;">-S/. @DescuentoAdicional.ToString("N2")</span>
+                            </div>
+                        }
+                        <div class="resumen-final-row resumen-final-total">
+                            <span class="resumen-final-label">Total a cobrar</span>
+                            <span class="resumen-final-value" style="@(DescuentoAdicional > GetMontoTotal() ? "color:#c0392b;" : "")">
+                                S/. @(Math.Max(0, GetMontoTotal() - DescuentoAdicional).ToString("N2"))
                             </span>
                         </div>
-                    </div>
-                }
-            }
 
-            @if (SelectedMetodoPago is "yape" or "plin" or "transferencia")
-            {
-                <div class="form-row form-full">
-                    <MudTextField T="string" Label="N° de operación / Referencia" @bind-Value="Referencia"
-                        Placeholder="@(SelectedMetodoPago == "transferencia" ? "N° de transferencia bancaria" : $"Código de operación {SelectedMetodoPago}")">
-                    </MudTextField>
+                        @* Vuelto — solo efectivo *@
+                        @if (SelectedMetodoPago == "efectivo" && MontoRecibido > 0)
+                        {
+                            var totalCobrar2 = Math.Max(0, GetMontoTotal() - DescuentoAdicional);
+                            var vuelto2 = MontoRecibido - totalCobrar2;
+                            <div style="margin-top:12px;padding:12px;border-radius:8px;background:@(vuelto2 >= 0 ? "#e8f5ee" : "#fdecea");">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-size:12px;font-weight:600;color:#5a6478;">Recibido</span>
+                                    <span style="font-weight:600;color:#1b3a60;">S/. @MontoRecibido.ToString("N2")</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                                    <span style="font-size:13px;font-weight:700;color:@(vuelto2 >= 0 ? "#2e7d5a" : "#c0392b");">Vuelto</span>
+                                    <span style="font-size:1.2rem;font-weight:800;font-family:var(--font-heading);color:@(vuelto2 >= 0 ? "#2e7d5a" : "#c0392b");">
+                                        @(vuelto2 >= 0 ? "" : "-")S/. @Math.Abs(vuelto2).ToString("N2")
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:4px;"
+                            @onclick="GuardarIngreso"
+                            disabled="@(!ValidateStep3() || IsSubmitting)">
+                        @if (IsSubmitting)
+                        {
+                            <span>Guardando...</span>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Registrar ingreso</span>
+                        }
+                    </button>
+                    @if (!ValidateStep3() && SelectedMetodoPago == "efectivo" && MontoRecibido == 0)
+                    {
+                        <div style="text-align:center;font-size:11px;color:#8a97b0;margin-top:6px;">Ingresa el monto recibido para continuar</div>
+                    }
                 </div>
-            }
 
-            <div class="form-row form-full">
-                <MudNumericField T="decimal" Label="Descuento adicional (S/.)" @bind-Value="DescuentoAdicional" Min="0" Max="@GetMontoTotal()" Step="0.5m"></MudNumericField>
-            </div>
-            @if (DescuentoAdicional > GetMontoTotal())
-            {
-                <div style="background:#fdecea;color:#c0392b;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    El descuento no puede superar el monto total. Máximo: S/. @GetMontoTotal().ToString("N2")
-                </div>
-            }
-
-            <div class="form-row form-full">
-                <MudTextField T="string" Label="Observaciones" @bind-Value="Observaciones" Multiline="true" Lines="3" Placeholder="Notas adicionales..."></MudTextField>
-            </div>
-
-            <!-- Resumen Final -->
-            <div class="resumen-final-card">
-                <div class="resumen-final-header">Resumen del cobro</div>
-                <div class="resumen-final-row">
-                    <span class="resumen-final-label">Concepto</span>
-                    <span class="resumen-final-value">@GetConcepto()</span>
-                </div>
-                @if (SelectedCliente != null)
-                {
-                    <div class="resumen-final-row">
-                        <span class="resumen-final-label">Cliente</span>
-                        <span class="resumen-final-value">@SelectedCliente.Nombre</span>
-                    </div>
-                }
-                @if (SelectedEmpleado != null)
-                {
-                    <div class="resumen-final-row">
-                        <span class="resumen-final-label">Atendido por</span>
-                        <span class="resumen-final-value">@SelectedEmpleado.Nombre</span>
-                    </div>
-                }
-                @if (SelectedMetodoPago != null)
-                {
-                    <div class="resumen-final-row">
-                        <span class="resumen-final-label">Método de pago</span>
-                        <span class="resumen-final-value">@GetNombreMetodoPago(SelectedMetodoPago)</span>
-                    </div>
-                }
-                @if (DescuentoAdicional > 0)
-                {
-                    <div class="resumen-final-row">
-                        <span class="resumen-final-label">Descuento adicional</span>
-                        <span class="resumen-final-value" style="color:#856404;">-S/. @DescuentoAdicional.ToString("N2")</span>
-                    </div>
-                }
-                <div class="resumen-final-row resumen-final-total">
-                    <span class="resumen-final-label">Total a cobrar</span>
-                    <span class="resumen-final-value" style="@(DescuentoAdicional > GetMontoTotal() ? "color:#c0392b;" : "")">
-                        S/. @(Math.Max(0, GetMontoTotal() - DescuentoAdicional).ToString("N2"))
-                    </span>
-                </div>
-            </div>
-
-            <div class="step-buttons">
-                <button class="btn btn-secondary" @onclick="GoToStep2">Atrás</button>
-                <button class="btn btn-primary" @onclick="GuardarIngreso" disabled="@(SelectedMetodoPago == null || IsSubmitting || DescuentoAdicional > GetMontoTotal())">
-                    @if (IsSubmitting) { <span>Guardando...</span> } else { <span>Registrar ingreso</span> }
-                </button>
             </div>
         }
     </div>
@@ -678,12 +718,20 @@ else
 
 @code {
     // ── Vista ─────────────────────────────────────────────
+    private decimal _maxSobreTotal = 1000m;
+    // Máximo que se puede recibir = total a cobrar + margen configurable
+    private decimal MaxMontoRecibido => Math.Max(0, GetMontoTotal() - Math.Min(DescuentoAdicional, GetMontoTotal())) + _maxSobreTotal;
+
     private bool ShowForm = false;
     private bool IsLoadingHistorial = true;
     private List<IngresoDto> Historial = new();
     private DateTime FilterDesde = DateTime.Today.AddDays(-30);
     private DateTime FilterHasta = DateTime.Today;
     private bool IsAdmin = false;
+    private UsuarioInfo? _currentUser;
+    // Empleado bloqueado = no-admin que tiene un empleado vinculado a su cuenta
+    private bool _empleadoBloqueado => !IsAdmin && _currentUser != null
+        && Empleados.Any(e => e.UsuarioLogin == _currentUser.NombreUsuario);
 
     // Paginación historial
     private int _paginaHistorial = 1;
@@ -744,6 +792,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _historialPageSize = Config.GetValue<int>("Pagination:IngresosTable", 10);
+        _maxSobreTotal = Config.GetValue<decimal>("Cobros:MaxSobreTotal", 1000m);
 
         // Abrir formulario directamente si viene con ?nuevo=1 (desde dashboard)
         var uri = new Uri(Nav.Uri);
@@ -761,6 +810,15 @@ else
         );
         var user = await userTask;
         IsAdmin = user?.Rol == "admin";
+        _currentUser = user;
+        PreSeleccionarEmpleado();
+    }
+
+    private void PreSeleccionarEmpleado()
+    {
+        if (_currentUser == null) return;
+        var emp = Empleados.FirstOrDefault(e => e.UsuarioLogin == _currentUser.NombreUsuario && e.Activo);
+        if (emp != null) SelectedEmpleadoId = emp.Id;
     }
 
     private async Task CargarHistorial()
@@ -870,6 +928,18 @@ else
         if (metodo != "efectivo") MontoRecibido = 0;
     }
 
+    private bool ValidateStep3()
+    {
+        if (SelectedMetodoPago == null) return false;
+        if (DescuentoAdicional > GetMontoTotal()) return false;
+        if (SelectedMetodoPago == "efectivo")
+        {
+            var totalCobrar = GetMontoTotal() - DescuentoAdicional;
+            if (MontoRecibido <= 0 || MontoRecibido < totalCobrar) return false;
+        }
+        return true;
+    }
+
     private bool ValidateStep1()
     {
         return SelectedTipo switch
@@ -940,6 +1010,7 @@ else
         SelectedPaqueteId = 0;
         SelectedClienteId = 0;
         SelectedEmpleadoId = 0;
+        PreSeleccionarEmpleado();
         SelectedMetodoPago = null;
         MontoRecibido = 0;
         DescuentoAdicional = 0;
@@ -963,7 +1034,7 @@ else
         var req = new CrearIngresoRequest(
             DateTime.Now,
             SelectedClienteId > 0 ? SelectedClienteId : null,
-            SelectedEmpleadoId,
+            SelectedEmpleadoId > 0 ? SelectedEmpleadoId : null,
             SelectedTipo,
             SelectedServicioId > 0 ? SelectedServicioId : null,
             SelectedProductoId > 0 ? SelectedProductoId : null,

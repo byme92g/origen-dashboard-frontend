@@ -28,7 +28,8 @@
             {
                 <div class="form-group">
                     <label class="form-label">Estado</label>
-                    <select class="form-control" @bind="_activo">
+                    <select class="form-control" value="@(_activo ? "true" : "false")"
+                            @onchange="SetActivo">
                         <option value="true">Activo</option><option value="false">Inactivo</option>
                     </select>
                 </div>
@@ -49,6 +50,8 @@
     private string _nombre = ""; private string _categoria = "Shampoo";
     private decimal _precio = 0; private int _stock = 0; private bool _activo = true;
     private bool _saving; private string? _error;
+
+    private void SetActivo(ChangeEventArgs e) => _activo = e.Value?.ToString() == "true";
 
     protected override void OnParametersSet()
     {

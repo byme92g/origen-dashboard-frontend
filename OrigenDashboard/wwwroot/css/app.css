@@ -226,6 +226,12 @@ textarea.form-control { resize: vertical; min-height: 70px; }
 .login-logo-text { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 700; color: var(--navy); }
 .login-logo-sub { font-size: 11px; color: #8a97b0; text-transform: uppercase; letter-spacing: .1em; margin-top: 2px; }
 
+/* ── Price cell (tables) ─────────────────────────────────────────────────── */
+.price-cell { font-weight: 600; color: var(--navy); white-space: nowrap; }
+
+/* ── Inactive table row ──────────────────────────────────────────────────── */
+.row-inactive { background: #f5f6f8 !important; opacity: 0.65; }
+
 /* ── Utilities ───────────────────────────────────────────────────────────── */
 .text-muted { color: #8a97b0; }
 .text-right { text-align: right; }

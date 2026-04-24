@@ -12,27 +12,48 @@
 
     @* ── Servicios ── *@
     <MudTabPanel Text="Servicios">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-            <button class="btn btn-primary btn-sm" @onclick="AbrirCrearServicio">+ Nuevo servicio</button>
-        </div>
-        @if (_servicios.Any())
-        {
-            <div class="catalog-grid">
-                @foreach (var s in _servicios)
-                {
-                    <div class="catalog-card @(!s.Activo ? "cc-inactive" : "")">
-                        <div class="cc-top">
-                            <span class="cc-cat">@s.Categoria</span>
-                            <span class="badge @(s.Activo ? "badge-green" : "badge-gray")">@(s.Activo ? "Activo" : "Inactivo")</span>
-                        </div>
-                        <div class="cc-name">@s.Nombre</div>
-                        <div class="cc-price">S/ @s.Precio.ToString("N2")</div>
-                        <div class="cc-actions">
-                            <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarServicio(s)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => EliminarServicio(s)">Eliminar</button>
-                        </div>
-                    </div>
-                }
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Servicios</div>
+                <button class="btn btn-primary btn-sm" @onclick="AbrirCrearServicio">+ Nuevo servicio</button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Duración</th><th>Comisión</th><th>Estado</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in _servicios)
+                        {
+                            <tr class="@(!s.Activo ? "row-inactive" : "")">
+                                <td class="fw-bold">@s.Nombre</td>
+                                <td>@s.Categoria</td>
+                                <td><span class="price-cell">S/ @s.Precio.ToString("N2")</span></td>
+                                <td class="text-muted">@s.DuracionMin min</td>
+                                <td class="text-muted">@s.ComisionPct%</td>
+                                <td><span class="badge @(s.Activo ? "badge-green" : "badge-gray")">@(s.Activo ? "Activo" : "Inactivo")</span></td>
+                                <td>
+                                    <div class="d-flex gap-8">
+                                        <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarServicio(s)">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            Editar
+                                        </button>
+                                        <button class="btn @(s.Activo ? "btn-secondary" : "btn-outline") btn-sm" @onclick="() => ToggleActivoServicio(s)">
+                                            @(s.Activo ? "Desactivar" : "Activar")
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" title="Eliminar" @onclick="() => EliminarServicio(s)">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!_servicios.Any())
+                        {
+                            <tr><td colspan="7" class="text-center text-muted" style="padding:24px;">Sin servicios registrados</td></tr>
+                        }
+                    </tbody>
+                </table>
             </div>
             @if (_totalServicios > 0)
             {
@@ -42,11 +63,7 @@
                     <button class="btn btn-outline btn-sm" disabled="@(_pagServicios >= _totalPagServicios)" @onclick="() => CambiarPagServicios(_pagServicios + 1)">Siguiente ›</button>
                 </div>
             }
-        }
-        else
-        {
-            <div class="text-center text-muted" style="padding:40px;">Sin servicios registrados</div>
-        }
+        </div>
     </MudTabPanel>
 
     @* ── Productos ── *@
@@ -64,20 +81,21 @@
                     <tbody>
                         @foreach (var p in _productos)
                         {
-                            <tr>
+                            <tr class="@(!p.Activo ? "row-inactive" : "")">
                                 <td class="fw-bold">@p.Nombre</td>
                                 <td>@p.Categoria</td>
-                                <td>
-                                    <span style="font-family:var(--font-heading);font-size:1.05rem;font-weight:800;color:#1b3a60;background:#eef2fa;padding:3px 10px;border-radius:6px;white-space:nowrap;">
-                                        S/ @p.PrecioVenta.ToString("N2")
-                                    </span>
-                                </td>
-                                <td><span class="badge @(p.Stock > 0 ? "badge-green" : "badge-red")">@p.Stock unid.</span></td>
+                                <td><span class="price-cell">S/ @p.PrecioVenta.ToString("N2")</span></td>
+                                <td><span class="badge @(p.Stock <= 0 ? "badge-red" : p.Stock <= 5 ? "badge-gold" : "badge-green")">@p.Stock unid.</span></td>
                                 <td><span class="badge @(p.Activo ? "badge-green" : "badge-gray")">@(p.Activo ? "Activo" : "Inactivo")</span></td>
                                 <td>
                                     <div class="d-flex gap-8">
-                                        <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarProducto(p)">Editar</button>
-                                        <button class="btn btn-danger btn-sm" @onclick="() => EliminarProducto(p)">Eliminar</button>
+                                        <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarProducto(p)">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            Editar
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" title="Eliminar" @onclick="() => EliminarProducto(p)">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -102,86 +120,85 @@
 
     @* ── Paquetes ── *@
     <MudTabPanel Text="Paquetes">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-            <button class="btn btn-primary btn-sm" @onclick="AbrirCrearPaquete">+ Nuevo paquete</button>
-        </div>
-        @if (_paquetes.Any())
-        {
-            <div class="pkg-grid">
-                @foreach (var p in _paquetes)
-                {
-                    <div class="pkg-card">
-                        <div class="pk-name">@p.Nombre</div>
-                        @if (!string.IsNullOrEmpty(p.Descripcion))
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Paquetes</div>
+                <button class="btn btn-primary btn-sm" @onclick="AbrirCrearPaquete">+ Nuevo paquete</button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Descuento</th><th>Incluye</th><th>Estado</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _paquetes)
                         {
-                            <div style="font-size:12px;color:#7a8396;margin-bottom:6px;">@p.Descripcion</div>
-                        }
-                        <div class="pk-prices">
-                            <span class="pk-price">S/ @p.Precio.ToString("N2")</span>
-                            @if (p.Descuento > 0)
-                            {
-                                <span class="pk-discount">- S/ @p.Descuento.ToString("N2")</span>
-                            }
-                        </div>
-                        @if (p.Servicios.Any())
-                        {
-                            <div class="pk-svcs" style="margin-bottom:4px;">
-                                <span style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#9aa3b3;font-weight:600;">Servicios</span>
-                                <div style="margin-top:3px;">
+                            <tr class="@(!p.Activo ? "row-inactive" : "")">
+                                <td class="fw-bold">@p.Nombre</td>
+                                <td class="text-muted">@(p.Descripcion ?? "—")</td>
+                                <td><span class="price-cell">S/ @p.Precio.ToString("N2")</span></td>
+                                <td>
+                                    @if (p.Descuento > 0)
+                                    {
+                                        <span class="badge badge-green">- S/ @p.Descuento.ToString("N2")</span>
+                                    }
+                                    else { <span class="text-muted">—</span> }
+                                </td>
+                                <td>
                                     @foreach (var svc in p.Servicios)
                                     {
                                         <span class="pk-svc-chip">@svc.Servicio.Nombre</span>
                                     }
-                                </div>
-                            </div>
-                        }
-                        @if (p.Productos.Any())
-                        {
-                            <div class="pk-svcs">
-                                <span style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#9aa3b3;font-weight:600;">Productos</span>
-                                <div style="margin-top:3px;">
                                     @foreach (var prod in p.Productos)
                                     {
                                         <span class="pk-svc-chip" style="background:#f0f4e8;color:#3a5a1a;">@prod.Producto.Nombre</span>
                                     }
-                                </div>
-                            </div>
+                                </td>
+                                <td><span class="badge @(p.Activo ? "badge-green" : "badge-gray")">@(p.Activo ? "Activo" : "Inactivo")</span></td>
+                                <td>
+                                    <div class="d-flex gap-8">
+                                        <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarPaquete(p)">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            Editar
+                                        </button>
+                                        <button class="btn @(p.Activo ? "btn-secondary" : "btn-outline") btn-sm" @onclick="() => ToggleActivoPaquete(p)">
+                                            @(p.Activo ? "Desactivar" : "Activar")
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" title="Eliminar" @onclick="() => EliminarPaquete(p)">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
                         }
-                        <div class="pk-actions">
-                            <button class="btn btn-outline btn-sm" @onclick="() => AbrirEditarPaquete(p)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => EliminarPaquete(p)">Eliminar</button>
-                        </div>
-                    </div>
-                }
+                        @if (!_paquetes.Any())
+                        {
+                            <tr><td colspan="7" class="text-center text-muted" style="padding:24px;">Sin paquetes registrados</td></tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-        }
-        @if (_totalPaquetes > 0)
-        {
-            <div class="pagination-bar">
-                <button class="btn btn-outline btn-sm" disabled="@(_pagPaquetes <= 1)" @onclick="() => CambiarPagPaquetes(_pagPaquetes - 1)">‹ Anterior</button>
-                <span class="pagination-info">Página @_pagPaquetes de @_totalPagPaquetes · @_totalPaquetes registros</span>
-                <button class="btn btn-outline btn-sm" disabled="@(_pagPaquetes >= _totalPagPaquetes)" @onclick="() => CambiarPagPaquetes(_pagPaquetes + 1)">Siguiente ›</button>
-            </div>
-        }
-        else if (!_paquetes.Any())
-        {
-            <div class="text-center text-muted" style="padding:40px;">Sin paquetes registrados</div>
-        }
+            @if (_totalPaquetes > 0)
+            {
+                <div class="pagination-bar">
+                    <button class="btn btn-outline btn-sm" disabled="@(_pagPaquetes <= 1)" @onclick="() => CambiarPagPaquetes(_pagPaquetes - 1)">‹ Anterior</button>
+                    <span class="pagination-info">Página @_pagPaquetes de @_totalPagPaquetes · @_totalPaquetes registros</span>
+                    <button class="btn btn-outline btn-sm" disabled="@(_pagPaquetes >= _totalPagPaquetes)" @onclick="() => CambiarPagPaquetes(_pagPaquetes + 1)">Siguiente ›</button>
+                </div>
+            }
+        </div>
     </MudTabPanel>
 
 </MudTabs>
 
 @code {
-    // Listas paginadas (display)
     private List<ServicioDto> _servicios = [];
     private List<ProductoDto> _productos = [];
     private List<PaqueteDto>  _paquetes  = [];
 
-    // Listas completas para PaqueteDialog (necesita todos los servicios/productos disponibles)
     private List<ServicioDto> _todosServicios = [];
     private List<ProductoDto> _todosProductos = [];
 
-    // Estado de paginación por tab
     private int _pagServicios = 1, _totalServicios = 0, _totalPagServicios = 1;
     private int _pagProductos = 1, _totalProductos = 0, _totalPagProductos = 1;
     private int _pagPaquetes  = 1, _totalPaquetes  = 0, _totalPagPaquetes  = 1;
@@ -246,6 +263,38 @@
     private async Task CambiarPagServicios(int p) { _pagServicios = p; await CargarServicios(); }
     private async Task CambiarPagProductos(int p) { _pagProductos = p; await CargarProductos(); }
     private async Task CambiarPagPaquetes(int p)  { _pagPaquetes  = p; await CargarPaquetes(); }
+
+    // ── Toggle activo/inactivo ──────────────────────────────────────────────
+
+    private async Task ToggleActivoServicio(ServicioDto s)
+    {
+        var (ok, err) = await SvcServicios.ActualizarAsync(s.Id,
+            new ActualizarServicioRequest(s.Nombre, s.Categoria, s.Precio, s.DuracionMin, s.ComisionPct, !s.Activo));
+        if (ok)
+        {
+            Snackbar.Add(s.Activo ? "Servicio desactivado." : "Servicio activado.", Severity.Success);
+            await CargarServicios();
+            _todosServicios = (await SvcServicios.ListarAsync()).data ?? [];
+        }
+        else Snackbar.Add(err ?? "Error.", Severity.Error);
+    }
+
+    private async Task ToggleActivoPaquete(PaqueteDto p)
+    {
+        var (ok, err) = await SvcPaquetes.ActualizarAsync(p.Id,
+            new ActualizarPaqueteRequest(p.Nombre, p.Descripcion, p.Precio, p.Descuento, !p.Activo,
+                p.Servicios.Select(s => s.ServicioId).ToList(),
+                p.Productos.Select(pr => pr.ProductoId).ToList(),
+                p.ComisionPct));
+        if (ok)
+        {
+            Snackbar.Add(p.Activo ? "Paquete desactivado." : "Paquete activado.", Severity.Success);
+            await CargarPaquetes();
+        }
+        else Snackbar.Add(err ?? "Error.", Severity.Error);
+    }
+
+    // ── Crear / Editar / Eliminar ───────────────────────────────────────────
 
     private async Task AbrirCrearServicio()
     {

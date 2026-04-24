@@ -4,6 +4,8 @@
 @inject EmpleadoService EmpleadoSvc
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject OrigenDashboard.Auth.AuthService Auth
+@using System.Text.Json
 
 <PageTitle>Caja · Origen</PageTitle>
 
@@ -279,10 +281,27 @@
                     </div>
                 </div>
 
-                <div class="cierre-footer">
-                    <button class="btn btn-outline btn-sm" @onclick="() => _showCierre = false">Cancelar</button>
-                    <button class="btn btn-outline btn-sm" @onclick="Imprimir">Imprimir</button>
-                    <button class="btn btn-primary btn-sm" @onclick="ConfirmarCierre">Confirmar cierre</button>
+                <div class="cierre-footer" style="flex-direction:column;gap:10px;">
+                    @if (!PuedesCerrar)
+                    {
+                        <div style="background:#fdecea;color:#c0392b;padding:8px 12px;border-radius:6px;font-size:12px;width:100%;">
+                            Solo el responsable de caja o un administrador puede cerrarla.
+                        </div>
+                    }
+                    <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                        <span style="font-size:12px;color:#5a6478;flex-shrink:0;">Escribe «cerrar»:</span>
+                        <input class="form-control" style="flex:1;max-width:180px;padding:6px 10px;font-size:13px;"
+                               placeholder="cerrar"
+                               @bind="_textoCierre" @bind:event="oninput" />
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;width:100%;">
+                        <button class="btn btn-outline btn-sm" @onclick="CancelarCierre">Cancelar</button>
+                        <button class="btn btn-outline btn-sm" @onclick="Imprimir">Imprimir</button>
+                        <button class="btn btn-primary btn-sm" @onclick="ConfirmarCierre"
+                                disabled="@(!_puedeConfirmarCierre)">
+                            Confirmar cierre
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -334,11 +353,27 @@ else if (!_cajaAbierta)
                 </div>
 
                 <div class="apertura-footer">
-                    <button class="btn btn-primary"
-                            @onclick="AbrirCaja"
-                            disabled="@(!_responsablesIds.Any())">
-                        Abrir caja
-                    </button>
+                    @if (!_pedirConfirmApertura)
+                    {
+                        <button class="btn btn-primary"
+                                @onclick="() => _pedirConfirmApertura = true"
+                                disabled="@(!_responsablesIds.Any())">
+                            Abrir caja
+                        </button>
+                    }
+                    else
+                    {
+                        <div style="display:flex;flex-direction:column;gap:10px;width:100%;align-items:flex-end;">
+                            <div style="font-size:13px;color:#5a6478;text-align:right;line-height:1.5;">
+                                ¿Confirmar apertura con <strong style="color:#1b3a60;">S/. @_montoInicial.ToString("N2")</strong>
+                                a cargo de <strong style="color:#1b3a60;">@ResponsableDisplay</strong>?
+                            </div>
+                            <div style="display:flex;gap:8px;">
+                                <button class="btn btn-outline btn-sm" @onclick="() => _pedirConfirmApertura = false">Cancelar</button>
+                                <button class="btn btn-primary btn-sm" @onclick="AbrirCaja">Confirmar</button>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -408,16 +443,87 @@ else
     </div>
 }
 
+@if (IsAdmin && _historial.Any())
+{
+    <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+            <div class="card-title">Historial de cajas</div>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Apertura</th><th>Cierre</th>
+                        <th>Inicial</th><th>Ingresos</th><th>Egresos</th>
+                        <th>Saldo final</th><th>Responsables</th><th>Cerró</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in _historial)
+                    {
+                        var ganancia = h.SaldoFinal - h.MontoInicial;
+                        <tr>
+                            <td class="text-muted">@h.FechaApertura.ToString("dd/MM HH:mm")</td>
+                            <td class="text-muted">@h.FechaCierre.ToString("dd/MM HH:mm")</td>
+                            <td class="price-cell">S/ @h.MontoInicial.ToString("N2")</td>
+                            <td style="color:#2e7d5a;font-weight:600;">+S/ @h.TotalIngresos.ToString("N2")</td>
+                            <td style="color:#c0392b;font-weight:600;">-S/ @h.TotalEgresos.ToString("N2")</td>
+                            <td class="price-cell">S/ @h.SaldoFinal.ToString("N2")</td>
+                            <td>@h.Responsables</td>
+                            <td class="text-muted">@h.CerradoPor</td>
+                            <td style="text-align:center;">
+                                @if (ganancia > 0)
+                                {
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2e7d5a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                                }
+                                else if (ganancia < 0)
+                                {
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                                }
+                                else { <span class="text-muted">—</span> }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
 </div>
 
 @code {
     private record Movimiento(DateTime Fecha, string Concepto, string? SubConcepto, decimal Monto, bool EsIngreso);
+
+    private record CajaHistorialItem(
+        DateTime FechaApertura, DateTime FechaCierre,
+        decimal MontoInicial, decimal TotalIngresos,
+        decimal TotalEgresos, decimal SaldoFinal,
+        string Responsables, string CerradoPor);
 
     private bool _cajaAbierta = false;
     private bool _showCierre = false;
     private DateTime _fechaApertura;
     private decimal _montoInicial = 0;
     private decimal _saldoAlCerrar = 0;
+
+    // Auth
+    private UsuarioInfo? _currentUser;
+    private bool IsAdmin => _currentUser?.Rol == "admin";
+    private bool PuedesCerrar => IsAdmin || _empleados.Any(e =>
+        _responsablesIds.Contains(e.Id) && e.UsuarioLogin == _currentUser?.NombreUsuario);
+
+    // Apertura confirm
+    private bool _pedirConfirmApertura = false;
+
+    // Cierre confirm
+    private string _textoCierre = "";
+    private bool _puedeConfirmarCierre =>
+        _textoCierre.Trim().ToLower() == "cerrar" && PuedesCerrar;
+
+    // Historial de cajas (localStorage)
+    private List<CajaHistorialItem> _historial = new();
+    private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
     // Empleados / responsables
     private List<EmpleadoDto> _empleados = new();
@@ -456,14 +562,38 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _currentUser = await Auth.GetUsuarioAsync();
         var t1 = EmpleadoSvc.ListarAsync();
         var t2 = CargarMovimientosHoy();
-        await Task.WhenAll(t1, t2);
+        var t3 = CargarHistorial();
+        await Task.WhenAll(t1, t2, t3);
         var (ok, data, _) = await t1;
         _empleados = ok && data is not null
             ? data.Where(e => e.Activo).ToList()
             : new();
         _cargandoEmpleados = false;
+    }
+
+    private async Task CargarHistorial()
+    {
+        try
+        {
+            var json = await JS.InvokeAsync<string?>("localStorage.getItem", "origen_caja_historial");
+            if (json is not null)
+                _historial = JsonSerializer.Deserialize<List<CajaHistorialItem>>(json, _jsonOpts) ?? new();
+        }
+        catch { _historial = new(); }
+    }
+
+    private async Task GuardarEnHistorial(CajaHistorialItem item)
+    {
+        _historial.Insert(0, item);
+        try
+        {
+            var json = JsonSerializer.Serialize(_historial, _jsonOpts);
+            await JS.InvokeVoidAsync("localStorage.setItem", "origen_caja_historial", json);
+        }
+        catch { /* historial no persiste */ }
     }
 
     private async Task CargarMovimientosHoy()
@@ -486,6 +616,7 @@ else
     private void AbrirCaja()
     {
         _cajaAbierta = true;
+        _pedirConfirmApertura = false;
         _fechaApertura = DateTime.Now;
         Snackbar.Add($"Caja abierta — {ResponsableDisplay}", Severity.Success);
     }
@@ -493,18 +624,39 @@ else
     private void IniciarCierre()
     {
         _saldoAlCerrar = SaldoFinal;
+        _textoCierre = "";
         _showCierre = true;
+    }
+
+    private void CancelarCierre()
+    {
+        _showCierre = false;
+        _textoCierre = "";
     }
 
     private async Task Imprimir() => await JS.InvokeVoidAsync("print");
 
-    private void ConfirmarCierre()
+    private async Task ConfirmarCierre()
     {
+        var item = new CajaHistorialItem(
+            _fechaApertura,
+            DateTime.Now,
+            _montoInicial,
+            TotalIngresos,
+            TotalEgresos,
+            _saldoAlCerrar,
+            ResponsableDisplay,
+            _currentUser?.NombreCompleto ?? _currentUser?.NombreUsuario ?? "—");
+
         var saldo = _saldoAlCerrar;
         _cajaAbierta = false;
         _showCierre  = false;
         _montoInicial = 0;
         _responsablesIds.Clear();
+        _textoCierre = "";
+        _pedirConfirmApertura = false;
+
+        await GuardarEnHistorial(item);
         Snackbar.Add($"Caja cerrada — Saldo final: S/. {saldo:N2}", Severity.Success);
     }
 

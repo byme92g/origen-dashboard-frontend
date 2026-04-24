@@ -34,11 +34,28 @@ public abstract class ApiBase(HttpClient http)
         try
         {
             var res = await http.PutAsJsonAsync(url, body);
+            if (!res.IsSuccessStatusCode)
+            {
+                try
+                {
+                    var err = await res.Content.ReadFromJsonAsync<ApiResponse<object>>(JsonOpts);
+                    return (false, err?.Error ?? MensajeError(res.StatusCode));
+                }
+                catch { return (false, MensajeError(res.StatusCode)); }
+            }
             var parsed = await res.Content.ReadFromJsonAsync<ApiResponse<object>>(JsonOpts);
             return parsed is null ? (false, "Sin respuesta.") : (parsed.Ok, parsed.Error);
         }
         catch (Exception ex) { return (false, ex.Message); }
     }
+
+    private static string MensajeError(System.Net.HttpStatusCode code) => code switch
+    {
+        System.Net.HttpStatusCode.Forbidden  => "Sin permisos para esta operación.",
+        System.Net.HttpStatusCode.Unauthorized => "Sesión expirada. Vuelve a iniciar sesión.",
+        System.Net.HttpStatusCode.NotFound   => "Recurso no encontrado.",
+        _ => $"Error del servidor ({(int)code})."
+    };
 
     protected async Task<(bool ok, string? error)> DeleteAsync(string url)
     {
