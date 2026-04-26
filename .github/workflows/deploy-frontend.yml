@@ -22,22 +22,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: 10.0.x
+          node-version: 22
+          cache: npm
+          cache-dependency-path: svelte/package-lock.json
 
-      - name: Restore dependencies
-        run: dotnet restore ./OrigenDashboard
+      - name: Install dependencies
+        working-directory: ./svelte
+        run: npm ci
+
+      - name: Check
+        working-directory: ./svelte
+        run: npm run check
 
       - name: Build
-        run: dotnet build ./OrigenDashboard --no-restore
+        working-directory: ./svelte
+        run: npm run build
 
       # - name: Test
       #   run: dotnet test <ruta-proyecto-tests> --verbosity normal
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME:latest ./OrigenDashboard
+        run: docker build -t $IMAGE_NAME:latest ./svelte
 
       - name: Scan image for vulnerabilities
         if: ${{ inputs.run_vuln_scan == true }}
