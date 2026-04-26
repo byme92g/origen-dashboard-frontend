@@ -19,19 +19,36 @@ export interface CrearIngresoRequest {
   observaciones?: string;
 }
 
+function normalizeIngreso(i: Ingreso): Ingreso {
+  return {
+    ...i,
+    clienteNombre: i.clienteNombre ?? i.cliente?.nombre,
+    concepto: i.concepto
+      ?? i.servicio?.nombre
+      ?? i.producto?.nombre
+      ?? i.paquete?.nombre
+      ?? i.conceptoPersonalizado
+      ?? '-',
+  };
+}
+
 export const ingresoApi = {
-  listar: (desde?: string, hasta?: string) => {
+  listar: async (desde?: string, hasta?: string) => {
     const params = new URLSearchParams();
     if (desde) params.set('desde', desde);
     if (hasta) params.set('hasta', hasta);
     const qs = params.toString();
-    return apiGet<Ingreso[]>(`/api/ingresos${qs ? '?' + qs : ''}`);
+    const res = await apiGet<Ingreso[]>(`/api/ingresos${qs ? '?' + qs : ''}`);
+    if (res.ok && res.data) res.data = res.data.map(normalizeIngreso);
+    return res;
   },
-  listarPaginado: (page: number, pageSize = 10, desde?: string, hasta?: string) => {
+  listarPaginado: async (page: number, pageSize = 10, desde?: string, hasta?: string) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (desde) params.set('desde', desde);
     if (hasta) params.set('hasta', hasta);
-    return apiGet<PaginatedResult<Ingreso>>(`/api/ingresos?${params}`);
+    const res = await apiGet<PaginatedResult<Ingreso>>(`/api/ingresos?${params}`);
+    if (res.ok && res.data && !Array.isArray(res.data)) res.data.items = res.data.items.map(normalizeIngreso);
+    return res;
   },
   obtener: (id: number) => apiGet<Ingreso>(`/api/ingresos/${id}`),
   crear: (data: CrearIngresoRequest) => apiPost<Ingreso>('/api/ingresos', data),

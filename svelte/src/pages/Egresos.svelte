@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { egresoApi, type CrearEgresoRequest } from '../lib/api/egresos';
+  import { egresoApi, type CategoriaEgreso, type CrearEgresoRequest } from '../lib/api/egresos';
   import { isAdmin } from '../lib/stores/auth';
   import Spinner from '../lib/components/Spinner.svelte';
   import Pagination from '../lib/components/Pagination.svelte';
@@ -24,35 +24,35 @@
   let deleteConfirm = false; let deleteId: number | null = null;
 
   // ── Category config ────────────────────────────────────────────────────────
-  const CATEGORIA_LABELS: Record<string, string> = {
-    suministros:   'Insumos y productos',
-    servicios:     'Servicios y utilidades',
-    salarios:      'Sueldos y comisiones',
-    renta:         'Alquiler',
-    marketing:     'Marketing y publicidad',
-    mantenimiento: 'Equipos y mantenimiento',
-    impuestos:     'Impuestos',
-    otros:         'Otros',
+  const fallbackCategorias: CategoriaEgreso[] = [
+    { key: 'suministros', label: 'Insumos y productos' },
+    { key: 'servicios', label: 'Servicios y utilidades' },
+    { key: 'salarios', label: 'Sueldos y comisiones' },
+    { key: 'renta', label: 'Alquiler' },
+    { key: 'marketing', label: 'Marketing y publicidad' },
+    { key: 'mantenimiento', label: 'Equipos y mantenimiento' },
+    { key: 'impuestos', label: 'Impuestos' },
+    { key: 'otros', label: 'Otros' },
+  ];
+  let categorias: CategoriaEgreso[] = fallbackCategorias;
+  let categoriaLabels: Record<string, string> = Object.fromEntries(fallbackCategorias.map((c) => [c.key, c.label]));
+
+  const categoriaIcons: Record<string, string> = {
+    suministros: '<path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.43 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>',
+    servicios: '<path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>',
+    salarios: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',
+    renta: '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>',
+    marketing: '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.54.8-1.07 1.2-1.61-.99-.74-2.24-1.68-3.2-2.4-.4.55-.8 1.08-1.2 1.62zM20.4 5.6c-.4-.54-.8-1.07-1.2-1.61-.96.74-2.24 1.65-3.2 2.4.4.54.8 1.07 1.2 1.61.96-.74 2.24-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/>',
+    mantenimiento: '<path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>',
+    impuestos: '<path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H7v-2h4v2zm6-4H7v-2h10v2zm0-4H7V7h10v2z"/>',
+    otros: '<path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>',
   };
 
-  const categoriaItems = [
-    { key: 'suministros',   label: 'Insumos',
-      svg: '<path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.43 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>' },
-    { key: 'servicios',     label: 'Servicios',
-      svg: '<path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>' },
-    { key: 'salarios',      label: 'Salarios',
-      svg: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>' },
-    { key: 'renta',         label: 'Renta',
-      svg: '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>' },
-    { key: 'marketing',     label: 'Marketing',
-      svg: '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.54.8-1.07 1.2-1.61-.99-.74-2.24-1.68-3.2-2.4-.4.55-.8 1.08-1.2 1.62zM20.4 5.6c-.4-.54-.8-1.07-1.2-1.61-.96.74-2.24 1.65-3.2 2.4.4.54.8 1.07 1.2 1.61.96-.74 2.24-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/>' },
-    { key: 'mantenimiento', label: 'Mantenimiento',
-      svg: '<path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>' },
-    { key: 'impuestos',     label: 'Impuestos',
-      svg: '<path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H7v-2h4v2zm6-4H7v-2h10v2zm0-4H7V7h10v2z"/>' },
-    { key: 'otros',         label: 'Otros',
-      svg: '<path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>' },
-  ];
+  $: categoriaItems = categorias.map((c) => ({
+    ...c,
+    shortLabel: c.label.split(' y ')[0],
+    svg: categoriaIcons[c.key] ?? categoriaIcons.otros,
+  }));
 
   // ── Data loaders ──────────────────────────────────────────────────────────
   async function load() {
@@ -65,7 +65,18 @@
     loading = false;
   }
 
-  onMount(load);
+  async function loadCategorias() {
+    const res = await egresoApi.getCategorias();
+    if (res.ok && res.data?.length) {
+      categorias = res.data;
+      categoriaLabels = Object.fromEntries(res.data.map((c) => [c.key, c.label]));
+    }
+  }
+
+  onMount(() => {
+    loadCategorias();
+    load();
+  });
 
   function openWizard() {
     form = { fecha: today, categoria: '', monto: 0 };
@@ -97,7 +108,7 @@
     return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit' });
   }
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
-  function catLabel(key: string) { return CATEGORIA_LABELS[key] ?? key; }
+  function catLabel(key: string) { return categoriaLabels[key] ?? key; }
 
   $: step2Valid = !!(form.descripcion && (form.monto ?? 0) > 0);
 </script>
@@ -175,13 +186,12 @@
 
 <!-- ── Wizard Modal ──────────────────────────────────────────────────────── -->
 {#if showWizard}
-  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showWizard=false)}>
+  <div class="modal d-block" style="background:rgba(0,0,0,.5)">
     <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
       <div class="modal-content modal-origen">
         <div class="modal-header border-0 pb-0">
           <h5 class="modal-title">Registrar egreso</h5>
-          <button class="btn-close" on:click={() => (showWizard=false)}></button>
+          <button class="btn-close" aria-label="Cerrar" on:click={() => (showWizard=false)}></button>
         </div>
 
         <!-- Step progress -->
@@ -207,7 +217,7 @@
                   <span class="cat-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">{@html c.svg}</svg>
                   </span>
-                  <span class="cat-name">{c.label}</span>
+                  <span class="cat-name">{c.shortLabel}</span>
                 </button>
               {/each}
             </div>
@@ -304,10 +314,13 @@
 
 <!-- ── Receipt Modal ──────────────────────────────────────────────────────── -->
 {#if showReceipt && lastEgreso}
-  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showReceipt=false)}>
+  <div class="modal d-block" style="background:rgba(0,0,0,.5)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content modal-origen">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title">Egreso registrado</h5>
+          <button class="btn-close" aria-label="Cerrar" on:click={() => (showReceipt=false)}></button>
+        </div>
         <div class="modal-body text-center p-4">
           <div style="width:56px;height:56px;background:#fdecea;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c0392b" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
@@ -319,7 +332,6 @@
         </div>
         <div class="modal-footer border-0 justify-content-center">
           <button class="btn btn-danger" on:click={() => { showReceipt=false; openWizard(); }}>+ Otro Egreso</button>
-          <button class="btn btn-outline-secondary" on:click={() => (showReceipt=false)}>Cerrar</button>
         </div>
       </div>
     </div>

@@ -102,7 +102,8 @@
     if (deleteType === 'servicios') {
       res = isEdit ? await servicioApi.actualizar(editing.id, editing) : await servicioApi.crear(editing);
     } else if (deleteType === 'productos') {
-      res = isEdit ? await productoApi.actualizar(editing.id, editing) : await productoApi.crear(editing);
+      const payload = isEdit ? editing : { ...editing, stockInicial: Number(editing.stock ?? 0) };
+      res = isEdit ? await productoApi.actualizar(editing.id, payload) : await productoApi.crear(payload);
     } else {
       const payload = { ...editing, servicioIds: selectedServIds, productoIds: selectedPrdIds };
       res = isEdit ? await paqueteApi.actualizar(editing.id, payload) : await paqueteApi.crear(payload);

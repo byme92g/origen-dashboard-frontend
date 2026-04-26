@@ -68,30 +68,86 @@
   }
 
   // Auto-fill price/commission when item selected
-  $: if (form.tipo === 'servicio' && form.servicioId) {
-    const s = servicios.find(x => x.id === form.servicioId);
+  $: if (form.tipo === 'servicio' && optionalId(form.servicioId)) {
+    const s = servicios.find(x => x.id === optionalId(form.servicioId));
     if (s) { form.monto = s.precio; form.comision = s.comisionPct; }
   }
-  $: if (form.tipo === 'producto' && form.productoId) {
-    const p = productos.find(x => x.id === form.productoId);
+  $: if (form.tipo === 'producto' && optionalId(form.productoId)) {
+    const p = productos.find(x => x.id === optionalId(form.productoId));
     if (p) { form.monto = p.precioVenta * (form.cantidad ?? 1); }
   }
-  $: if (form.tipo === 'paquete' && form.paqueteId) {
-    const pk = paquetes.find(x => x.id === form.paqueteId);
+  $: if (form.tipo === 'paquete' && optionalId(form.paqueteId)) {
+    const pk = paquetes.find(x => x.id === optionalId(form.paqueteId));
     if (pk) { form.monto = pk.precio - pk.descuento; form.comision = pk.comisionPct; }
   }
 
-  $: selectedServicio = servicios.find(x => x.id === form.servicioId);
-  $: selectedProducto = productos.find(x => x.id === form.productoId);
-  $: selectedPaquete  = paquetes.find(x => x.id === form.paqueteId);
+  $: selectedServicio = servicios.find(x => x.id === optionalId(form.servicioId));
+  $: selectedProducto = productos.find(x => x.id === optionalId(form.productoId));
+  $: selectedPaquete  = paquetes.find(x => x.id === optionalId(form.paqueteId));
 
   $: montoFinal = (form.monto ?? 0) - (form.descuento ?? 0);
   $: vuelto = montoRecibido - montoFinal;
   $: step3Valid = !!form.metodoPago && (form.metodoPago !== 'efectivo' || montoRecibido >= montoFinal);
 
+  function optionalId(value: unknown): number | undefined {
+    if (value === '' || value === null || value === undefined) return undefined;
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  }
+
+  function optionalText(value: unknown): string | undefined {
+    const text = String(value ?? '').trim();
+    return text ? text : undefined;
+  }
+
+  function buildPayload(): CrearIngresoRequest {
+    const tipo = String(form.tipo ?? '');
+    return {
+      fecha: String(form.fecha ?? today),
+      tipo,
+      clienteId: optionalId(form.clienteId),
+      empleadoId: optionalId(form.empleadoId),
+      servicioId: tipo === 'servicio' ? optionalId(form.servicioId) : undefined,
+      productoId: tipo === 'producto' ? optionalId(form.productoId) : undefined,
+      paqueteId: tipo === 'paquete' ? optionalId(form.paqueteId) : undefined,
+      conceptoPersonalizado: tipo === 'personalizado' ? optionalText(form.conceptoPersonalizado) : undefined,
+      cantidad: Math.max(1, Number(form.cantidad ?? 1)),
+      monto: Number(form.monto ?? 0),
+      descuento: Number(form.descuento ?? 0),
+      metodoPago: String(form.metodoPago ?? ''),
+      referencia: optionalText(form.referencia),
+      comision: Number(form.comision ?? 0),
+      observaciones: optionalText(form.observaciones),
+    };
+  }
+
+  function normalizeFormForStep() {
+    const tipo = String(form.tipo ?? '');
+    form = {
+      ...form,
+      clienteId: optionalId(form.clienteId),
+      empleadoId: optionalId(form.empleadoId),
+      servicioId: tipo === 'servicio' ? optionalId(form.servicioId) : undefined,
+      productoId: tipo === 'producto' ? optionalId(form.productoId) : undefined,
+      paqueteId: tipo === 'paquete' ? optionalId(form.paqueteId) : undefined,
+      conceptoPersonalizado: tipo === 'personalizado' ? optionalText(form.conceptoPersonalizado) : undefined,
+      cantidad: Math.max(1, Number(form.cantidad ?? 1)),
+      monto: Number(form.monto ?? 0),
+      descuento: Number(form.descuento ?? 0),
+      comision: Number(form.comision ?? 0),
+      referencia: optionalText(form.referencia),
+      observaciones: optionalText(form.observaciones),
+    };
+  }
+
+  function advanceStep() {
+    normalizeFormForStep();
+    step++;
+  }
+
   async function save() {
     saving = true;
-    const res = await ingresoApi.crear(form as CrearIngresoRequest);
+    const res = await ingresoApi.crear(buildPayload());
     saving = false;
     if (res.ok && res.data) {
       toast('Ingreso registrado', 'success');
@@ -230,13 +286,12 @@
 
 <!-- ── Wizard Modal ──────────────────────────────────────────────────────── -->
 {#if showWizard}
-  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showWizard=false)}>
+  <div class="modal d-block" style="background:rgba(0,0,0,.5)">
     <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-lg">
       <div class="modal-content modal-origen">
         <div class="modal-header border-0 pb-0">
           <h5 class="modal-title">Registrar ingreso</h5>
-          <button class="btn-close" on:click={() => (showWizard=false)}></button>
+          <button class="btn-close" aria-label="Cerrar" on:click={() => (showWizard=false)}></button>
         </div>
 
         <!-- Step progress -->
@@ -444,8 +499,8 @@
         <div class="modal-footer border-0">
           {#if step > 1}<button class="btn btn-outline-secondary btn-sm" on:click={() => step--}>← Atrás</button>{/if}
           {#if step < 3}
-            <button class="btn btn-primary btn-sm" on:click={() => step++}
-              disabled={step === 1 && (!form.tipo || (form.tipo === 'servicio' && !form.servicioId) || (form.tipo === 'producto' && !form.productoId) || (form.tipo === 'paquete' && !form.paqueteId) || (form.tipo === 'personalizado' && (!form.conceptoPersonalizado || !form.monto)))}>
+            <button class="btn btn-primary btn-sm" on:click={advanceStep}
+              disabled={step === 1 && (!form.tipo || (form.tipo === 'servicio' && !optionalId(form.servicioId)) || (form.tipo === 'producto' && !optionalId(form.productoId)) || (form.tipo === 'paquete' && !optionalId(form.paqueteId)) || (form.tipo === 'personalizado' && (!optionalText(form.conceptoPersonalizado) || !form.monto)))}>
               Siguiente →
             </button>
           {:else}
@@ -462,10 +517,13 @@
 
 <!-- ── Resumen post-registro ─────────────────────────────────────────────── -->
 {#if showSummary && lastIngreso}
-  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showSummary=false)}>
+  <div class="modal d-block" style="background:rgba(0,0,0,.5)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content modal-origen">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title">Ingreso registrado</h5>
+          <button class="btn-close" aria-label="Cerrar" on:click={() => (showSummary=false)}></button>
+        </div>
         <div class="modal-body text-center p-4">
           <div style="width:56px;height:56px;background:#e8f5ee;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2e7d5a" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
@@ -477,7 +535,6 @@
         </div>
         <div class="modal-footer border-0 justify-content-center">
           <button class="btn btn-success" on:click={() => { showSummary=false; openWizard(); }}>+ Nuevo Ingreso</button>
-          <button class="btn btn-outline-secondary" on:click={() => (showSummary=false)}>Cerrar</button>
         </div>
       </div>
     </div>

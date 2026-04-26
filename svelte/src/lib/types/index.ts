@@ -79,6 +79,8 @@ export interface Ingreso {
   id: number;
   fecha: string;
   tipo: string;
+  concepto?: string;
+  clienteNombre?: string;
   conceptoPersonalizado?: string;
   servicioId?: number;
   productoId?: number;

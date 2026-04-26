@@ -11,7 +11,13 @@ export interface CrearEgresoRequest {
   observaciones?: string;
 }
 
+export interface CategoriaEgreso {
+  key: string;
+  label: string;
+}
+
 export const egresoApi = {
+  getCategorias: () => apiGet<CategoriaEgreso[]>('/api/egresos/categorias'),
   listar: (desde?: string, hasta?: string) => {
     const params = new URLSearchParams();
     if (desde) params.set('desde', desde);
