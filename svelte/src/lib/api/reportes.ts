@@ -3,7 +3,7 @@ import type { DashboardData, ReporteResumen } from '../types';
 
 export const reporteApi = {
   dashboard: async () => {
-    const res = await apiGet<any>('/api/reportes/dashboard');
+    const res = await apiGet<any>('/reportes/dashboard');
     if (res.ok && res.data) {
       res.data.ultimasTransacciones = (res.data.ultimasTransacciones ?? []).map((t: any) => ({
         ...t,
@@ -13,7 +13,7 @@ export const reporteApi = {
     return res as { ok: boolean; data?: DashboardData; error?: string };
   },
   resumen: async (desde: string, hasta: string) => {
-    const res = await apiGet<any>(`/api/reportes/resumen?desde=${desde}&hasta=${hasta}`);
+    const res = await apiGet<any>(`/reportes/resumen?desde=${desde}&hasta=${hasta}`);
     if (res.ok && res.data) {
       res.data.topServicios = (res.data.topServicios ?? []).map((s: any) => ({
         nombre: s.nombre ?? s.servicio ?? 'Sin nombre',

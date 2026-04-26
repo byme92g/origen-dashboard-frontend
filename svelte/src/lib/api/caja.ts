@@ -13,16 +13,16 @@ export interface CajaApertura {
 }
 
 export const cajaApi = {
-  estado: () => apiGet<CajaApertura | null>('/api/caja/estado'),
+  estado: () => apiGet<CajaApertura | null>('/caja/estado'),
 
   historial: (page = 1, pageSize = 20) =>
     apiGet<{ items: CajaApertura[]; total: number; page: number; pageSize: number }>(
-      `/api/caja/historial?page=${page}&pageSize=${pageSize}`
+      `/caja/historial?page=${page}&pageSize=${pageSize}`
     ),
 
   abrir: (montoInicial: number, responsables: string | null) =>
-    apiPost<CajaApertura>('/api/caja/abrir', { montoInicial, responsables }),
+    apiPost<CajaApertura>('/caja/abrir', { montoInicial, responsables }),
 
   cerrar: (id: number, totalIngresos: number, totalEgresos: number, saldoFinal: number, observaciones?: string) =>
-    apiPost<void>(`/api/caja/cerrar/${id}`, { totalIngresos, totalEgresos, saldoFinal, observaciones }),
+    apiPost<void>(`/caja/cerrar/${id}`, { totalIngresos, totalEgresos, saldoFinal, observaciones }),
 };

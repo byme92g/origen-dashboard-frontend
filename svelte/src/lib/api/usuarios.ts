@@ -2,12 +2,12 @@ import { apiGet, apiPost, apiPut, apiDelete } from './base';
 import type { Usuario, PaginatedResult } from '../types';
 
 export const usuarioApi = {
-  listar: () => apiGet<Usuario[]>('/api/usuarios'),
+  listar: () => apiGet<Usuario[]>('/usuarios'),
   listarPaginado: (page: number, pageSize = 15) =>
-    apiGet<PaginatedResult<Usuario>>(`/api/usuarios?page=${page}&pageSize=${pageSize}`),
+    apiGet<PaginatedResult<Usuario>>(`/usuarios?page=${page}&pageSize=${pageSize}`),
   crear: (data: { nombreCompleto: string; nombreUsuario: string; password: string; rol: string }) =>
-    apiPost<Usuario>('/api/usuarios', data),
+    apiPost<Usuario>('/usuarios', data),
   actualizar: (id: number, data: Partial<Usuario & { password?: string }>) =>
-    apiPut<Usuario>(`/api/usuarios/${id}`, data),
-  eliminar: (id: number) => apiDelete(`/api/usuarios/${id}`),
+    apiPut<Usuario>(`/usuarios/${id}`, data),
+  eliminar: (id: number) => apiDelete(`/usuarios/${id}`),
 };

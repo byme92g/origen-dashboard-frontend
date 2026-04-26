@@ -38,7 +38,7 @@ export const ingresoApi = {
     if (desde) params.set('desde', desde);
     if (hasta) params.set('hasta', hasta);
     const qs = params.toString();
-    const res = await apiGet<Ingreso[]>(`/api/ingresos${qs ? '?' + qs : ''}`);
+    const res = await apiGet<Ingreso[]>(`/ingresos${qs ? '?' + qs : ''}`);
     if (res.ok && res.data) res.data = res.data.map(normalizeIngreso);
     return res;
   },
@@ -46,11 +46,11 @@ export const ingresoApi = {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (desde) params.set('desde', desde);
     if (hasta) params.set('hasta', hasta);
-    const res = await apiGet<PaginatedResult<Ingreso>>(`/api/ingresos?${params}`);
+    const res = await apiGet<PaginatedResult<Ingreso>>(`/ingresos?${params}`);
     if (res.ok && res.data && !Array.isArray(res.data)) res.data.items = res.data.items.map(normalizeIngreso);
     return res;
   },
-  obtener: (id: number) => apiGet<Ingreso>(`/api/ingresos/${id}`),
-  crear: (data: CrearIngresoRequest) => apiPost<Ingreso>('/api/ingresos', data),
-  eliminar: (id: number) => apiDelete(`/api/ingresos/${id}`),
+  obtener: (id: number) => apiGet<Ingreso>(`/ingresos/${id}`),
+  crear: (data: CrearIngresoRequest) => apiPost<Ingreso>('/ingresos', data),
+  eliminar: (id: number) => apiDelete(`/ingresos/${id}`),
 };

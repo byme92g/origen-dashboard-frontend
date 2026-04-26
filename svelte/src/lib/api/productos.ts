@@ -9,11 +9,11 @@ export interface CrearProductoRequest {
 }
 
 export const productoApi = {
-  listar: () => apiGet<Producto[]>('/api/productos'),
+  listar: () => apiGet<Producto[]>('/productos'),
   listarPaginado: (page: number, pageSize = 15) =>
-    apiGet<PaginatedResult<Producto>>(`/api/productos?page=${page}&pageSize=${pageSize}`),
-  obtener: (id: number) => apiGet<Producto>(`/api/productos/${id}`),
-  crear: (data: CrearProductoRequest) => apiPost<Producto>('/api/productos', data),
-  actualizar: (id: number, data: Partial<Producto>) => apiPut<Producto>(`/api/productos/${id}`, data),
-  eliminar: (id: number) => apiDelete(`/api/productos/${id}`),
+    apiGet<PaginatedResult<Producto>>(`/productos?page=${page}&pageSize=${pageSize}`),
+  obtener: (id: number) => apiGet<Producto>(`/productos/${id}`),
+  crear: (data: CrearProductoRequest) => apiPost<Producto>('/productos', data),
+  actualizar: (id: number, data: Partial<Producto>) => apiPut<Producto>(`/productos/${id}`, data),
+  eliminar: (id: number) => apiDelete(`/productos/${id}`),
 };

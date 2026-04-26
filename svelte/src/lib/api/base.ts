@@ -1,7 +1,7 @@
 import type { ApiResponse } from '../types';
 import { config } from '../config';
 
-const API_BASE = config.apiUrl;
+const API_BASE = `${config.apiUrl}${config.apiPrefix}`;
 
 function getToken(): string | null {
   try {

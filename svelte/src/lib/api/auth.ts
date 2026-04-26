@@ -11,7 +11,7 @@ interface LoginResponse {
 
 export async function login(usuario: string, password: string): Promise<{ ok: boolean; error?: string }> {
   const res = await apiPost<LoginResponse>(
-    '/api/auth/login',
+    '/auth/login',
     { nombreUsuario: usuario, password },
     false
   );

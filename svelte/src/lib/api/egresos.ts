@@ -17,21 +17,21 @@ export interface CategoriaEgreso {
 }
 
 export const egresoApi = {
-  getCategorias: () => apiGet<CategoriaEgreso[]>('/api/egresos/categorias'),
+  getCategorias: () => apiGet<CategoriaEgreso[]>('/egresos/categorias'),
   listar: (desde?: string, hasta?: string) => {
     const params = new URLSearchParams();
     if (desde) params.set('desde', desde);
     if (hasta) params.set('hasta', hasta);
     const qs = params.toString();
-    return apiGet<Egreso[]>(`/api/egresos${qs ? '?' + qs : ''}`);
+    return apiGet<Egreso[]>(`/egresos${qs ? '?' + qs : ''}`);
   },
   listarPaginado: (page: number, pageSize = 10, desde?: string, hasta?: string) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (desde) params.set('desde', desde);
     if (hasta) params.set('hasta', hasta);
-    return apiGet<PaginatedResult<Egreso>>(`/api/egresos?${params}`);
+    return apiGet<PaginatedResult<Egreso>>(`/egresos?${params}`);
   },
-  obtener: (id: number) => apiGet<Egreso>(`/api/egresos/${id}`),
-  crear: (data: CrearEgresoRequest) => apiPost<Egreso>('/api/egresos', data),
-  eliminar: (id: number) => apiDelete(`/api/egresos/${id}`),
+  obtener: (id: number) => apiGet<Egreso>(`/egresos/${id}`),
+  crear: (data: CrearEgresoRequest) => apiPost<Egreso>('/egresos', data),
+  eliminar: (id: number) => apiDelete(`/egresos/${id}`),
 };
