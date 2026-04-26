@@ -1,0 +1,158 @@
+/* ── Brand variables ─────────────────────────────────────────────────────── */
+:root {
+  --navy:       #1b3a60;
+  --navy-dark:  #142d4c;
+  --navy-light: #2a4f80;
+  --gold:       #a07838;
+  --gold-light: #c09848;
+  --font-heading: "Cormorant Garamond", Georgia, serif;
+  --font-body:    "DM Sans", system-ui, sans-serif;
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(27,58,96,.10);
+  --shadow-md: 0 4px 16px rgba(27,58,96,.14);
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: #f4f6fa;
+  color: #1a1a2e;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+#app {
+  height: 100%;
+}
+
+/* ── Bootstrap overrides — nav tabs ─────────────────────────────────────── */
+.nav-tabs .nav-link {
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: #6b7a99;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  background: transparent;
+}
+.nav-tabs .nav-link.active {
+  color: var(--navy);
+  font-weight: 600;
+  border-bottom-color: var(--navy);
+  background: transparent;
+}
+.nav-tabs {
+  border-bottom-color: #e0e8f0;
+}
+
+/* ── Bootstrap overrides — buttons ──────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--navy) !important;
+  border-color: var(--navy) !important;
+  font-family: var(--font-body);
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--navy-light) !important;
+  border-color: var(--navy-light) !important;
+}
+.btn-outline-secondary {
+  color: #5a6478;
+  border-color: #d0d8e8;
+}
+.btn-outline-secondary:hover {
+  background: #f0f4fa;
+  border-color: var(--navy);
+  color: var(--navy);
+}
+.btn-success { background-color: #2e7d5a !important; border-color: #2e7d5a !important; }
+.btn-danger  { background-color: #c0392b !important; border-color: #c0392b !important; }
+
+/* ── Bootstrap overrides — form controls ────────────────────────────────── */
+.form-control, .form-select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  border-color: #d0d8e8;
+  color: #1a1a2e;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(27,58,96,.10);
+}
+.form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5a6478;
+  margin-bottom: 4px;
+}
+
+/* ── Bootstrap overrides — cards ────────────────────────────────────────── */
+.card {
+  border-radius: var(--radius) !important;
+}
+.card-header {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  color: var(--navy);
+}
+
+/* ── Bootstrap overrides — tables ───────────────────────────────────────── */
+.table thead th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #8a97b0;
+  background: #f8fafc;
+  border-bottom-width: 1px;
+}
+.table tbody td {
+  vertical-align: middle;
+  font-size: 13px;
+}
+.table-hover tbody tr:hover td {
+  background: #f4f8ff;
+}
+
+/* ── Bootstrap overrides — badges ───────────────────────────────────────── */
+.badge {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+}
+
+/* ── Bootstrap overrides — modals ───────────────────────────────────────── */
+.modal-title {
+  font-family: var(--font-heading);
+  color: var(--navy);
+  font-size: 1.15rem;
+}
+.modal-content {
+  border-radius: var(--radius) !important;
+  border: none;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Bootstrap overrides — pagination ───────────────────────────────────── */
+.page-link {
+  color: var(--navy);
+  font-size: 13px;
+}
+.page-item.active .page-link {
+  background-color: var(--navy);
+  border-color: var(--navy);
+}
+
+/* ── Progress bars ───────────────────────────────────────────────────────── */
+.progress-bar.bg-primary {
+  background-color: var(--navy) !important;
+}
