@@ -50,9 +50,15 @@
     return currentPath.startsWith(href);
   }
 
-  $: initials = $authStore.user
-    ? $authStore.user.nombreCompleto.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-    : '?';
+  // ⚠️ DIRTY TRICK FOR NOW: evitar crash si nombreCompleto viene null/undefined
+$: initials =
+  $authStore.user?.nombreCompleto
+    ?.trim()
+    ?.split(/\s+/)
+    ?.map((w: string) => w?.[0] ?? '')
+    ?.join('')
+    ?.slice(0, 2)
+    ?.toUpperCase() || '?';
 </script>
 
 <nav class="sidebar-nav d-flex flex-column h-100">
