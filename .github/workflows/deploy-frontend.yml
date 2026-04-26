@@ -9,7 +9,7 @@ on:
         default: true
 
 env:
-  IMAGE_NAME: origen-frontend
+  IMAGE_NAME: origen-svelte
   COMPOSE_FILE: /opt/origen/docker-compose.yml
 
 jobs:
@@ -104,6 +104,6 @@ jobs:
             docker load < /tmp/image.tar.gz
             rm /tmp/image.tar.gz
 
-            docker compose -f ${{ env.COMPOSE_FILE }} up -d --no-deps frontend
+            docker compose -f ${{ env.COMPOSE_FILE }} up -d --no-deps svelte
 
             docker image prune -f
