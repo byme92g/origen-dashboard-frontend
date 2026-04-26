@@ -82,6 +82,11 @@
   $: totalEgresos = egresos.reduce((s, e) => s + e.monto, 0);
   $: saldoActual = (apertura?.montoInicial ?? montoInicial) + totalIngresos - totalEgresos;
 
+  $: movimientos = [
+    ...ingresos.map(i => ({ fecha: i.fecha, concepto: i.concepto, sub: i.clienteNombre ?? null, monto: i.monto, esIng: true })),
+    ...egresos.map(e => ({ fecha: e.fecha, concepto: e.descripcion, sub: e.categoria ?? null, monto: e.monto, esIng: false })),
+  ].sort((a, b) => a.fecha.localeCompare(b.fecha));
+
   async function cerrar() {
     if (confirmText !== 'cerrar' || !apertura) return;
     submitting = true;
@@ -109,119 +114,204 @@
       ? selectedEmpleados.filter(x => x !== id)
       : [...selectedEmpleados, id];
   }
+
+  function fmtTime(iso: string) {
+    return new Date(iso).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+  }
 </script>
 
-<div class="p-3 p-md-4">
-  <h5 class="fw-bold mb-4">Caja</h5>
+<div class="caja-wrap">
 
   {#if state === 'loading'}
-    <Spinner />
+    <div style="padding-top:48px;display:flex;justify-content:center;">
+      <Spinner />
+    </div>
 
   {:else if state === 'closed'}
-    <div class="card border-0 shadow-sm p-4" style="max-width:480px">
-      <h6 class="fw-semibold mb-3">Apertura de caja</h6>
-      {#if errorMsg}
-        <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
-      {/if}
-      <div class="mb-3">
-        <label class="form-label small fw-semibold">Monto inicial S/</label>
-        <input class="form-control" type="number" step="0.01" min="0" bind:value={montoInicial} />
-      </div>
-      <div class="mb-3">
-        <label class="form-label small fw-semibold">Responsable(s)</label>
-        <div class="d-flex flex-wrap gap-2 mt-1">
-          {#each empleados.filter(e => e.activo) as e}
-            <button type="button" class="btn btn-sm {selectedEmpleados.includes(e.id) ? 'btn-primary' : 'btn-outline-secondary'}" on:click={() => toggleEmp(e.id)}>{e.nombre}</button>
-          {/each}
+    <div class="apertura-outer">
+      <div class="apertura-card">
+        <div class="apertura-header">
+          <div class="apertura-header-label">Control de Caja · Origen</div>
+          <div class="apertura-header-date">
+            {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </div>
+        </div>
+        <div class="apertura-body">
+          {#if errorMsg}
+            <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
+          {/if}
+          <div style="margin-bottom:18px;">
+            <div class="afield">
+              <label>Monto inicial (S/.)</label>
+              <input type="number" step="0.50" min="0" placeholder="0.00"
+                     bind:value={montoInicial} style="max-width:180px;" />
+            </div>
+          </div>
+          <div class="resp-section">
+            <div class="resp-section-label">Responsable(s)</div>
+            <div class="resp-grid">
+              {#each empleados.filter(e => e.activo) as e}
+                <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+                <div class="resp-chip {selectedEmpleados.includes(e.id) ? 'sel' : ''}"
+                     on:click={() => toggleEmp(e.id)}>
+                  <span>{e.nombre}</span>
+                  <span class="resp-cargo">{e.cargo}</span>
+                </div>
+              {:else}
+                <div style="font-size:12px;color:#8a97b0;">Sin empleados registrados</div>
+              {/each}
+            </div>
+          </div>
+          <div class="apertura-footer">
+            <button class="btn btn-primary" on:click={abrir} disabled={submitting}>
+              {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+              Abrir caja
+            </button>
+          </div>
         </div>
       </div>
-      <button class="btn btn-success" on:click={abrir} disabled={submitting}>
-        {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
-        Abrir caja
-      </button>
     </div>
 
   {:else if state === 'open'}
-    <!-- KPIs -->
-    <div class="row g-3 mb-4">
-      {#each [
-        { label: 'Monto inicial', value: fmt(apertura?.montoInicial ?? 0), color: 'secondary' },
-        { label: 'Ingresos del día', value: fmt(totalIngresos), color: 'success' },
-        { label: 'Egresos del día', value: fmt(totalEgresos), color: 'danger' },
-        { label: 'Saldo actual', value: fmt(saldoActual), color: 'primary' },
-      ] as k}
-        <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm">
-            <div class="card-body p-3">
-              <p class="text-muted small mb-1">{k.label}</p>
-              <p class="fw-bold fs-5 mb-0 text-{k.color}">{k.value}</p>
+    <div class="caja-topbar">
+      <div class="caja-topbar-left">
+        <div class="caja-dot"></div>
+        <div class="caja-topbar-info">
+          <strong>Caja abierta</strong>
+          <span>
+            Desde las {apertura ? fmtTime(apertura.abiertaEn) : '—'}
+            {#if apertura?.responsables} · {apertura.responsables}{/if}
+          </span>
+        </div>
+      </div>
+      <button class="btn-cierre" on:click={() => (state = 'closing')}>Cerrar caja</button>
+    </div>
+
+    <div class="caja-kpis">
+      <div class="caja-kpi">
+        <div class="caja-kpi-label">Saldo inicial</div>
+        <div class="caja-kpi-value">{fmt(apertura?.montoInicial ?? 0)}</div>
+      </div>
+      <div class="caja-kpi ing">
+        <div class="caja-kpi-label">Ingresos del día</div>
+        <div class="caja-kpi-value">+{fmt(totalIngresos)}</div>
+      </div>
+      <div class="caja-kpi egr">
+        <div class="caja-kpi-label">Egresos del día</div>
+        <div class="caja-kpi-value">−{fmt(totalEgresos)}</div>
+      </div>
+      <div class="caja-kpi net">
+        <div class="caja-kpi-label">Saldo actual</div>
+        <div class="caja-kpi-value">{fmt(saldoActual)}</div>
+      </div>
+    </div>
+
+    <div class="movs-card">
+      <div class="movs-head">
+        <span class="movs-head-title">Movimientos del día</span>
+        <span class="movs-head-count">{movimientos.length} operaciones</span>
+      </div>
+      {#if movimientos.length > 0}
+        {#each movimientos as m}
+          <div class="mov-row {m.esIng ? 'is-ing' : 'is-egr'}">
+            <div class="mov-time">{fmtTime(m.fecha)}</div>
+            <div>
+              <div class="mov-main">{m.concepto}</div>
+              {#if m.sub}<div class="mov-sub">{m.sub}</div>{/if}
+            </div>
+            <div class="mov-amt {m.esIng ? 'ing' : 'egr'}">
+              {m.esIng ? '+' : '−'}{fmt(m.monto)}
+            </div>
+          </div>
+        {/each}
+      {:else}
+        <div class="movs-empty">Sin movimientos registrados hoy</div>
+      {/if}
+    </div>
+
+  {:else}
+    <!-- Cierre de caja -->
+    <div class="cierre-outer">
+      <div class="cierre-card">
+        <div class="cierre-top">
+          <div class="cierre-top-title">Cierre de Caja — Origen</div>
+          <div class="cierre-top-sub">
+            {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </div>
+        </div>
+        <div class="cierre-body">
+          {#if errorMsg}
+            <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
+          {/if}
+          <div class="cierre-meta">
+            Responsable(s): <strong>{apertura?.responsables ?? 'Sin asignar'}</strong><br/>
+            Apertura: <strong>{apertura ? fmtTime(apertura.abiertaEn) : '—'}</strong>
+            &nbsp;·&nbsp;
+            Cierre: <strong>{new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</strong>
+          </div>
+
+          <div class="cierre-kpis">
+            <div class="ck ini">
+              <div class="ck-label">Saldo inicial</div>
+              <div class="ck-value">{fmt(apertura?.montoInicial ?? 0)}</div>
+            </div>
+            <div class="ck ing">
+              <div class="ck-label">Ingresos</div>
+              <div class="ck-value">+{fmt(totalIngresos)}</div>
+            </div>
+            <div class="ck egr">
+              <div class="ck-label">Egresos</div>
+              <div class="ck-value">−{fmt(totalEgresos)}</div>
+            </div>
+          </div>
+
+          <div class="cierre-movs">
+            {#each movimientos as m}
+              <div class="cierre-mov {m.esIng ? 'is-ing' : 'is-egr'}">
+                <span class="cierre-mov-time">{fmtTime(m.fecha)}</span>
+                <span class="cierre-mov-desc">{m.concepto}</span>
+                <span class="cierre-mov-amt {m.esIng ? 'ing' : 'egr'}">{m.esIng ? '+' : '−'}{fmt(m.monto)}</span>
+              </div>
+            {:else}
+              <div style="padding:16px;text-align:center;font-size:12px;color:#8a97b0;">Sin movimientos registrados</div>
+            {/each}
+          </div>
+
+          <div class="cierre-totales">
+            <div class="cierre-total-row">
+              <span class="cierre-total-label">Saldo inicial</span>
+              <span class="cierre-total-value">{fmt(apertura?.montoInicial ?? 0)}</span>
+            </div>
+            <div class="cierre-total-row">
+              <span class="cierre-total-label">Ingresos ({ingresos.length} transacciones)</span>
+              <span class="cierre-total-value" style="color:#2e7d5a;">+{fmt(totalIngresos)}</span>
+            </div>
+            <div class="cierre-total-row">
+              <span class="cierre-total-label">Egresos ({egresos.length} transacciones)</span>
+              <span class="cierre-total-value" style="color:#c0392b;">−{fmt(totalEgresos)}</span>
+            </div>
+            <div class="cierre-total-row final">
+              <span class="cierre-total-label" style="font-size:15px;font-weight:700;color:#1b3a60;">Saldo final</span>
+              <span class="cierre-total-value" style="font-size:20px;color:#1b3a60;">{fmt(saldoActual)}</span>
+            </div>
+          </div>
+
+          <div class="cierre-footer" style="flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:8px;width:100%;">
+              <span style="font-size:12px;color:#5a6478;flex-shrink:0;">Escribe «cerrar»:</span>
+              <input class="form-control" style="flex:1;max-width:180px;padding:6px 10px;font-size:13px;"
+                     placeholder="cerrar" bind:value={confirmText} />
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;width:100%;">
+              <button class="btn btn-outline-secondary btn-sm" on:click={() => (state = 'open')}>Cancelar</button>
+              <button class="btn btn-primary btn-sm" on:click={cerrar}
+                      disabled={confirmText !== 'cerrar' || submitting}>
+                {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+                Confirmar cierre
+              </button>
             </div>
           </div>
         </div>
-      {/each}
-    </div>
-
-    {#if apertura?.responsables}
-      <p class="text-muted small mb-3">Responsables: <strong>{apertura.responsables}</strong></p>
-    {/if}
-
-    <!-- Movimientos -->
-    <div class="card border-0 shadow-sm mb-3">
-      <div class="card-header bg-white fw-semibold small border-0 pt-3">Movimientos del día</div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead class="table-light">
-            <tr><th class="ps-3">Hora</th><th>Descripción</th><th>Tipo</th><th class="pe-3 text-end">Monto</th></tr>
-          </thead>
-          <tbody>
-            {#each ingresos as i}
-              <tr>
-                <td class="ps-3 small text-muted">{new Date(i.fecha).toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit' })}</td>
-                <td class="small">{i.concepto}</td>
-                <td><span class="badge bg-success-subtle text-success">Ingreso</span></td>
-                <td class="pe-3 text-end small fw-semibold text-success">{fmt(i.monto)}</td>
-              </tr>
-            {/each}
-            {#each egresos as e}
-              <tr>
-                <td class="ps-3 small text-muted">{new Date(e.fecha).toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit' })}</td>
-                <td class="small">{e.descripcion}</td>
-                <td><span class="badge bg-danger-subtle text-danger">Egreso</span></td>
-                <td class="pe-3 text-end small fw-semibold text-danger">- {fmt(e.monto)}</td>
-              </tr>
-            {:else}
-              {#if ingresos.length === 0}<tr><td colspan="4" class="text-center text-muted py-3">Sin movimientos hoy</td></tr>{/if}
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <button class="btn btn-outline-danger" on:click={() => (state = 'closing')}>Cerrar caja</button>
-
-  {:else}
-    <!-- Closing confirmation -->
-    <div class="card border-0 shadow-sm p-4" style="max-width:480px">
-      <h6 class="fw-semibold mb-3">Resumen de cierre</h6>
-      {#if errorMsg}
-        <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
-      {/if}
-      <div class="p-3 rounded bg-light mb-3">
-        <div class="d-flex justify-content-between mb-2"><span class="text-muted small">Monto inicial</span><span>{fmt(apertura?.montoInicial ?? 0)}</span></div>
-        <div class="d-flex justify-content-between mb-2"><span class="text-muted small">Total ingresos</span><span class="text-success">{fmt(totalIngresos)}</span></div>
-        <div class="d-flex justify-content-between mb-2"><span class="text-muted small">Total egresos</span><span class="text-danger">- {fmt(totalEgresos)}</span></div>
-        <div class="d-flex justify-content-between fw-bold"><span>Saldo final</span><span class="text-primary">{fmt(saldoActual)}</span></div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label small fw-semibold">Escribe "cerrar" para confirmar</label>
-        <input class="form-control" bind:value={confirmText} placeholder="cerrar" />
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary" on:click={() => (state = 'open')}>Volver</button>
-        <button class="btn btn-danger" on:click={cerrar} disabled={confirmText !== 'cerrar' || submitting}>
-          {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
-          Confirmar cierre
-        </button>
       </div>
     </div>
   {/if}
@@ -229,21 +319,28 @@
   <!-- Historial (admin) -->
   {#if $isAdmin && historial.length > 0}
     <div class="mt-4">
-      <h6 class="fw-semibold mb-3">Historial de cierres</h6>
+      <h6 class="fw-semibold mb-3">Historial de cajas</h6>
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead class="table-light">
-              <tr><th class="ps-3">Fecha</th><th>Inicial</th><th>Ingresos</th><th>Egresos</th><th>Saldo final</th><th class="pe-3 d-none d-md-table-cell">Responsables</th></tr>
+          <table class="table table-sm table-origen mb-0">
+            <thead class="table-origen">
+              <tr>
+                <th class="ps-3">Fecha cierre</th>
+                <th>Inicial</th>
+                <th>Ingresos</th>
+                <th>Egresos</th>
+                <th>Saldo final</th>
+                <th class="pe-3 d-none d-md-table-cell">Responsables</th>
+              </tr>
             </thead>
             <tbody>
               {#each historial as h}
                 <tr>
-                  <td class="ps-3 small">{new Date(h.cerradaEn!).toLocaleDateString('es-PE', { dateStyle: 'medium' })}</td>
+                  <td class="ps-3 small">{h.cerradaEn ? new Date(h.cerradaEn).toLocaleDateString('es-PE', { dateStyle: 'medium' }) : '—'}</td>
                   <td class="small">{fmt(h.montoInicial)}</td>
-                  <td class="small text-success">{fmt(h.totalIngresos ?? 0)}</td>
-                  <td class="small text-danger">{fmt(h.totalEgresos ?? 0)}</td>
-                  <td class="small fw-semibold text-primary">{fmt(h.saldoFinal ?? 0)}</td>
+                  <td class="small" style="color:#2e7d5a;font-weight:600;">+{fmt(h.totalIngresos ?? 0)}</td>
+                  <td class="small" style="color:#c0392b;font-weight:600;">−{fmt(h.totalEgresos ?? 0)}</td>
+                  <td class="small fw-bold" style="color:#1b3a60;">{fmt(h.saldoFinal ?? 0)}</td>
                   <td class="small text-muted pe-3 d-none d-md-table-cell">{h.responsables ?? '—'}</td>
                 </tr>
               {/each}
@@ -253,4 +350,196 @@
       </div>
     </div>
   {/if}
+
 </div>
+
+<style>
+/* ── Layout ───────────────────────────────────────────────── */
+.caja-wrap { max-width: 820px; margin: 0 auto; padding: 16px; }
+
+/* ── Apertura (caja cerrada) ──────────────────────────────── */
+.apertura-outer { display: flex; justify-content: center; padding-top: 32px; }
+.apertura-card {
+  background: white; border-radius: 10px;
+  box-shadow: 0 2px 16px rgba(27,58,96,.13);
+  width: 100%; max-width: 460px; overflow: hidden;
+}
+.apertura-header {
+  background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%);
+  color: white; padding: 22px 32px 18px;
+}
+.apertura-header-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+  opacity: .7; margin-bottom: 4px;
+}
+.apertura-header-date { font-size: 18px; font-weight: 700; text-transform: capitalize; }
+.apertura-body { padding: 24px 32px 28px; }
+.afield { display: flex; flex-direction: column; gap: 5px; }
+.afield label { font-size: 12px; font-weight: 600; color: #5a6478; text-transform: uppercase; letter-spacing: .5px; }
+.afield input {
+  padding: 9px 12px; border: 1.5px solid #e0e8f0; border-radius: 6px;
+  font-size: 14px; color: #1b3a60; font-family: inherit; background: white;
+  transition: border-color .15s;
+}
+.afield input:focus { outline: none; border-color: #1b3a60; }
+.resp-section { margin-bottom: 20px; margin-top: 4px; }
+.resp-section-label { font-size: 12px; font-weight: 600; color: #5a6478; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.resp-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.resp-chip {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border: 1.5px solid #dce5f0; border-radius: 20px;
+  cursor: pointer; font-size: 13px; color: #5a6478;
+  background: #f8fafc; transition: all .15s; user-select: none;
+}
+.resp-chip:hover { border-color: #a0b4cc; background: #f0f4f9; }
+.resp-chip.sel { border-color: #1b3a60; background: #eef2fa; color: #1b3a60; font-weight: 600; }
+.resp-cargo { font-size: 10px; color: #8a97b0; font-weight: 400; }
+.resp-chip.sel .resp-cargo { color: #5a6478; }
+.apertura-footer { display: flex; justify-content: flex-end; padding-top: 4px; }
+
+/* ── Top bar (caja abierta) ───────────────────────────────── */
+.caja-topbar {
+  background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%);
+  border-radius: 10px; color: white;
+  box-shadow: 0 2px 10px rgba(27,58,96,.25);
+  padding: 14px 22px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.caja-topbar-left { display: flex; align-items: center; gap: 10px; }
+.caja-dot {
+  width: 9px; height: 9px; border-radius: 50%; background: #4ade80; flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(74,222,128,.25);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(74,222,128,.25); }
+  50%       { box-shadow: 0 0 0 5px rgba(74,222,128,.12); }
+}
+.caja-topbar-info :global(strong) { font-size: 13px; color: white; display: block; font-weight: 700; }
+.caja-topbar-info span { font-size: 12px; color: rgba(255,255,255,.65); }
+.btn-cierre {
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+  color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px;
+  font-weight: 500; cursor: pointer; transition: background .15s;
+}
+.btn-cierre:hover { background: rgba(255,255,255,.2); }
+
+/* ── KPIs ─────────────────────────────────────────────────── */
+.caja-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.caja-kpi {
+  border-radius: 10px; padding: 15px 18px;
+  box-shadow: 0 2px 8px rgba(27,58,96,.08);
+  background: white; border-left: 3px solid #d8e1ec;
+}
+.caja-kpi-label { font-size: 10px; color: #8a97b0; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; font-weight: 600; }
+.caja-kpi-value { font-size: 18px; font-weight: 800; color: #1b3a60; }
+.caja-kpi.ing { background: #f0faf5; border-left-color: #2e7d5a; }
+.caja-kpi.ing .caja-kpi-label { color: #2e7d5a; }
+.caja-kpi.ing .caja-kpi-value { color: #2e7d5a; }
+.caja-kpi.egr { background: #fef6f6; border-left-color: #c0392b; }
+.caja-kpi.egr .caja-kpi-label { color: #c0392b; }
+.caja-kpi.egr .caja-kpi-value { color: #c0392b; }
+.caja-kpi.net { background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%); border-left-color: #1b3a60; }
+.caja-kpi.net .caja-kpi-label { color: rgba(255,255,255,.65); }
+.caja-kpi.net .caja-kpi-value { color: white; }
+
+/* ── Movimientos ──────────────────────────────────────────── */
+.movs-card {
+  background: white; border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(27,58,96,.08);
+  overflow: hidden; margin-bottom: 12px;
+}
+.movs-head {
+  padding: 13px 20px; border-bottom: 1px solid #f0f4f8;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.movs-head-title { font-size: 13px; font-weight: 700; color: #1b3a60; }
+.movs-head-count { font-size: 12px; color: #8a97b0; }
+.mov-row {
+  display: grid; grid-template-columns: 48px 1fr auto;
+  gap: 12px; padding: 10px 20px;
+  border-bottom: 1px solid #f8fafc; align-items: center;
+  border-left: 3px solid transparent; transition: background .12s;
+}
+.mov-row.is-ing { border-left-color: #2e7d5a; }
+.mov-row.is-egr { border-left-color: #c0392b; }
+.mov-row:last-child { border-bottom: none; }
+.mov-row:hover { background: #fafbfd; }
+.mov-time { font-size: 12px; color: #8a97b0; font-weight: 500; }
+.mov-main { font-size: 13px; font-weight: 600; color: #1b3a60; }
+.mov-sub { font-size: 11px; color: #8a97b0; margin-top: 1px; }
+.mov-amt { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.mov-amt.ing { color: #2e7d5a; }
+.mov-amt.egr { color: #c0392b; }
+.movs-empty { padding: 36px; text-align: center; font-size: 13px; color: #8a97b0; }
+
+/* ── Cierre ───────────────────────────────────────────────── */
+.cierre-outer { display: flex; justify-content: center; }
+.cierre-card {
+  background: white; border-radius: 10px;
+  box-shadow: 0 2px 16px rgba(27,58,96,.13);
+  overflow: hidden; width: 100%; max-width: 500px;
+}
+.cierre-top {
+  background: linear-gradient(135deg, #1b3a60 0%, #1e4a7a 100%);
+  color: white; padding: 22px 28px;
+}
+.cierre-top-title { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.cierre-top-sub { font-size: 12px; opacity: .7; margin-top: 3px; text-transform: capitalize; }
+.cierre-body { padding: 20px 28px; }
+.cierre-meta { font-size: 12px; color: #8a97b0; margin-bottom: 18px; line-height: 1.9; }
+.cierre-meta :global(strong) { color: #1b3a60; }
+.cierre-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.ck { border-radius: 8px; padding: 10px 12px; text-align: center; }
+.ck-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-bottom: 3px; }
+.ck-value { font-size: 16px; font-weight: 800; margin-top: 2px; }
+.ck.ini { background: #eef2fa; }
+.ck.ini .ck-label { color: #5a6478; }
+.ck.ini .ck-value { color: #1b3a60; }
+.ck.ing { background: #e8f5ee; }
+.ck.ing .ck-label { color: #2e7d5a; }
+.ck.ing .ck-value { color: #2e7d5a; }
+.ck.egr { background: #fdecea; }
+.ck.egr .ck-label { color: #c0392b; }
+.ck.egr .ck-value { color: #c0392b; }
+.cierre-movs {
+  border: 1px solid #e8edf4; border-radius: 8px;
+  overflow: hidden; margin-bottom: 18px;
+  max-height: 210px; overflow-y: auto;
+}
+.cierre-mov {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 12px; border-bottom: 1px solid #f0f4f8; font-size: 12px;
+  border-left: 2px solid transparent;
+}
+.cierre-mov:last-child { border-bottom: none; }
+.cierre-mov.is-ing { border-left-color: #2e7d5a; }
+.cierre-mov.is-egr { border-left-color: #c0392b; }
+.cierre-mov-time { color: #8a97b0; width: 36px; flex-shrink: 0; }
+.cierre-mov-desc { flex: 1; color: #5a6478; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cierre-mov-amt { font-weight: 600; white-space: nowrap; }
+.cierre-mov-amt.ing { color: #2e7d5a; }
+.cierre-mov-amt.egr { color: #c0392b; }
+.cierre-totales { border-top: 1px solid #f0f4f8; padding-top: 14px; }
+.cierre-total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.cierre-total-row.final {
+  border-top: 2px solid #1b3a60; padding-top: 12px; margin-top: 10px;
+  background: #eef2fa; padding: 10px 12px; border-radius: 6px;
+}
+.cierre-total-label { color: #5a6478; }
+.cierre-total-value { font-weight: 700; color: #1b3a60; }
+.cierre-footer {
+  display: flex; gap: 10px; justify-content: flex-end;
+  margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f4f8;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .caja-wrap { padding: 12px; }
+  .caja-kpis { grid-template-columns: repeat(2, 1fr); }
+  .caja-kpi-value { font-size: 15px; }
+  .apertura-header { padding: 18px 20px 14px; }
+  .apertura-body { padding: 18px 20px 22px; }
+  .mov-row { grid-template-columns: 40px 1fr auto; padding: 9px 14px; }
+}
+</style>

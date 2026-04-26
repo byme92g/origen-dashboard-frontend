@@ -93,29 +93,29 @@
     <div class="two-col-grid">
       <!-- Últimas transacciones -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 pt-3">
-          <span class="fw-semibold small">Últimas transacciones hoy</span>
+        <div class="card-header-origen">
+          <span class="card-title">Últimas transacciones hoy</span>
         </div>
         <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
+          <table class="table table-sm table-hover table-navy mb-0">
+            <thead>
               <tr>
-                <th class="ps-3">Cliente</th>
+                <th>Cliente</th>
                 <th>Concepto</th>
                 <th>Método</th>
-                <th class="pe-3 text-end">Total</th>
+                <th class="text-end">Total</th>
               </tr>
             </thead>
             <tbody>
               {#each data.ultimasTransacciones as t}
                 <tr>
-                  <td class="ps-3 small text-muted">{t.clienteNombre ?? '—'}</td>
-                  <td class="small">{t.concepto}</td>
-                  <td><span class="badge bg-light text-dark border">{t.metodoPago}</span></td>
-                  <td class="pe-3 text-end fw-semibold small">{fmt(t.monto - t.descuento)}</td>
+                  <td class="text-muted">{t.clienteNombre ?? '—'}</td>
+                  <td>{t.concepto}</td>
+                  <td><span class="badge badge-navy">{t.metodoPago}</span></td>
+                  <td class="text-end fw-semibold">{fmt(t.monto - t.descuento)}</td>
                 </tr>
               {:else}
-                <tr><td colspan="4" class="text-center text-muted py-3 small">Sin transacciones hoy</td></tr>
+                <tr><td colspan="4" class="text-center text-muted py-3">Sin transacciones hoy</td></tr>
               {/each}
             </tbody>
           </table>
@@ -124,8 +124,8 @@
 
       <!-- Por método de pago -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 pt-3">
-          <span class="fw-semibold small">Ingresos hoy por método</span>
+        <div class="card-header-origen">
+          <span class="card-title">Ingresos hoy por método</span>
         </div>
         <div class="card-body">
           {#each data.porMetodoPago as m}
@@ -204,72 +204,11 @@
     line-height: 1.3;
   }
 
-  /* ── KPI Cards ───────────────────────────────────────────────────────────── */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-  }
-  .kpi-card {
-    background: white;
-    border-radius: var(--radius);
-    padding: 18px 20px;
-    box-shadow: var(--shadow);
-    border-left: 4px solid var(--navy);
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .kpi-card.gold  { border-left-color: var(--gold); }
-  .kpi-card.green { border-left-color: #2e7d5a; }
-  .kpi-card.red   { border-left-color: #c0392b; }
-  .kpi-card.amber { border-left-color: #d4860a; }
-  .kpi-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: rgba(27,58,96,.08);
-    color: var(--navy);
-  }
-  .kpi-card.gold  .kpi-icon { background: rgba(160,120,56,.1);  color: var(--gold); }
-  .kpi-card.green .kpi-icon { background: rgba(46,125,90,.1);   color: #2e7d5a; }
-  .kpi-card.red   .kpi-icon { background: rgba(192,57,43,.1);   color: #c0392b; }
-  .kpi-card.amber .kpi-icon { background: rgba(212,134,10,.1);  color: #d4860a; }
-  .kpi-label {
-    font-size: 11px;
-    color: #8a97b0;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-  .kpi-value {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #1a1a2e;
-    line-height: 1.2;
-  }
-
-  /* ── Two-col grid ────────────────────────────────────────────────────────── */
-  .two-col-grid {
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    gap: 16px;
-  }
-
-  /* ── Responsive ──────────────────────────────────────────────────────────── */
+  /* ── Responsive (quick-actions only — kpi/two-col-grid in origen.css) ───── */
   @media (max-width: 768px) {
     .quick-actions { grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .quick-action  { padding: 14px 8px 12px; }
     .qa-icon-wrap  { width: 38px; height: 38px; }
     .qa-label      { font-size: 11px; }
-    .kpi-grid      { grid-template-columns: repeat(2, 1fr); }
-    .kpi-card      { padding: 12px; gap: 10px; }
-    .kpi-icon      { width: 32px; height: 32px; border-radius: 8px; }
-    .kpi-value     { font-size: 1.05rem; }
-    .two-col-grid  { grid-template-columns: 1fr; }
   }
 </style>

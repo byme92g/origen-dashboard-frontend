@@ -9,7 +9,7 @@
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)" on:click|self={onClose}>
     <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-{size}">
-      <div class="modal-content">
+      <div class="modal-content modal-origen">
         <div class="modal-header">
           <h5 class="modal-title">{title}</h5>
           <button type="button" class="btn-close" on:click={onClose}></button>

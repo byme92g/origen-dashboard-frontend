@@ -12,7 +12,7 @@
     <small class="text-muted">
       {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} de {total}
     </small>
-    <ul class="pagination pagination-sm mb-0">
+    <ul class="pagination pagination-sm pagination-origen mb-0">
       <li class="page-item" class:disabled={page === 1}>
         <button class="page-link" on:click={() => onChange(page - 1)} disabled={page === 1}>‹</button>
       </li>

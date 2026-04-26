@@ -1,0 +1,184 @@
+/* ============================================================
+   origen.css — Clases custom del proyecto. No sobreescribe
+   clases Bootstrap directamente; extiende con nombres propios.
+   ============================================================ */
+
+/* ── Cards ────────────────────────────────────────────────── */
+.card-origen {
+  border-radius: var(--radius) !important;
+  border: none;
+  box-shadow: var(--shadow);
+}
+.card-header-origen {
+  padding: 14px 20px;
+  border-bottom: 1px solid #e8edf4;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0;
+}
+
+/* ── Tables ─────────────────────────────────────────────────
+   .table-origen se aplica en el <thead> (historial, listas)
+   .table-navy  se aplica en el <thead> (widgets tipo Dashboard)
+   --------------------------------------------------------- */
+thead.table-origen th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #8a97b0;
+  background: #f8fafc !important;
+  border-bottom-width: 1px;
+  white-space: nowrap;
+  padding: 10px 14px;
+}
+/* row/cell styles aplican cuando la tabla tiene clase table-origen */
+table.table-origen tbody td,
+table.table-origen tfoot td {
+  vertical-align: middle;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef1f6;
+}
+table.table-origen tbody tr:last-child td {
+  border-bottom: none;
+}
+table.table-origen.table-hover tbody tr:hover td {
+  background: #f8fafc;
+}
+
+thead.table-navy th {
+  background: var(--navy) !important;
+  color: white !important;
+}
+
+/* ── Badges ───────────────────────────────────────────────── */
+.badge-origen {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+}
+.badge-navy  { background: #eaf0f8 !important; color: var(--navy)  !important; }
+.badge-green { background: #e6f4ed !important; color: #2e7d5a      !important; }
+.badge-red   { background: #fdecea !important; color: #c0392b      !important; }
+.badge-gold  { background: #fdf3e3 !important; color: var(--gold)  !important; }
+.badge-amber { background: #fef3e2 !important; color: #d4860a      !important; }
+.badge-gray  { background: #f0f2f5 !important; color: #5a6478      !important; }
+
+/* ── Modals ───────────────────────────────────────────────── */
+.modal-origen .modal-title {
+  font-family: var(--font-heading);
+  color: var(--navy);
+  font-size: 1.15rem;
+}
+.modal-origen.modal-content {
+  border-radius: var(--radius) !important;
+  border: none;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Pagination ───────────────────────────────────────────── */
+.pagination-origen .page-link {
+  color: var(--navy);
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+.pagination-origen .page-item.active .page-link {
+  background-color: var(--navy);
+  border-color: var(--navy);
+}
+
+/* ── Nav tabs ─────────────────────────────────────────────── */
+.nav-tabs-origen {
+  border-bottom-color: #e0e8f0;
+}
+.nav-tabs-origen .nav-link {
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: #6b7a99;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  background: transparent;
+}
+.nav-tabs-origen .nav-link:hover {
+  color: var(--navy);
+  border-bottom-color: rgba(27,58,96,.3);
+}
+.nav-tabs-origen .nav-link.active {
+  color: var(--navy);
+  font-weight: 600;
+  border-bottom-color: var(--navy);
+  background: transparent;
+}
+
+/* ── Progress bar ─────────────────────────────────────────── */
+.progress-bar-navy {
+  background-color: var(--navy) !important;
+}
+
+/* ── KPI Cards ────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.kpi-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.kpi-card.gold  { border-left-color: var(--gold); }
+.kpi-card.green { border-left-color: #2e7d5a; }
+.kpi-card.red   { border-left-color: #c0392b; }
+.kpi-card.amber { border-left-color: #d4860a; }
+.kpi-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; background: rgba(27,58,96,.08); color: var(--navy);
+}
+.kpi-card.gold  .kpi-icon { background: rgba(160,120,56,.1);  color: var(--gold); }
+.kpi-card.green .kpi-icon { background: rgba(46,125,90,.1);   color: #2e7d5a; }
+.kpi-card.red   .kpi-icon { background: rgba(192,57,43,.1);   color: #c0392b; }
+.kpi-card.amber .kpi-icon { background: rgba(212,134,10,.1);  color: #d4860a; }
+.kpi-label {
+  font-size: 11px; color: #8a97b0; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.kpi-value { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; line-height: 1.2; }
+
+/* ── Two-col grid ─────────────────────────────────────────── */
+.two-col-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+
+@media (max-width: 768px) {
+  .kpi-grid     { grid-template-columns: repeat(2, 1fr); }
+  .kpi-card     { padding: 12px; gap: 10px; }
+  .kpi-icon     { width: 32px; height: 32px; border-radius: 8px; }
+  .kpi-value    { font-size: 1.05rem; }
+  .two-col-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Table helpers ────────────────────────────────────────── */
+tr.row-inactive td { opacity: 0.45; }
+
+/* ── Package item chips ───────────────────────────────────── */
+.pk-chip {
+  display: inline-block; font-size: 11px; font-weight: 500;
+  padding: 2px 8px; border-radius: 10px; margin: 1px 2px;
+  background: #eaf0f8; color: var(--navy);
+}
+.pk-chip.pk-chip-green { background: #f0f4e8; color: #3a5a1a; }

@@ -79,15 +79,24 @@ export interface Ingreso {
   id: number;
   fecha: string;
   tipo: string;
-  concepto: string;
+  conceptoPersonalizado?: string;
+  servicioId?: number;
+  productoId?: number;
+  paqueteId?: number;
+  cantidad: number;
   monto: number;
   descuento: number;
   metodoPago: string;
   referencia?: string;
   comision: number;
-  clienteNombre?: string;
-  empleadoNombre?: string;
   observaciones?: string;
+  clienteId?: number;
+  empleadoId?: number;
+  cliente?: { id: number; nombre: string };
+  empleado?: { id: number; nombre: string; cargo: string };
+  servicio?: { id: number; nombre: string; precio: number };
+  producto?: { id: number; nombre: string; precioVenta: number };
+  paquete?: { id: number; nombre: string; precio: number };
 }
 
 export interface Egreso {

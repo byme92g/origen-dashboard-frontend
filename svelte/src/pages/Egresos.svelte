@@ -25,13 +25,13 @@
 
   // ── Category config ────────────────────────────────────────────────────────
   const CATEGORIA_LABELS: Record<string, string> = {
-    suministros:   'Insumos y Productos',
-    servicios:     'Servicios Externos',
-    salarios:      'Salarios y Personal',
-    renta:         'Renta y Local',
-    marketing:     'Marketing y Publicidad',
-    mantenimiento: 'Mantenimiento',
-    impuestos:     'Impuestos y Tasas',
+    suministros:   'Insumos y productos',
+    servicios:     'Servicios y utilidades',
+    salarios:      'Sueldos y comisiones',
+    renta:         'Alquiler',
+    marketing:     'Marketing y publicidad',
+    mantenimiento: 'Equipos y mantenimiento',
+    impuestos:     'Impuestos',
     otros:         'Otros',
   };
 
@@ -132,8 +132,8 @@
   {#if loading}<Spinner />{:else}
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0">
-          <thead class="table-light">
+        <table class="table table-sm table-hover table-origen mb-0">
+          <thead class="table-origen">
             <tr>
               <th class="ps-3">Fecha</th>
               <th>Descripción</th>
@@ -178,7 +178,7 @@
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showWizard=false)}>
     <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
-      <div class="modal-content">
+      <div class="modal-content modal-origen">
         <div class="modal-header border-0 pb-0">
           <h5 class="modal-title">Registrar egreso</h5>
           <button class="btn-close" on:click={() => (showWizard=false)}></button>
@@ -307,7 +307,7 @@
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showReceipt=false)}>
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
+      <div class="modal-content modal-origen">
         <div class="modal-body text-center p-4">
           <div style="width:56px;height:56px;background:#fdecea;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c0392b" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>

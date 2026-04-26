@@ -48,125 +48,176 @@
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
 
   const PERIODOS: { key: Periodo; label: string }[] = [
-    { key: 'hoy', label: 'Hoy' },
-    { key: 'semana', label: 'Esta semana' },
-    { key: 'mes', label: 'Este mes' },
+    { key: 'hoy',     label: 'Hoy' },
+    { key: 'semana',  label: 'Esta semana' },
+    { key: 'mes',     label: 'Este mes' },
     { key: 'mes_ant', label: 'Mes anterior' },
-    { key: 'año', label: 'Este año' },
-    { key: 'custom', label: 'Personalizado' },
+    { key: 'año',     label: 'Este año' },
+    { key: 'custom',  label: 'Personalizado' },
   ];
 </script>
 
 <div class="p-3 p-md-4">
-  <h5 class="fw-bold mb-4">Reportes</h5>
 
-  <!-- Selector período -->
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    {#each PERIODOS as p}
-      <button class="btn btn-sm {periodo===p.key ? 'btn-primary' : 'btn-outline-secondary'}" on:click={() => setPeriodo(p.key)}>{p.label}</button>
-    {/each}
-  </div>
-
-  {#if periodo === 'custom'}
-    <div class="d-flex gap-2 mb-3 flex-wrap align-items-end">
-      <div><label class="form-label small">Desde</label><input type="date" class="form-control form-control-sm" bind:value={desde} /></div>
-      <div><label class="form-label small">Hasta</label><input type="date" class="form-control form-control-sm" bind:value={hasta} /></div>
-      <button class="btn btn-primary btn-sm" on:click={load}>Consultar</button>
-    </div>
-  {/if}
-
-  {#if loading}
-    <Spinner />
-  {:else if data}
-    <!-- KPIs -->
-    <div class="row g-3 mb-4">
-      {#each [
-        { label: 'Total ingresos', value: fmt(data.resumen.totalIngresos), color: 'success', sub: `${data.resumen.cantidadIngresos} transacciones` },
-        { label: 'Total egresos', value: fmt(data.resumen.totalEgresos), color: 'danger', sub: `${data.resumen.cantidadEgresos} transacciones` },
-        { label: 'Utilidad neta', value: fmt(data.resumen.utilidadNeta), color: 'primary', sub: '' },
-        { label: 'Total comisiones', value: fmt(data.resumen.totalComisiones), color: 'warning', sub: '' },
-      ] as k}
-        <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body p-3">
-              <p class="text-muted small mb-1">{k.label}</p>
-              <p class="fw-bold fs-5 mb-0 text-{k.color}">{k.value}</p>
-              {#if k.sub}<p class="text-muted small mb-0">{k.sub}</p>{/if}
-            </div>
-          </div>
-        </div>
+  <!-- Toolbar de período -->
+  <div class="report-toolbar mb-4">
+    <div class="report-toolbar-row mb-2">
+      <span class="report-date-label me-1">Período:</span>
+      {#each PERIODOS as p}
+        <button class="rango-btn" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
       {/each}
     </div>
+    <div class="report-toolbar-row">
+      <span class="report-date-label">Desde:</span>
+      <input type="date" class="report-date-input" bind:value={desde} />
+      <span class="report-date-label ms-2">Hasta:</span>
+      <input type="date" class="report-date-input" bind:value={hasta} />
+      <div class="report-toolbar-divider"></div>
+      <button class="btn btn-primary btn-sm" on:click={load}>Aplicar rango</button>
+      {#if loading}<span class="text-muted ms-2" style="font-size:12px;">Cargando...</span>{/if}
+    </div>
+  </div>
 
-    <div class="row g-3">
+  {#if loading && !data}
+    <Spinner />
+  {:else if data}
+    <!-- KPI Cards -->
+    <div class="kpi-grid mb-4">
+      <div class="kpi-card green">
+        <div class="kpi-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Total ingresos</div>
+          <div class="kpi-value">{fmt(data.resumen.totalIngresos)}</div>
+          <div style="font-size:11px;color:#8a97b0;">{data.resumen.cantidadIngresos} transacciones</div>
+        </div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Total egresos</div>
+          <div class="kpi-value">{fmt(data.resumen.totalEgresos)}</div>
+          <div style="font-size:11px;color:#8a97b0;">{data.resumen.cantidadEgresos} transacciones</div>
+        </div>
+      </div>
+      <div class="kpi-card {data.resumen.utilidadNeta >= 0 ? 'green' : 'red'}">
+        <div class="kpi-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Utilidad neta</div>
+          <div class="kpi-value">{fmt(data.resumen.utilidadNeta)}</div>
+        </div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="kpi-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Comisiones</div>
+          <div class="kpi-value">{fmt(data.resumen.totalComisiones)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tablas -->
+    <div class="two-col-grid">
       <!-- Top servicios -->
-      <div class="col-12 col-lg-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white fw-semibold small border-0 pt-3">Top servicios</div>
-          <div class="table-responsive">
-            <table class="table table-sm mb-0">
-              <thead class="table-light"><tr><th class="ps-3">Servicio</th><th>Cantidad</th><th class="pe-3 text-end">Total</th></tr></thead>
-              <tbody>
-                {#each data.topServicios as s}
-                  <tr>
-                    <td class="ps-3 small fw-semibold">{s.nombre}</td>
-                    <td class="small">{s.cantidad}</td>
-                    <td class="pe-3 text-end small text-success">{fmt(s.total)}</td>
-                  </tr>
-                {:else}
-                  <tr><td colspan="3" class="text-center text-muted py-3 small">Sin datos</td></tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
+      <div class="card border-0 shadow-sm">
+        <div class="card-header-origen"><span class="card-title">Top servicios</span></div>
+        <div class="table-responsive">
+          <table class="table table-sm table-origen mb-0">
+            <thead class="table-origen">
+              <tr><th class="ps-3">#</th><th>Servicio</th><th>Cantidad</th><th class="pe-3 text-end">Total</th></tr>
+            </thead>
+            <tbody>
+              {#each data.topServicios as s, i}
+                <tr>
+                  <td class="ps-3 small text-muted">{i + 1}</td>
+                  <td class="small fw-semibold">{s.nombre}</td>
+                  <td class="small">{s.cantidad}</td>
+                  <td class="pe-3 text-end small" style="color:#2e7d5a;font-weight:600;">{fmt(s.total)}</td>
+                </tr>
+              {:else}
+                <tr><td colspan="4" class="text-center text-muted py-3 small">Sin datos</td></tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <!-- Por empleado -->
-      <div class="col-12 col-lg-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white fw-semibold small border-0 pt-3">Por empleado</div>
-          <div class="table-responsive">
-            <table class="table table-sm mb-0">
-              <thead class="table-light"><tr><th class="ps-3">Empleado</th><th>Servicios</th><th>Ventas</th><th class="pe-3 text-end">Comisión</th></tr></thead>
-              <tbody>
-                {#each data.porEmpleado as e}
-                  <tr>
-                    <td class="ps-3 small fw-semibold">{e.nombre}</td>
-                    <td class="small">{e.servicios}</td>
-                    <td class="small">{fmt(e.ventas)}</td>
-                    <td class="pe-3 text-end small text-warning">{fmt(e.comision)}</td>
-                  </tr>
-                {:else}
-                  <tr><td colspan="4" class="text-center text-muted py-3 small">Sin datos</td></tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
+      <div class="card border-0 shadow-sm">
+        <div class="card-header-origen"><span class="card-title">Por empleado</span></div>
+        <div class="table-responsive">
+          <table class="table table-sm table-origen mb-0">
+            <thead class="table-origen">
+              <tr><th class="ps-3">Empleado</th><th>Servicios</th><th>Ventas</th><th class="pe-3 text-end">Comisión</th></tr>
+            </thead>
+            <tbody>
+              {#each data.porEmpleado as e}
+                <tr>
+                  <td class="ps-3 small fw-semibold">{e.nombre}</td>
+                  <td class="small">{e.servicios}</td>
+                  <td class="small">{fmt(e.ventas)}</td>
+                  <td class="pe-3 text-end small" style="color:var(--gold);font-weight:600;">{fmt(e.comision)}</td>
+                </tr>
+              {:else}
+                <tr><td colspan="4" class="text-center text-muted py-3 small">Sin datos</td></tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <!-- Por método de pago -->
-      <div class="col-12">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white fw-semibold small border-0 pt-3">Por método de pago</div>
-          <div class="card-body">
-            {#each data.porMetodoPago as m}
-              {@const max = Math.max(...data.porMetodoPago.map(x => x.total))}
-              <div class="mb-3">
-                <div class="d-flex justify-content-between small mb-1"><span>{m.metodo}</span><span class="fw-semibold">{fmt(m.total)}</span></div>
-                <div class="progress" style="height:10px">
-                  <div class="progress-bar bg-primary" style="width:{max > 0 ? (m.total / max * 100).toFixed(0) : 0}%"></div>
-                </div>
+      <div class="card border-0 shadow-sm" style="grid-column: 1 / -1;">
+        <div class="card-header-origen"><span class="card-title">Por método de pago</span></div>
+        <div class="card-body">
+          {#each data.porMetodoPago as m}
+            {@const pct = data.resumen.totalIngresos > 0 ? Math.round(m.total / data.resumen.totalIngresos * 100) : 0}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between small mb-1">
+                <span style="text-transform:capitalize;">{m.metodo}</span>
+                <span class="fw-semibold">{fmt(m.total)} <span class="text-muted">({pct}%)</span></span>
               </div>
-            {:else}
-              <p class="text-muted small text-center">Sin datos</p>
-            {/each}
-          </div>
+              <div style="background:#eef1f6;border-radius:4px;height:6px;">
+                <div style="background:var(--navy);height:6px;border-radius:4px;width:{pct}%;transition:width .3s;"></div>
+              </div>
+            </div>
+          {:else}
+            <p class="text-muted small text-center py-2 mb-0">Sin datos</p>
+          {/each}
         </div>
       </div>
     </div>
-  {:else}
+  {:else if !loading}
     <p class="text-muted">No se pudieron cargar los datos.</p>
   {/if}
 </div>
+
+<style>
+.report-toolbar {
+  background: white; border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(27,58,96,.08);
+  padding: 16px 20px;
+}
+.report-toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.report-toolbar-divider { width: 1px; height: 24px; background: #e0e6f0; margin: 0 4px; flex-shrink: 0; }
+.report-date-label { font-size: 11px; font-weight: 600; color: #8a97b0; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.report-date-input {
+  border: 1.5px solid #d0d8e8; border-radius: 6px; padding: 6px 10px;
+  font-size: 13px; color: #1b3a60; outline: none; font-family: inherit;
+}
+.report-date-input:focus { border-color: #1b3a60; }
+.rango-btn {
+  padding: 6px 16px; border: 1.5px solid #d0d8e8; border-radius: 20px;
+  background: white; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: #5a6478; transition: all .15s; white-space: nowrap; font-family: inherit;
+}
+.rango-btn:hover { border-color: #1b3a60; color: #1b3a60; background: #f0f4ff; }
+.rango-btn.active { border-color: #1b3a60; background: #1b3a60; color: white; }
+</style>

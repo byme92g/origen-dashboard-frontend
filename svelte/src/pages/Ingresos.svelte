@@ -109,6 +109,16 @@
     else toast(res.error ?? 'Error', 'error');
   }
 
+  function getConcepto(i: Ingreso): string {
+    switch (i.tipo) {
+      case 'servicio':     return i.servicio?.nombre ?? 'Servicio';
+      case 'producto':     return i.cantidad > 1 ? `${i.cantidad}x ${i.producto?.nombre ?? 'Producto'}` : (i.producto?.nombre ?? 'Producto');
+      case 'paquete':      return i.paquete?.nombre ?? 'Paquete';
+      case 'personalizado': return i.conceptoPersonalizado ?? 'Personalizado';
+      default:             return '—';
+    }
+  }
+
   function fmtDate(s: string) {
     const d = new Date(s);
     return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit' })
@@ -175,8 +185,8 @@
   {#if loading}<Spinner />{:else}
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0">
-          <thead class="table-light">
+        <table class="table table-sm table-hover table-origen mb-0">
+          <thead class="table-origen">
             <tr>
               <th class="ps-3">Fecha</th>
               <th>Concepto</th>
@@ -191,9 +201,9 @@
             {#each items as i}
               <tr>
                 <td class="ps-3 small text-muted" style="white-space:nowrap">{fmtDate(i.fecha)}</td>
-                <td class="small fw-semibold">{i.concepto}</td>
-                <td class="small text-muted d-none d-md-table-cell">{i.clienteNombre ?? '—'}</td>
-                <td class="small text-muted d-none d-lg-table-cell">{i.empleadoNombre ?? '—'}</td>
+                <td class="small fw-semibold">{getConcepto(i)}</td>
+                <td class="small text-muted d-none d-md-table-cell">{i.cliente?.nombre ?? '—'}</td>
+                <td class="small text-muted d-none d-lg-table-cell">{i.empleado?.nombre ?? '—'}</td>
                 <td><span class="metodo-badge metodo-{i.metodoPago}">{i.metodoPago}</span></td>
                 <td class="text-end fw-bold small text-success">S/ {(i.monto - i.descuento).toFixed(2)}</td>
                 {#if $isAdmin}
@@ -223,7 +233,7 @@
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showWizard=false)}>
     <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-lg">
-      <div class="modal-content">
+      <div class="modal-content modal-origen">
         <div class="modal-header border-0 pb-0">
           <h5 class="modal-title">Registrar ingreso</h5>
           <button class="btn-close" on:click={() => (showWizard=false)}></button>
@@ -455,13 +465,13 @@
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div class="modal d-block" style="background:rgba(0,0,0,.5)" on:click|self={() => (showSummary=false)}>
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
+      <div class="modal-content modal-origen">
         <div class="modal-body text-center p-4">
           <div style="width:56px;height:56px;background:#e8f5ee;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2e7d5a" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
           </div>
           <h5 class="fw-bold">¡Ingreso Registrado!</h5>
-          <p class="text-muted small">{lastIngreso.concepto}</p>
+          <p class="text-muted small">{getConcepto(lastIngreso)}</p>
           <p class="fw-bold fs-3 text-success" style="font-family:var(--font-heading)">S/ {(lastIngreso.monto - lastIngreso.descuento).toFixed(2)}</p>
           <p class="text-muted small">{lastIngreso.metodoPago} · {fmtDate(lastIngreso.fecha)}</p>
         </div>

@@ -82,6 +82,20 @@
     modal = true;
   }
 
+  async function toggleActivo(item: any, type: string) {
+    const updated = { ...item, activo: !item.activo };
+    let res: any;
+    if (type === 'servicios') res = await servicioApi.actualizar(item.id, updated);
+    else res = await paqueteApi.actualizar(item.id, updated);
+    if (res?.ok) {
+      toast(item.activo ? 'Desactivado' : 'Activado', 'success');
+      if (type === 'servicios') loadServicios();
+      else loadPaquetes();
+    } else {
+      toast(res?.error ?? 'Error', 'error');
+    }
+  }
+
   async function save() {
     saving = true;
     let res;
@@ -125,7 +139,7 @@
 <div class="p-3 p-md-4">
   <h5 class="fw-bold mb-3">Servicios y productos</h5>
 
-  <ul class="nav nav-tabs mb-3">
+  <ul class="nav nav-tabs nav-tabs-origen mb-3">
     <li class="nav-item"><button class="nav-link" class:active={tab==='servicios'} on:click={() => (tab='servicios')}>Servicios</button></li>
     <li class="nav-item"><button class="nav-link" class:active={tab==='productos'} on:click={() => (tab='productos')}>Productos</button></li>
     <li class="nav-item"><button class="nav-link" class:active={tab==='paquetes'} on:click={() => (tab='paquetes')}>Paquetes</button></li>
@@ -138,25 +152,32 @@
     {#if svcLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
+          <table class="table table-sm table-hover table-origen mb-0">
+            <thead class="table-origen">
               <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th class="d-none d-md-table-cell">Duración</th><th>Comisión</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each servicios as s}
-                <tr>
+                <tr class:row-inactive={!s.activo}>
                   <td class="ps-3 fw-semibold small">{s.nombre}</td>
                   <td class="small">{s.categoria}</td>
                   <td class="small">S/ {s.precio.toFixed(2)}</td>
                   <td class="small d-none d-md-table-cell">{s.duracionMin} min</td>
                   <td class="small">{s.comisionPct}%</td>
-                  <td><span class="badge bg-{s.activo ? 'success' : 'secondary'}">{s.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {s.activo ? 'badge-green' : 'badge-gray'}">{s.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
-                    <button class="btn btn-sm btn-outline-secondary me-1" on:click={() => openEdit(s, 'servicios')}>✏️</button>
-                    <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = s.id; deleteType = 'servicios'; confirm = true; }}>🗑️</button>
+                    <div class="d-flex gap-1 justify-content-end">
+                      <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(s, 'servicios')} title="Editar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="btn btn-sm {s.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(s, 'servicios')} title="{s.activo ? 'Desactivar' : 'Activar'}">{s.activo ? 'Desactivar' : 'Activar'}</button>
+                      <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = s.id; deleteType = 'servicios'; confirm = true; }} title="Eliminar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              {:else}<tr><td colspan="7" class="text-center text-muted py-4">Sin servicios</td></tr>{/each}
+              {:else}<tr><td colspan="7" class="text-center text-muted py-4">Sin servicios registrados</td></tr>{/each}
             </tbody>
           </table>
         </div>
@@ -171,21 +192,27 @@
     {#if prdLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
+          <table class="table table-sm table-hover table-origen mb-0">
+            <thead class="table-origen">
               <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each productos as p}
-                <tr>
+                <tr class:row-inactive={!p.activo}>
                   <td class="ps-3 fw-semibold small">{p.nombre}</td>
                   <td class="small">{p.categoria}</td>
                   <td class="small">S/ {p.precioVenta.toFixed(2)}</td>
-                  <td><span class="badge bg-{p.stock <= 3 ? 'danger' : p.stock <= 10 ? 'warning' : 'success'}">{p.stock}</span></td>
-                  <td><span class="badge bg-{p.activo ? 'success' : 'secondary'}">{p.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {p.stock <= 0 ? 'badge-red' : p.stock <= 5 ? 'badge-gold' : 'badge-green'}">{p.stock} unid.</span></td>
+                  <td><span class="badge badge-origen {p.activo ? 'badge-green' : 'badge-gray'}">{p.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
-                    <button class="btn btn-sm btn-outline-secondary me-1" on:click={() => openEdit(p, 'productos')}>✏️</button>
-                    <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = p.id; deleteType = 'productos'; confirm = true; }}>🗑️</button>
+                    <div class="d-flex gap-1 justify-content-end">
+                      <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(p, 'productos')} title="Editar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = p.id; deleteType = 'productos'; confirm = true; }} title="Eliminar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               {:else}<tr><td colspan="6" class="text-center text-muted py-4">Sin productos</td></tr>{/each}
@@ -203,24 +230,48 @@
     {#if pkgLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
-              <tr><th class="ps-3">Nombre</th><th>Precio</th><th>Descuento</th><th class="d-none d-md-table-cell">Items</th><th>Estado</th><th class="pe-3"></th></tr>
+          <table class="table table-sm table-hover table-origen mb-0">
+            <thead class="table-origen">
+              <tr><th class="ps-3">Nombre</th><th class="d-none d-md-table-cell">Descripción</th><th>Precio</th><th>Descuento</th><th>Incluye</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each paquetes as pkg}
-                <tr>
+                <tr class:row-inactive={!pkg.activo}>
                   <td class="ps-3 fw-semibold small">{pkg.nombre}</td>
+                  <td class="small text-muted d-none d-md-table-cell">{pkg.descripcion ?? '—'}</td>
                   <td class="small">S/ {pkg.precio.toFixed(2)}</td>
-                  <td class="small">{pkg.descuento}%</td>
-                  <td class="small d-none d-md-table-cell">{(pkg.servicios?.length ?? 0) + (pkg.productos?.length ?? 0)} items</td>
-                  <td><span class="badge bg-{pkg.activo ? 'success' : 'secondary'}">{pkg.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td class="small">
+                    {#if pkg.descuento > 0}
+                      <span class="badge badge-origen badge-green">{pkg.descuento}%</span>
+                    {:else}
+                      <span class="text-muted">—</span>
+                    {/if}
+                  </td>
+                  <td class="small">
+                    {#each (pkg.servicios ?? []) as s}
+                      <span class="pk-chip">{s.nombre}</span>
+                    {/each}
+                    {#each (pkg.productos ?? []) as p}
+                      <span class="pk-chip pk-chip-green">{p.nombre}</span>
+                    {/each}
+                    {#if !(pkg.servicios?.length) && !(pkg.productos?.length)}
+                      <span class="text-muted">—</span>
+                    {/if}
+                  </td>
+                  <td><span class="badge badge-origen {pkg.activo ? 'badge-green' : 'badge-gray'}">{pkg.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
-                    <button class="btn btn-sm btn-outline-secondary me-1" on:click={() => openEdit(pkg, 'paquetes')}>✏️</button>
-                    <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = pkg.id; deleteType = 'paquetes'; confirm = true; }}>🗑️</button>
+                    <div class="d-flex gap-1 justify-content-end">
+                      <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(pkg, 'paquetes')} title="Editar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="btn btn-sm {pkg.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(pkg, 'paquetes')} title="{pkg.activo ? 'Desactivar' : 'Activar'}">{pkg.activo ? 'Desactivar' : 'Activar'}</button>
+                      <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = pkg.id; deleteType = 'paquetes'; confirm = true; }} title="Eliminar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              {:else}<tr><td colspan="6" class="text-center text-muted py-4">Sin paquetes</td></tr>{/each}
+              {:else}<tr><td colspan="7" class="text-center text-muted py-4">Sin paquetes registrados</td></tr>{/each}
             </tbody>
           </table>
         </div>
@@ -282,4 +333,4 @@
   </svelte:fragment>
 </Modal>
 
-<ConfirmDialog show={confirm} message="¿Eliminar este elemento?" onConfirm={doDelete} onCancel={() => (confirm = false)} />
+<ConfirmDialog show={confirm} message="¿Eliminar este elemento? Esta acción no se puede deshacer." onConfirm={doDelete} onCancel={() => (confirm = false)} />

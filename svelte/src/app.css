@@ -35,27 +35,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
 }
 
-/* ── Bootstrap overrides — nav tabs ─────────────────────────────────────── */
-.nav-tabs .nav-link {
-  font-size: 13px;
-  font-family: var(--font-body);
-  color: #6b7a99;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 8px 16px;
-  background: transparent;
-}
-.nav-tabs .nav-link.active {
-  color: var(--navy);
-  font-weight: 600;
-  border-bottom-color: var(--navy);
-  background: transparent;
-}
-.nav-tabs {
-  border-bottom-color: #e0e8f0;
-}
-
-/* ── Bootstrap overrides — buttons ──────────────────────────────────────── */
+/* ── Bootstrap brand overrides — botones ────────────────────────────────── */
 .btn-primary {
   background-color: var(--navy) !important;
   border-color: var(--navy) !important;
@@ -77,7 +57,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-success { background-color: #2e7d5a !important; border-color: #2e7d5a !important; }
 .btn-danger  { background-color: #c0392b !important; border-color: #c0392b !important; }
 
-/* ── Bootstrap overrides — form controls ────────────────────────────────── */
+/* ── Bootstrap brand overrides — forms ──────────────────────────────────── */
 .form-control, .form-select {
   font-family: var(--font-body);
   font-size: 13px;
@@ -93,66 +73,4 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
   color: #5a6478;
   margin-bottom: 4px;
-}
-
-/* ── Bootstrap overrides — cards ────────────────────────────────────────── */
-.card {
-  border-radius: var(--radius) !important;
-}
-.card-header {
-  font-family: var(--font-heading);
-  font-size: 1rem;
-  color: var(--navy);
-}
-
-/* ── Bootstrap overrides — tables ───────────────────────────────────────── */
-.table thead th {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: #8a97b0;
-  background: #f8fafc;
-  border-bottom-width: 1px;
-}
-.table tbody td {
-  vertical-align: middle;
-  font-size: 13px;
-}
-.table-hover tbody tr:hover td {
-  background: #f4f8ff;
-}
-
-/* ── Bootstrap overrides — badges ───────────────────────────────────────── */
-.badge {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 11px;
-}
-
-/* ── Bootstrap overrides — modals ───────────────────────────────────────── */
-.modal-title {
-  font-family: var(--font-heading);
-  color: var(--navy);
-  font-size: 1.15rem;
-}
-.modal-content {
-  border-radius: var(--radius) !important;
-  border: none;
-  box-shadow: var(--shadow-md);
-}
-
-/* ── Bootstrap overrides — pagination ───────────────────────────────────── */
-.page-link {
-  color: var(--navy);
-  font-size: 13px;
-}
-.page-item.active .page-link {
-  background-color: var(--navy);
-  border-color: var(--navy);
-}
-
-/* ── Progress bars ───────────────────────────────────────────────────────── */
-.progress-bar.bg-primary {
-  background-color: var(--navy) !important;
 }

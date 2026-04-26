@@ -89,7 +89,7 @@
 <div class="p-3 p-md-4">
   <h5 class="fw-bold mb-3">Personal</h5>
 
-  <ul class="nav nav-tabs mb-3">
+  <ul class="nav nav-tabs nav-tabs-origen mb-3">
     <li class="nav-item">
       <button class="nav-link" class:active={tab === 'empleados'} on:click={() => (tab = 'empleados')}>Empleados</button>
     </li>
@@ -105,8 +105,8 @@
     {#if empLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
+          <table class="table table-sm table-hover table-origen mb-0">
+            <thead class="table-origen">
               <tr>
                 <th class="ps-3">Nombre</th>
                 <th>Cargo</th>
@@ -123,10 +123,16 @@
                   <td class="small">{e.cargo}</td>
                   <td class="small">{e.comisionPct}%</td>
                   <td class="small text-muted d-none d-md-table-cell">{e.usuarioLogin ?? '—'}</td>
-                  <td><span class="badge bg-{e.activo ? 'success' : 'secondary'}">{e.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {e.activo ? 'badge-green' : 'badge-gray'}">{e.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
-                    <button class="btn btn-sm btn-outline-secondary me-1" on:click={() => { empEdit = {...e}; empIsEdit = true; empModal = true; }}>✏️</button>
-                    <button class="btn btn-sm btn-outline-danger" on:click={() => { empDeleteId = e.id; empConfirm = true; }}>🗑️</button>
+                    <div class="d-flex gap-1 justify-content-end">
+                      <button class="btn btn-sm btn-outline-secondary" on:click={() => { empEdit = {...e}; empIsEdit = true; empModal = true; }} title="Editar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" on:click={() => { empDeleteId = e.id; empConfirm = true; }} title="Eliminar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               {:else}
@@ -148,8 +154,8 @@
     {#if usrLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
+          <table class="table table-sm table-hover table-origen mb-0">
+            <thead class="table-origen">
               <tr>
                 <th class="ps-3">Usuario</th>
                 <th>Nombre completo</th>
@@ -163,11 +169,17 @@
                 <tr>
                   <td class="ps-3 fw-semibold small">{u.nombreUsuario}</td>
                   <td class="small">{u.nombreCompleto}</td>
-                  <td><span class="badge bg-{u.rol === 'admin' ? 'primary' : 'secondary'}">{u.rol}</span></td>
-                  <td><span class="badge bg-{u.activo ? 'success' : 'secondary'}">{u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {u.rol === 'admin' ? 'badge-navy' : 'badge-gold'}">{u.rol}</span></td>
+                  <td><span class="badge badge-origen {u.activo ? 'badge-green' : 'badge-gray'}">{u.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
-                    <button class="btn btn-sm btn-outline-secondary me-1" on:click={() => { usrEdit = {...u}; usrIsEdit = true; usrModal = true; }}>✏️</button>
-                    <button class="btn btn-sm btn-outline-danger" on:click={() => { usrDeleteId = u.id; usrConfirm = true; }}>🗑️</button>
+                    <div class="d-flex gap-1 justify-content-end">
+                      <button class="btn btn-sm btn-outline-secondary" on:click={() => { usrEdit = {...u}; usrIsEdit = true; usrModal = true; }} title="Editar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" on:click={() => { usrDeleteId = u.id; usrConfirm = true; }} title="Eliminar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               {:else}
