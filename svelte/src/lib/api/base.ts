@@ -1,6 +1,7 @@
 import type { ApiResponse } from '../types';
+import { config } from '../config';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const API_BASE = config.apiUrl;
 
 function getToken(): string | null {
   try {

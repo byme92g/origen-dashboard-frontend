@@ -14,10 +14,9 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddMudServices();
 
 // ── URL base de la API ────────────────────────────────────────────────────
-var apiBaseConfig = builder.Configuration["ApiBaseUrl"];
-var apiBase = string.IsNullOrWhiteSpace(apiBaseConfig)
-    ? builder.HostEnvironment.BaseAddress
-    : apiBaseConfig;
+var apiBase = builder.Configuration["ApiBaseUrl"];
+if (string.IsNullOrWhiteSpace(apiBase))
+    throw new InvalidOperationException("ApiBaseUrl no configurado en appsettings.json.");
 
 // ── Auth service ──────────────────────────────────────────────────────────
 // Usa un HttpClient plain (sin handler) solo para el endpoint de login.

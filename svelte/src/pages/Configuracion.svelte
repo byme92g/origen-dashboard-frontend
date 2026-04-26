@@ -2,6 +2,7 @@
   import { usuarioApi } from '../lib/api/usuarios';
   import { authStore } from '../lib/stores/auth';
   import { toast } from '../lib/stores/toast';
+  import { config } from '../lib/config';
 
   type NegocioConfig = {
     nombre: string;
@@ -152,7 +153,7 @@
         <div class="settings-list">
           <div><span>Autenticación</span><strong>JWT con expiración</strong></div>
           <div><span>Rol requerido</span><strong>Admin</strong></div>
-          <div><span>API frontend</span><strong>{import.meta.env.VITE_API_URL ?? 'http://localhost:5000'}</strong></div>
+          <div><span>API frontend</span><strong>{config.apiUrl}</strong></div>
           <div><span>Persistencia negocio</span><strong>Local del navegador</strong></div>
         </div>
       </div>
