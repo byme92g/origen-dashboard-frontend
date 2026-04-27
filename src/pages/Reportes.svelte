@@ -47,6 +47,26 @@
 
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
 
+  function saveBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportar(tipo: 'csv' | 'pdf') {
+    const dates = getDates(periodo);
+    if (!dates.desde || !dates.hasta) return;
+    const res = tipo === 'csv'
+      ? await reporteApi.exportarCsv(dates.desde, dates.hasta)
+      : await reporteApi.exportarPdf(dates.desde, dates.hasta);
+    if (res.ok && res.blob) {
+      saveBlob(res.blob, res.filename ?? `reporte-origen-${dates.desde}-${dates.hasta}.${tipo}`);
+    }
+  }
+
   const PERIODOS: { key: Periodo; label: string }[] = [
     { key: 'hoy',     label: 'Hoy' },
     { key: 'semana',  label: 'Esta semana' },
@@ -74,6 +94,8 @@
       <input type="date" class="report-date-input" bind:value={hasta} />
       <div class="report-toolbar-divider"></div>
       <button class="btn btn-primary btn-sm" on:click={load}>Aplicar rango</button>
+      <button class="btn btn-outline-primary btn-sm" on:click={() => exportar('csv')}>Exportar CSV</button>
+      <button class="btn btn-outline-primary btn-sm" on:click={() => exportar('pdf')}>Exportar PDF</button>
       {#if loading}<span class="text-muted ms-2" style="font-size:12px;">Cargando...</span>{/if}
     </div>
   </div>
