@@ -27,25 +27,22 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: svelte/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./svelte
         run: npm ci
 
       - name: Check
-        working-directory: ./svelte
         run: npm run check
 
       - name: Build
-        working-directory: ./svelte
         run: npm run build
 
       # - name: Test
       #   run: dotnet test <ruta-proyecto-tests> --verbosity normal
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME:latest ./svelte
+        run: docker build -t $IMAGE_NAME:latest .
 
       - name: Scan image for vulnerabilities
         if: ${{ inputs.run_vuln_scan == true }}

@@ -50,7 +50,6 @@
     return currentPath.startsWith(href);
   }
 
-  // ⚠️ DIRTY TRICK FOR NOW: evitar crash si nombreCompleto viene null/undefined
 $: initials =
   $authStore.user?.nombreCompleto
     ?.trim()
