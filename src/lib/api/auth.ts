@@ -6,6 +6,11 @@ interface LoginResponse {
   token?: string;
   expiraEn?: number;
   usuario?: UsuarioInfo;
+  data?: {
+    token?: string;
+    expiraEn?: number;
+    usuario?: UsuarioInfo;
+  };
   error?: string;
 }
 
@@ -15,13 +20,14 @@ export async function login(usuario: string, password: string): Promise<{ ok: bo
     { nombreUsuario: usuario, password },
     false
   );
-  // Backend returns { ok, token, expiraEn, usuario } at root level (not nested under data)
-  const body = (res.data ?? res) as LoginResponse;
-  if (!body.ok || !body.token) return { ok: false, error: body.error ?? 'Error al iniciar sesión' };
+  const body = res as LoginResponse;
+  const payload = body.data ?? body;
+  const token = payload.token;
+  if (!body.ok || !token) return { ok: false, error: body.error ?? 'Error al iniciar sesión' };
 
-  const expiry = Math.floor(Date.now() / 1000) + (body.expiraEn ?? 1800);
-  localStorage.setItem('origen_token', body.token);
-  localStorage.setItem('origen_user', JSON.stringify(body.usuario));
+  const expiry = Math.floor(Date.now() / 1000) + (payload.expiraEn ?? 1800);
+  localStorage.setItem('origen_token', token);
+  localStorage.setItem('origen_user', JSON.stringify(payload.usuario));
   localStorage.setItem('origen_expiry', String(expiry));
   return { ok: true };
 }

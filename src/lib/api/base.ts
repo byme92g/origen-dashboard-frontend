@@ -3,7 +3,7 @@ import { config } from '../config';
 
 const API_BASE = `${config.apiUrl}${config.apiPrefix}`;
 
-function getToken(): string | null {
+export function getToken(): string | null {
   try {
     const expiry = localStorage.getItem('origen_expiry');
     if (expiry && Date.now() / 1000 > Number(expiry)) {
@@ -113,6 +113,21 @@ export async function apiDelete<T>(path: string): Promise<ApiResponse<T>> {
     const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE', headers: headers() });
     if (res.status === 401) { await handle401(); return { ok: false, error: 'No autorizado' }; }
     return parseResponse<T>(res);
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+export async function apiDownload(path: string): Promise<{ ok: boolean; blob?: Blob; filename?: string; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { headers: headers() });
+    if (res.status === 401) { await handle401(); return { ok: false, error: 'No autorizado' }; }
+    if (!res.ok) return { ok: false, error: humanError(res.status) };
+
+    const disposition = res.headers.get('content-disposition') ?? '';
+    const match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(disposition);
+    const filename = match ? decodeURIComponent(match[1].replace(/"/g, '')) : undefined;
+    return { ok: true, blob: await res.blob(), filename };
   } catch (e) {
     return { ok: false, error: String(e) };
   }
