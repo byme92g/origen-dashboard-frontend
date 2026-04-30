@@ -38,20 +38,49 @@
   let categoriaLabels: Record<string | number, string> = Object.fromEntries(fallbackCategorias.map((c) => [c.key, c.label]));
 
   const categoriaIcons: Record<string, string> = {
-    suministros: '<path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.43 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>',
-    servicios: '<path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>',
-    salarios: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',
-    renta: '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>',
-    marketing: '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.54.8-1.07 1.2-1.61-.99-.74-2.24-1.68-3.2-2.4-.4.55-.8 1.08-1.2 1.62zM20.4 5.6c-.4-.54-.8-1.07-1.2-1.61-.96.74-2.24 1.65-3.2 2.4.4.54.8 1.07 1.2 1.61.96-.74 2.24-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/>',
-    mantenimiento: '<path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>',
-    impuestos: '<path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H7v-2h4v2zm6-4H7v-2h10v2zm0-4H7V7h10v2z"/>',
-    otros: '<path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>',
+    suministros: 'bi-basket',
+    servicios: 'bi-lightning-charge',
+    salarios: 'bi-person-vcard',
+    renta: 'bi-house-door',
+    marketing: 'bi-megaphone',
+    equipos: 'bi-tools',
+    impuestos: 'bi-receipt',
+    otros: 'bi-three-dots',
   };
+
+  function normalizeCategory(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  function categoriaIconKey(categoria: CategoriaEgreso): string {
+    const label = normalizeCategory(categoria.label);
+    if (label.includes('insumo') || label.includes('producto')) return 'suministros';
+    if (label.includes('servicio') || label.includes('utilidad')) return 'servicios';
+    if (label.includes('sueldo') || label.includes('comision') || label.includes('salario')) return 'salarios';
+    if (label.includes('alquiler') || label.includes('renta')) return 'renta';
+    if (label.includes('marketing') || label.includes('publicidad')) return 'marketing';
+    if (label.includes('equipo') || label.includes('mantenimiento')) return 'equipos';
+    if (label.includes('impuesto')) return 'impuestos';
+    return 'otros';
+  }
+
+  function categoriaDisplayLabel(categoria: CategoriaEgreso): string {
+    const label = normalizeCategory(categoria.label);
+    if (label.includes('servicio') && label.includes('utilidad')) return 'Utilidades';
+    if (label.includes('sueldo') && label.includes('comision')) return 'Sueldos';
+    if (label.includes('marketing') && label.includes('publicidad')) return 'Marketing';
+    if (label.includes('equipo') && label.includes('mantenimiento')) return 'Equipos';
+    if (label.includes('insumo') && label.includes('producto')) return 'Insumos';
+    return categoria.label;
+  }
 
   $: categoriaItems = categorias.map((c) => ({
     ...c,
-    shortLabel: c.label.split(' y ')[0],
-    svg: categoriaIcons[c.key] ?? categoriaIcons.otros,
+    shortLabel: categoriaDisplayLabel(c),
+    icon: categoriaIcons[categoriaIconKey(c)] ?? categoriaIcons.otros,
   }));
 
   // ── Data loaders ──────────────────────────────────────────────────────────
@@ -79,7 +108,7 @@
   });
 
   function openWizard() {
-    form = { fecha: today, categoriaId: 0, monto: 0 };
+    form = { fecha: today, categoriaId: 0 };
     step = 1; showWizard = true;
   }
 
@@ -110,7 +139,7 @@
     const d = new Date(s);
     return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit' });
   }
-  function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
+  function fmt(v: number) { return `S/. ${v.toFixed(2)}`; }
   function catLabel(key: string | number | { id: number; nombre: string } | undefined | null): string {
     if (!key && key !== 0) return '—';
     if (typeof key === 'object') return key.nombre;
@@ -172,14 +201,14 @@
                 {#if $isAdmin}
                   <td class="pe-3 text-end">
                     <button class="btn-icon-sm" title="Eliminar" on:click={() => { deleteId = e.id; deleteConfirm = true; }}>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                      <i class="bi bi-trash"></i>
                     </button>
                   </td>
                 {/if}
               </tr>
             {:else}
               <tr><td colspan="6" class="text-center text-muted py-5">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="36" height="36" style="opacity:.2;display:block;margin:0 auto 8px"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                <i class="bi bi-cash-stack empty-icon"></i>
                 Sin egresos en el período seleccionado
               </td></tr>
             {/each}
@@ -222,7 +251,7 @@
               {#each categoriaItems as c}
                 <button type="button" class="cat-btn {form.categoriaId === c.key ? 'active' : ''}" on:click={() => (form.categoriaId = Number(c.key))}>
                   <span class="cat-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">{@html c.svg}</svg>
+                    <i class="bi {c.icon}"></i>
                   </span>
                   <span class="cat-name">{c.shortLabel}</span>
                 </button>
@@ -236,8 +265,9 @@
             <div class="mb-3">
               <label class="form-label" style="font-size:11px;font-weight:700;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Monto (S/)</label>
               <div style="position:relative">
-                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.3rem;font-weight:700;color:#c0392b;pointer-events:none">-S/</span>
+                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.3rem;font-weight:700;color:#c0392b;pointer-events:none">S/.</span>
                 <input type="number" step="0.01" min="0" bind:value={form.monto}
+                  placeholder="0.00"
                   style="width:100%;padding:14px 14px 14px 62px;font-size:1.8rem;font-weight:800;color:#c0392b;border:2.5px solid {(form.monto ?? 0) > 0 ? '#c0392b' : '#d0d8e8'};border-radius:8px;outline:none;background:white;transition:border-color .15s" />
               </div>
             </div>
@@ -288,7 +318,7 @@
               {/if}
               <div class="resumen-row resumen-total">
                 <span>Total a registrar</span>
-                <span>-{fmt(form.monto ?? 0)}</span>
+                <span>- {fmt(form.monto ?? 0)}</span>
               </div>
             </div>
             <div class="mb-3">
@@ -330,11 +360,10 @@
         </div>
         <div class="modal-body text-center p-4">
           <div style="width:56px;height:56px;background:#fdecea;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c0392b" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            <i class="bi bi-check-lg"></i>
           </div>
-          <h5 class="fw-bold">Egreso Registrado</h5>
-          <p class="text-muted small">{lastEgreso.descripcion} · {catLabel(lastEgreso.categoria)}</p>
-          <p class="fw-bold fs-3 text-danger">-{fmt(lastEgreso.monto)}</p>
+          <p class="text-muted small">{lastEgreso.descripcion} · {catLabel(lastEgreso.categoria ?? lastEgreso.categoriaId)}</p>
+          <p class="fw-bold fs-3 text-danger">- {fmt(lastEgreso.monto)}</p>
           <p class="text-muted small">{fmtDate(lastEgreso.fecha)}</p>
         </div>
         <div class="modal-footer border-0 justify-content-center">
@@ -364,8 +393,16 @@
   .cat-btn.active { border-color: #c0392b; background: #fdecea; color: #c0392b; }
   .cat-btn.active .cat-name { color: #c0392b; font-weight: 700; }
   .cat-icon { display: flex; align-items: center; justify-content: center; }
+  .cat-icon .bi { font-size: 22px; line-height: 1; }
   .cat-name { font-size: 11px; font-weight: 500; color: #5a6478; line-height: 1.2; text-align: center; }
   .cat-btn.active .cat-name { color: #c0392b; }
+  .empty-icon {
+    display: block;
+    margin: 0 auto 8px;
+    font-size: 36px;
+    line-height: 1;
+    opacity: .2;
+  }
 
   /* ── Summary card ────────────────────────────────────────────────────────── */
   .resumen-card {

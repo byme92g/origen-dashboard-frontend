@@ -29,7 +29,7 @@
   let showSummary = false;
   let lastIngreso: Ingreso | null = null;
   let deleteConfirm = false; let deleteId: number | null = null;
-  let montoRecibido = 0;
+  let montoRecibido: number | string = '';
 
   // ── Cart (Step 1) ─────────────────────────────────────────────────────────
   interface CartItem {
@@ -54,7 +54,7 @@
     empleadoId: undefined as number | undefined,
     comision: 0,
     metodoPago: 'efectivo',
-    descuento: 0,
+    descuento: '' as number | string,
     referencia: '',
     observaciones: '',
   };
@@ -69,9 +69,11 @@
 
   // ── Computed ──────────────────────────────────────────────────────────────
   $: cartTotal = cart.reduce((s, item) => s + item.precioUnitario * item.cantidad, 0);
-  $: montoFinal = cartTotal - (wForm.descuento ?? 0);
-  $: vuelto = montoRecibido - montoFinal;
-  $: step3Valid = !!wForm.metodoPago && (wForm.metodoPago !== 'efectivo' || montoRecibido >= montoFinal);
+  $: descuentoValue = Number(wForm.descuento) || 0;
+  $: montoRecibidoValue = Number(montoRecibido) || 0;
+  $: montoFinal = cartTotal - descuentoValue;
+  $: vuelto = montoRecibidoValue - montoFinal;
+  $: step3Valid = !!wForm.metodoPago && (wForm.metodoPago !== 'efectivo' || montoRecibidoValue >= montoFinal);
 
   $: filteredItems = (() => {
     const q = itemSearch.toLowerCase();
@@ -132,8 +134,8 @@
     showAddClienteForm = false;
     newClienteNombre = '';
     newClienteTelefono = '';
-    montoRecibido = 0;
-    wForm = { clienteId: undefined, empleadoId: undefined, comision: 0, metodoPago: 'efectivo', descuento: 0, referencia: '', observaciones: '' };
+    montoRecibido = '';
+    wForm = { clienteId: undefined, empleadoId: undefined, comision: 0, metodoPago: 'efectivo', descuento: '', referencia: '', observaciones: '' };
 
     if (!$isAdmin && $authStore.user) {
       const emp = empleados.find(e => e.usuarioLogin === $authStore.user!.nombreUsuario);
@@ -218,7 +220,7 @@
     const base = {
       clienteId: wForm.clienteId ? Number(wForm.clienteId) : undefined,
       empleadoId: wForm.empleadoId ? Number(wForm.empleadoId) : undefined,
-      descuento: wForm.descuento ?? 0,
+      descuento: descuentoValue,
       metodoPago: wForm.metodoPago,
       referencia: wForm.referencia || undefined,
       comision: wForm.comision ?? 0,
@@ -314,20 +316,12 @@
   }
 
   const metodoPagoItems = [
-    { key: 'efectivo',      label: 'Efectivo',
-      content: '<path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>',
-      isSvg: true },
-    { key: 'transferencia', label: 'Transferencia',
-      content: '<path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/>',
-      isSvg: true },
-    { key: 'yape',  label: 'Yape', content: 'Y', isSvg: false, bg: '#6B21A8' },
-    { key: 'plin',  label: 'Plin', content: 'P', isSvg: false, bg: '#00B4D8' },
-    { key: 'pos',   label: 'POS',
-      content: '<path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>',
-      isSvg: true },
-    { key: 'otro',  label: 'Otro',
-      content: '<path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>',
-      isSvg: true },
+    { key: 'efectivo',      label: 'Efectivo',      icon: 'bi-cash-stack' },
+    { key: 'transferencia', label: 'Transferencia', icon: 'bi-bank' },
+    { key: 'yape',          label: 'Yape',          content: 'Y', bg: '#6B21A8' },
+    { key: 'plin',          label: 'Plin',          content: 'P', bg: '#00B4D8' },
+    { key: 'pos',           label: 'POS',           icon: 'bi-credit-card' },
+    { key: 'otro',          label: 'Otro',          icon: 'bi-three-dots' },
   ];
 </script>
 
@@ -385,14 +379,14 @@
                 {#if $isAdmin}
                   <td class="pe-3 text-end">
                     <button class="btn-icon-sm" title="Eliminar" on:click={() => { deleteId = i.id; deleteConfirm = true; }}>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                      <i class="bi bi-trash"></i>
                     </button>
                   </td>
                 {/if}
               </tr>
             {:else}
               <tr><td colspan="7" class="text-center text-muted py-5">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="36" height="36" style="opacity:.2;display:block;margin:0 auto 8px"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                <i class="bi bi-cash-stack empty-icon"></i>
                 Sin ingresos en el período seleccionado
               </td></tr>
             {/each}
@@ -435,7 +429,7 @@
             <!-- Search -->
             <div class="item-search-wrap mb-3" style="position:relative">
               <div class="search-input-row">
-                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <i class="bi bi-search search-icon"></i>
                 <input
                   type="text"
                   class="form-control search-input"
@@ -523,7 +517,7 @@
               </div>
             {:else}
               <div class="cart-empty">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28" style="opacity:.25;display:block;margin:0 auto 6px"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm0 10c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                <i class="bi bi-bag-plus cart-empty-icon"></i>
                 Busca un ítem arriba para agregarlo
               </div>
             {/if}
@@ -557,7 +551,7 @@
                   {#if wForm.clienteId}
                     {@const cl = clientes.find(c => c.id === wForm.clienteId)}
                     <div class="selected-cliente">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                      <i class="bi bi-person"></i>
                       {cl?.nombre ?? ''}
                       {#if cl?.telefono}<span class="text-muted"> · {cl.telefono}</span>{/if}
                     </div>
@@ -573,7 +567,7 @@
                       {/each}
                       <!-- svelte-ignore a11y-no-static-element-interactions -->
                       <div class="combobox-item combobox-add-item" on:mousedown={() => { clienteDropdownOpen = false; showAddClienteForm = true; newClienteNombre = clienteSearch; }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        <i class="bi bi-plus-lg"></i>
                         {clienteSearch ? `Crear "${clienteSearch}"` : 'Nuevo cliente'}
                       </div>
                     </div>
@@ -607,7 +601,7 @@
               {#if !$isAdmin && wForm.empleadoId}
                 {@const emp = empleados.find(e => e.id === wForm.empleadoId)}
                 <div class="emp-locked">
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <i class="bi bi-person-badge"></i>
                   {emp?.nombre ?? '—'} <span style="color:#8a97b0;font-weight:400">· sesión activa</span>
                 </div>
               {:else}
@@ -639,10 +633,10 @@
                 <label class="form-label" style="font-size:11px;font-weight:600;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Método de pago</label>
                 <div class="pago-grid mb-3">
                   {#each metodoPagoItems as m}
-                    <button type="button" class="pago-btn {wForm.metodoPago === m.key ? 'selected' : ''}" on:click={() => { wForm.metodoPago = m.key; if (m.key !== 'efectivo') montoRecibido = 0; }}>
+                    <button type="button" class="pago-btn {wForm.metodoPago === m.key ? 'selected' : ''}" on:click={() => { wForm.metodoPago = m.key; if (m.key !== 'efectivo') montoRecibido = ''; }}>
                       <div class="pago-icon">
-                        {#if m.isSvg}
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="26" height="26">{@html m.content}</svg>
+                        {#if m.icon}
+                          <i class="bi {m.icon}"></i>
                         {:else}
                           <span class="brand-badge" style="background:{m.bg}">{m.content}</span>
                         {/if}
@@ -659,11 +653,11 @@
                     <div style="position:relative">
                       <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.3rem;font-weight:700;color:#8a97b0;pointer-events:none">S/</span>
                       <input type="number" step="0.5" min="0" bind:value={montoRecibido}
-                        on:focus={(e) => (e.target as HTMLInputElement).select()}
-                        style="width:100%;padding:14px 14px 14px 46px;font-size:1.8rem;font-weight:800;color:var(--navy);border:2.5px solid {montoRecibido > 0 && montoRecibido >= montoFinal ? '#2e7d5a' : '#d0d8e8'};border-radius:8px;outline:none;background:white;transition:border-color .15s" />
+                        placeholder="0.00"
+                        style="width:100%;padding:14px 14px 14px 46px;font-size:1.8rem;font-weight:800;color:var(--navy);border:2.5px solid {montoRecibidoValue > 0 && montoRecibidoValue >= montoFinal ? '#2e7d5a' : '#d0d8e8'};border-radius:8px;outline:none;background:white;transition:border-color .15s" />
                     </div>
-                    {#if montoRecibido > 0 && montoRecibido < montoFinal}
-                      <div class="text-danger small mt-1 fw-semibold">Monto insuficiente. Faltan S/ {(montoFinal - montoRecibido).toFixed(2)}</div>
+                    {#if montoRecibidoValue > 0 && montoRecibidoValue < montoFinal}
+                      <div class="text-danger small mt-1 fw-semibold">Monto insuficiente. Faltan S/ {(montoFinal - montoRecibidoValue).toFixed(2)}</div>
                     {/if}
                   </div>
                 {/if}
@@ -681,7 +675,7 @@
                   <div class="col-6">
                     <label class="form-label small fw-semibold">Descuento S/</label>
                     <input class="form-control" type="number" step="0.01" min="0" bind:value={wForm.descuento}
-                      on:focus={(e) => (e.target as HTMLInputElement).select()} />
+                      placeholder="0.00" />
                   </div>
                 </div>
                 <div class="mb-3">
@@ -707,12 +701,12 @@
                   {/each}
 
                   {#if wForm.metodoPago}<div class="resumen-row"><span>Método</span><span class="fw-semibold text-capitalize">{wForm.metodoPago}</span></div>{/if}
-                  {#if (wForm.descuento ?? 0) > 0}<div class="resumen-row"><span>Descuento</span><span class="fw-semibold" style="color:#856404">-S/ {(wForm.descuento ?? 0).toFixed(2)}</span></div>{/if}
+                  {#if descuentoValue > 0}<div class="resumen-row"><span>Descuento</span><span class="fw-semibold" style="color:#856404">-S/ {descuentoValue.toFixed(2)}</span></div>{/if}
                   <div class="resumen-row resumen-total"><span>Total a cobrar</span><span>S/ {montoFinal.toFixed(2)}</span></div>
 
-                  {#if wForm.metodoPago === 'efectivo' && montoRecibido > 0}
+                  {#if wForm.metodoPago === 'efectivo' && montoRecibidoValue > 0}
                     <div style="margin-top:10px;padding:10px;border-radius:8px;background:{vuelto >= 0 ? '#e8f5ee' : '#fdecea'}">
-                      <div class="d-flex justify-content-between small"><span style="color:#5a6478">Recibido</span><span class="fw-semibold">S/ {montoRecibido.toFixed(2)}</span></div>
+                      <div class="d-flex justify-content-between small"><span style="color:#5a6478">Recibido</span><span class="fw-semibold">S/ {montoRecibidoValue.toFixed(2)}</span></div>
                       <div class="d-flex justify-content-between mt-1">
                         <span class="fw-bold" style="color:{vuelto >= 0 ? '#2e7d5a' : '#c0392b'}">Vuelto</span>
                         <span class="fw-bold fs-5" style="color:{vuelto >= 0 ? '#2e7d5a' : '#c0392b'}">{vuelto >= 0 ? '' : '-'}S/ {Math.abs(vuelto).toFixed(2)}</span>
@@ -755,7 +749,7 @@
         </div>
         <div class="modal-body text-center p-4">
           <div style="width:56px;height:56px;background:#e8f5ee;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2e7d5a" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            <i class="bi bi-check-lg"></i>
           </div>
           <h5 class="fw-bold">¡Ingreso Registrado!</h5>
           <p class="text-muted small">{getConcepto(lastIngreso)}</p>
@@ -782,6 +776,13 @@
   }
   .search-input-row:focus-within { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(27,58,96,.10); }
   .search-icon { color: #8a97b0; flex-shrink: 0; }
+  .empty-icon {
+    display: block;
+    margin: 0 auto 8px;
+    font-size: 36px;
+    line-height: 1;
+    opacity: .2;
+  }
   .search-input {
     border: none !important; padding: 0 !important; outline: none !important;
     box-shadow: none !important; font-size: 13px; background: transparent;
@@ -866,6 +867,13 @@
     font-size: 13px; background: #f8fafc; border: 1px dashed #d0d8e8; border-radius: 8px;
     margin-bottom: 16px;
   }
+  .cart-empty-icon {
+    display: block;
+    margin: 0 auto 6px;
+    font-size: 28px;
+    line-height: 1;
+    opacity: .25;
+  }
 
   /* ── Client combobox ─────────────────────────────────────────────────────── */
   .combobox-input-row { display: flex; align-items: center; gap: 6px; }
@@ -923,6 +931,7 @@
   .pago-btn:hover { border-color: var(--gold); background: #fdf9f3; }
   .pago-btn.selected { border-color: var(--gold); background: #fdf3e3; color: var(--gold); }
   .pago-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; }
+  .pago-icon .bi { font-size: 26px; line-height: 1; }
   .brand-badge {
     display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; border-radius: 8px; color: white; font-weight: 800; font-size: 16px;

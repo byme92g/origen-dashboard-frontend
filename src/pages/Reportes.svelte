@@ -107,7 +107,7 @@
     <div class="kpi-grid mb-4">
       <div class="kpi-card green">
         <div class="kpi-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          <i class="bi bi-arrow-down-circle"></i>
         </div>
         <div>
           <div class="kpi-label">Total ingresos</div>
@@ -117,7 +117,7 @@
       </div>
       <div class="kpi-card red">
         <div class="kpi-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+          <i class="bi bi-arrow-up-circle"></i>
         </div>
         <div>
           <div class="kpi-label">Total egresos</div>
@@ -127,7 +127,7 @@
       </div>
       <div class="kpi-card {data.resumen.utilidadNeta >= 0 ? 'green' : 'red'}">
         <div class="kpi-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          <i class="bi bi-graph-up-arrow"></i>
         </div>
         <div>
           <div class="kpi-label">Utilidad neta</div>
@@ -136,7 +136,7 @@
       </div>
       <div class="kpi-card gold">
         <div class="kpi-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          <i class="bi bi-person-vcard"></i>
         </div>
         <div>
           <div class="kpi-label">Comisiones</div>

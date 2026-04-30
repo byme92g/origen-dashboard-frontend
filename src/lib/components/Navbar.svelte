@@ -1,7 +1,35 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { cajaApi } from '../api/caja';
   import { authStore } from '../stores/auth';
 
   export let onToggleSidebar: () => void = () => {};
+
+  let cajaAbierta: boolean | null = null;
+
+  async function loadCajaEstado() {
+    if (!$authStore.authenticated) {
+      cajaAbierta = null;
+      return;
+    }
+
+    const res = await cajaApi.estado();
+    if (res.ok && res.data) {
+      cajaAbierta = res.data.abierta;
+    }
+  }
+
+  onMount(() => {
+    loadCajaEstado();
+    const interval = window.setInterval(loadCajaEstado, 30000);
+    window.addEventListener('focus', loadCajaEstado);
+    window.addEventListener('hashchange', loadCajaEstado);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', loadCajaEstado);
+      window.removeEventListener('hashchange', loadCajaEstado);
+    };
+  });
 
   function logout() {
     authStore.logout();
@@ -11,12 +39,21 @@
 
 <header class="topbar">
   <button class="hamburger d-md-none" on:click={onToggleSidebar} aria-label="Menú">
-    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
+    <i class="bi bi-list"></i>
   </button>
 
   <span class="topbar-title d-none d-md-block">Panel de Control</span>
+
+  {#if cajaAbierta === false}
+    <a class="caja-alert" href="#/caja" title="Abrir caja">
+      <span class="caja-alert-dot"></span>
+      Caja no abierta aún
+    </a>
+  {:else if cajaAbierta === true}
+    <a class="caja-open d-none d-sm-inline-flex" href="#/caja" title="Ver caja abierta">
+      Caja abierta
+    </a>
+  {/if}
 
   <div class="ms-auto d-flex align-items-center gap-3">
     {#if $authStore.user}
@@ -47,6 +84,35 @@
     font-weight: 600;
     color: var(--navy);
   }
+  .caja-alert,
+  .caja-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 11px;
+    white-space: nowrap;
+  }
+  .caja-alert {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffe08a;
+  }
+  .caja-alert-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #d4860a;
+    box-shadow: 0 0 0 3px rgba(212,134,10,.16);
+  }
+  .caja-open {
+    background: #e8f5ee;
+    color: #2e7d5a;
+    border: 1px solid #b9e3cb;
+  }
   .hamburger {
     display: flex;
     align-items: center;
@@ -64,14 +130,14 @@
   .hamburger:hover { background: #eef2fa; }
   .user-name {
     font-family: var(--font-heading);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--navy);
     line-height: 1.2;
   }
   .user-role {
     font-family: var(--font-heading);
-    font-size: 11px;
+    font-size: 12px;
     color: #8a97b0;
     text-transform: capitalize;
   }

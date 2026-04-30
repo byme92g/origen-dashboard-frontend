@@ -1,12 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ingresoApi } from '../lib/api/ingresos';
-  import { egresoApi } from '../lib/api/egresos';
   import { empleadoApi } from '../lib/api/empleados';
   import { cajaApi, getResponsablesStr, type CajaApertura, type CajaMovimiento } from '../lib/api/caja';
   import { isAdmin } from '../lib/stores/auth';
   import Spinner from '../lib/components/Spinner.svelte';
-  import type { Empleado, Ingreso, Egreso } from '../lib/types';
+  import type { Empleado } from '../lib/types';
 
   type CajaState = 'loading' | 'closed' | 'open' | 'closing';
   type SubView = 'control' | 'historial' | 'detalle';
@@ -18,10 +16,9 @@
   let apertura: CajaApertura | null = null;
   let empleados: Empleado[] = [];
   let selectedEmpleados: number[] = [];
-  let montoInicial = 0;
+  let montoInicial: number | string = '';
 
-  let ingresos: Ingreso[] = [];
-  let egresos: Egreso[] = [];
+  let movimientos: CajaMovimiento[] = [];
   let confirmText = '';
 
   let historial: CajaApertura[] = [];
@@ -45,7 +42,7 @@
       const estadoData = estadoRes.data;
       apertura = estadoData.apertura;
       if (apertura) {
-        await cargarMovimientos();
+        await cargarMovimientos(apertura.id);
         state = 'open';
       } else {
         state = 'closed';
@@ -57,11 +54,9 @@
     if ($isAdmin) await cargarHistorial();
   });
 
-  async function cargarMovimientos() {
-    const hoy = new Date().toISOString().split('T')[0];
-    const [ir, er] = await Promise.all([ingresoApi.listar(hoy, hoy), egresoApi.listar(hoy, hoy)]);
-    if (ir.ok && ir.data) ingresos = ir.data as unknown as Ingreso[];
-    if (er.ok && er.data) egresos = er.data as unknown as Egreso[];
+  async function cargarMovimientos(cajaId: number) {
+    const res = await cajaApi.movimientos(cajaId);
+    movimientos = res.ok && res.data ? res.data : [];
   }
 
   async function cargarHistorial() {
@@ -78,10 +73,10 @@
     }
     submitting = true;
     errorMsg = '';
-    const res = await cajaApi.abrir(montoInicial, selectedEmpleados);
+    const res = await cajaApi.abrir(Number(montoInicial) || 0, selectedEmpleados);
     if (res.ok && res.data) {
       apertura = res.data as unknown as CajaApertura;
-      await cargarMovimientos();
+      movimientos = [];
       state = 'open';
     } else {
       errorMsg = (res as any).error ?? 'No se pudo abrir la caja';
@@ -89,14 +84,10 @@
     submitting = false;
   }
 
-  $: totalIngresos = ingresos.reduce((s, i) => s + i.monto, 0);
-  $: totalEgresos = egresos.reduce((s, e) => s + e.monto, 0);
-  $: saldoActual = (apertura?.montoInicial ?? montoInicial) + totalIngresos - totalEgresos;
-
-  $: movimientos = [
-    ...ingresos.map(i => ({ fecha: i.fecha, concepto: i.concepto ?? i.conceptoPersonalizado ?? '—', sub: i.clienteNombre ?? null, monto: i.monto, esIng: true })),
-    ...egresos.map(e => ({ fecha: e.fecha, concepto: e.descripcion, sub: typeof e.categoria === 'object' ? e.categoria.nombre : String(e.categoria ?? ''), monto: e.monto, esIng: false })),
-  ].sort((a, b) => a.fecha.localeCompare(b.fecha));
+  $: totalIngresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
+  $: totalEgresos = movimientos.filter(m => m.tipo === 'egreso').reduce((s, m) => s + m.monto, 0);
+  $: montoInicialValue = Number(montoInicial) || 0;
+  $: saldoActual = (apertura?.montoInicial ?? montoInicialValue) + totalIngresos - totalEgresos;
 
   async function cerrar() {
     if (confirmText !== 'cerrar' || !apertura) return;
@@ -109,10 +100,9 @@
       state = 'closed';
       subView = 'control';
       confirmText = '';
-      montoInicial = 0;
+      montoInicial = '';
       selectedEmpleados = [];
-      ingresos = [];
-      egresos = [];
+      movimientos = [];
     } else {
       errorMsg = (res as any).error ?? 'No se pudo cerrar la caja';
     }
@@ -182,8 +172,7 @@
           <table class="table table-sm table-hover table-origen mb-0">
             <thead class="table-origen">
               <tr>
-                <th class="ps-3">ID</th>
-                <th>Apertura</th>
+                <th class="ps-3">Apertura</th>
                 <th>Cierre</th>
                 <th>Inicial</th>
                 <th>Ingresos</th>
@@ -196,8 +185,7 @@
             <tbody>
               {#each historial as h}
                 <tr>
-                  <td class="ps-3 small text-muted">#{h.id}</td>
-                  <td class="small">{fmtDatetime(h.abiertaEn)}</td>
+                  <td class="ps-3 small">{fmtDatetime(h.abiertaEn)}</td>
                   <td class="small">{fmtDatetime(h.cerradaEn)}</td>
                   <td class="small">{fmt(h.montoInicial)}</td>
                   <td class="small" style="color:#2e7d5a;font-weight:600;">+{fmt(h.totalIngresos ?? 0)}</td>
@@ -219,7 +207,7 @@
   {:else if subView === 'detalle' && detalleCaja}
     <div class="d-flex align-items-center gap-2 mb-3">
       <button class="btn btn-sm btn-outline-secondary" on:click={() => (subView = 'historial')}>← Historial</button>
-      <h6 class="fw-semibold mb-0">Caja #{detalleCaja.id} · {fmtDatetime(detalleCaja.abiertaEn)}</h6>
+      <h6 class="fw-semibold mb-0">Caja del {fmtDatetime(detalleCaja.abiertaEn)}</h6>
     </div>
     <div class="caja-kpis mb-3">
       <div class="caja-kpi">
@@ -358,14 +346,14 @@
         </div>
         {#if movimientos.length > 0}
           {#each movimientos as m}
-            <div class="mov-row {m.esIng ? 'is-ing' : 'is-egr'}">
+            <div class="mov-row {m.tipo === 'ingreso' ? 'is-ing' : 'is-egr'}">
               <div class="mov-time">{fmtTime(m.fecha)}</div>
               <div>
                 <div class="mov-main">{m.concepto}</div>
-                {#if m.sub}<div class="mov-sub">{m.sub}</div>{/if}
+                {#if m.detalle}<div class="mov-sub">{m.detalle}</div>{/if}
               </div>
-              <div class="mov-amt {m.esIng ? 'ing' : 'egr'}">
-                {m.esIng ? '+' : '−'}{fmt(m.monto)}
+              <div class="mov-amt {m.tipo === 'ingreso' ? 'ing' : 'egr'}">
+                {m.tipo === 'ingreso' ? '+' : '−'}{fmt(m.monto)}
               </div>
             </div>
           {/each}
@@ -412,10 +400,10 @@
 
             <div class="cierre-movs">
               {#each movimientos as m}
-                <div class="cierre-mov {m.esIng ? 'is-ing' : 'is-egr'}">
+                <div class="cierre-mov {m.tipo === 'ingreso' ? 'is-ing' : 'is-egr'}">
                   <span class="cierre-mov-time">{fmtTime(m.fecha)}</span>
                   <span class="cierre-mov-desc">{m.concepto}</span>
-                  <span class="cierre-mov-amt {m.esIng ? 'ing' : 'egr'}">{m.esIng ? '+' : '−'}{fmt(m.monto)}</span>
+                <span class="cierre-mov-amt {m.tipo === 'ingreso' ? 'ing' : 'egr'}">{m.tipo === 'ingreso' ? '+' : '−'}{fmt(m.monto)}</span>
                 </div>
               {:else}
                 <div style="padding:16px;text-align:center;font-size:12px;color:#8a97b0;">Sin movimientos registrados</div>
@@ -428,11 +416,11 @@
                 <span class="cierre-total-value">{fmt(apertura?.montoInicial ?? 0)}</span>
               </div>
               <div class="cierre-total-row">
-                <span class="cierre-total-label">Ingresos ({ingresos.length} transacciones)</span>
+                <span class="cierre-total-label">Ingresos ({movimientos.filter(m => m.tipo === 'ingreso').length} transacciones)</span>
                 <span class="cierre-total-value" style="color:#2e7d5a;">+{fmt(totalIngresos)}</span>
               </div>
               <div class="cierre-total-row">
-                <span class="cierre-total-label">Egresos ({egresos.length} transacciones)</span>
+                <span class="cierre-total-label">Egresos ({movimientos.filter(m => m.tipo === 'egreso').length} transacciones)</span>
                 <span class="cierre-total-value" style="color:#c0392b;">−{fmt(totalEgresos)}</span>
               </div>
               <div class="cierre-total-row final">

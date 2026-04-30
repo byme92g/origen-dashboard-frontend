@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "echarts": "^6.0.0",
     "svelte-spa-router": "^5.0.1"
   }
 }

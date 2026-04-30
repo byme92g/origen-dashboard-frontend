@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { reporteApi } from '../lib/api/reportes';
+  import { isAdmin } from '../lib/stores/auth';
   import Spinner from '../lib/components/Spinner.svelte';
   import type { DashboardData } from '../lib/types';
 
@@ -17,36 +18,38 @@
 
   const quickActions = [
     { href: '#/ingresos', label: 'Registrar Ingreso', color: 'green',
-      svg: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>' },
+      icon: 'bi-arrow-down-circle' },
     { href: '#/egresos',  label: 'Registrar Egreso',  color: 'red',
-      svg: '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>' },
+      icon: 'bi-arrow-up-circle' },
     { href: '#/caja',     label: 'Control de Caja',   color: '',
-      svg: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>' },
-    { href: '#/clientes', label: 'Clientes',           color: 'gold',
-      svg: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
-    { href: '#/servicios', label: 'Servicios',         color: '',
-      svg: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>' },
-    { href: '#/stock',     label: 'Stock',             color: 'amber',
-      svg: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>' },
-    { href: '#/empleados', label: 'Personal',          color: '',
-      svg: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
-    { href: '#/estadisticas', label: 'Estadísticas',   color: 'amber',
-      svg: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
-    { href: '#/reportes',  label: 'Reportes',          color: 'gold',
-      svg: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>' },
+      icon: 'bi-cash-coin' },
+    { href: '#/clientes', label: 'Clientes',           color: 'gold', adminOnly: true,
+      icon: 'bi-people' },
+    { href: '#/servicios', label: 'Servicios y Productos', color: '',
+      icon: 'bi-bag-check' },
+    { href: '#/stock',     label: 'Stock',             color: 'amber', adminOnly: true,
+      icon: 'bi-box-seam' },
+    { href: '#/empleados', label: 'Personal',          color: '', adminOnly: true,
+      icon: 'bi-person-badge' },
+    { href: '#/estadisticas', label: 'Estadísticas',   color: 'amber', adminOnly: true,
+      icon: 'bi-bar-chart-line' },
+    { href: '#/reportes',  label: 'Reportes',          color: 'gold', adminOnly: true,
+      icon: 'bi-file-earmark-bar-graph' },
   ];
+
+  $: visibleQuickActions = quickActions.filter((qa) => !qa.adminOnly || $isAdmin);
 
   const kpis = (d: DashboardData) => [
     { label: 'Ingresos hoy',    value: fmt(d.kpis.ingresosHoy),     color: 'gold',
-      svg: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>' },
+      icon: 'bi-arrow-down-circle' },
     { label: 'Egresos mes',     value: fmt(d.kpis.egresosMes),      color: 'red',
-      svg: '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>' },
+      icon: 'bi-arrow-up-circle' },
     { label: 'Utilidad mes',    value: fmt(d.kpis.utilidadMes),     color: 'green',
-      svg: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' },
+      icon: 'bi-graph-up-arrow' },
     { label: 'Clientes totales', value: String(d.kpis.totalClientes), color: '',
-      svg: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
+      icon: 'bi-people' },
     { label: 'Servicios hoy',   value: String(d.kpis.serviciosHoy), color: 'amber',
-      svg: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>' },
+      icon: 'bi-bag-check' },
   ];
 </script>
 
@@ -54,13 +57,10 @@
 
   <!-- Quick Actions -->
   <div class="quick-actions mb-4">
-    {#each quickActions as qa}
+    {#each visibleQuickActions as qa}
       <a href={qa.href} class="quick-action">
         <div class="qa-icon-wrap {qa.color}">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            {@html qa.svg}
-          </svg>
+          <i class="bi {qa.icon}"></i>
         </div>
         <div class="qa-label">{qa.label}</div>
       </a>
@@ -76,10 +76,7 @@
       {#each kpis(data) as kpi}
         <div class="kpi-card {kpi.color}">
           <div class="kpi-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-              {@html kpi.svg}
-            </svg>
+            <i class="bi {kpi.icon}"></i>
           </div>
           <div>
             <div class="kpi-label">{kpi.label}</div>
@@ -92,7 +89,7 @@
     <!-- Bottom two-col -->
     <div class="two-col-grid">
       <!-- Últimas transacciones -->
-      <div class="card border-0 shadow-sm">
+      <div class="card border-0 shadow-sm dashboard-transactions">
         <div class="card-header-origen">
           <span class="card-title">Últimas transacciones hoy</span>
         </div>
@@ -202,6 +199,20 @@
     font-weight: 500;
     text-align: center;
     line-height: 1.3;
+  }
+
+  .dashboard-transactions :global(.table th),
+  .dashboard-transactions :global(.table td) {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .dashboard-transactions :global(.table th:first-child),
+  .dashboard-transactions :global(.table td:first-child) {
+    padding-left: 20px;
+  }
+  .dashboard-transactions :global(.table th:last-child),
+  .dashboard-transactions :global(.table td:last-child) {
+    padding-right: 20px;
   }
 
   /* ── Responsive (quick-actions only — kpi/two-col-grid in origen.css) ───── */

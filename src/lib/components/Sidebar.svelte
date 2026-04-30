@@ -3,44 +3,44 @@
 
   export let currentPath: string = '/';
 
-  type NavItem = { href: string; label: string; svg: string; adminOnly?: boolean };
+  type NavItem = { href: string; label: string; icon: string; adminOnly?: boolean };
   type Section = { label: string; items: NavItem[] };
 
   const sections: Section[] = [
     {
       label: 'Principal',
       items: [
-        { href: '/', label: 'Dashboard', svg: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>' },
+        { href: '/', label: 'Dashboard', icon: 'bi-grid-1x2' },
       ],
     },
     {
       label: 'Finanzas & Operaciones',
       items: [
-        { href: '/ingresos', label: 'Ingresos',        svg: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>' },
-        { href: '/egresos',  label: 'Egresos',         svg: '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>' },
-        { href: '/caja',     label: 'Control de Caja', svg: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>' },
+        { href: '/ingresos', label: 'Ingresos',        icon: 'bi-arrow-down-circle' },
+        { href: '/egresos',  label: 'Egresos',         icon: 'bi-arrow-up-circle' },
+        { href: '/caja',     label: 'Control de Caja', icon: 'bi-cash-coin' },
       ],
     },
     {
       label: 'Gestión',
       items: [
-        { href: '/clientes',  label: 'Clientes',             svg: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
-        { href: '/servicios', label: 'Servicios & Productos', svg: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>' },
-        { href: '/stock',     label: 'Stock',                svg: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>' },
-        { href: '/empleados', label: 'Personal',              svg: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', adminOnly: true },
+        { href: '/clientes',  label: 'Clientes',             icon: 'bi-people', adminOnly: true },
+        { href: '/servicios', label: 'Servicios & Productos', icon: 'bi-bag-check' },
+        { href: '/stock',     label: 'Stock',                icon: 'bi-box-seam', adminOnly: true },
+        { href: '/empleados', label: 'Personal',              icon: 'bi-person-badge', adminOnly: true },
       ],
     },
     {
       label: 'Análisis',
       items: [
-        { href: '/estadisticas', label: 'Estadísticas', svg: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' },
-        { href: '/reportes',     label: 'Reportes',     svg: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
+        { href: '/estadisticas', label: 'Estadísticas', icon: 'bi-bar-chart-line', adminOnly: true },
+        { href: '/reportes',     label: 'Reportes',     icon: 'bi-file-earmark-bar-graph', adminOnly: true },
       ],
     },
     {
       label: 'Sistema',
       items: [
-        { href: '/configuracion', label: 'Configuración', svg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>', adminOnly: true },
+        { href: '/configuracion', label: 'Configuración', icon: 'bi-gear', adminOnly: true },
       ],
     },
   ];
@@ -87,9 +87,7 @@ $: initials =
         {#each visibleItems as item}
           <a href="#{item.href}" class="nav-link-item" class:active={isActive(item.href)}>
             <span class="nav-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                {@html item.svg}
-              </svg>
+              <i class="bi {item.icon}"></i>
             </span>
             <span>{item.label}</span>
           </a>
@@ -147,7 +145,7 @@ $: initials =
   }
   .sidebar-user-name {
     font-family: var(--font-heading);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: rgba(255,255,255,.9);
     white-space: nowrap;
@@ -156,7 +154,7 @@ $: initials =
   }
   .sidebar-user-role {
     font-family: var(--font-heading);
-    font-size: 11px;
+    font-size: 12px;
     color: rgba(255,255,255,.45);
     text-transform: capitalize;
   }
@@ -177,7 +175,7 @@ $: initials =
     color: rgba(255,255,255,.65);
     text-decoration: none;
     font-family: var(--font-heading);
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 400;
     border-left: 3px solid transparent;
     transition: background .15s, color .15s;

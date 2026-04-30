@@ -67,7 +67,7 @@
   onMount(() => { loadServicios(); loadProductos(); loadPaquetes(); });
 
   function openNew(type: string) {
-    editing = type === 'servicios' ? { comisionPct: 0, activo: true } : type === 'productos' ? { stock: 0, activo: true } : { descuento: 0, comisionPct: 0, activo: true };
+    editing = { activo: true };
     isEdit = false; deleteType = type;
     if (type === 'paquetes') { selectedServIds = []; selectedPrdIds = []; loadAllForPaquete(); }
     modal = true;
@@ -111,12 +111,27 @@
     saving = true;
     let res;
     if (deleteType === 'servicios') {
-      res = isEdit ? await servicioApi.actualizar(editing.id, editing) : await servicioApi.crear(editing);
+      const payload = {
+        ...editing,
+        precio: Number(editing.precio ?? 0),
+        duracionMin: Number(editing.duracionMin ?? 0),
+        comisionPct: Number(editing.comisionPct ?? 0),
+      };
+      res = isEdit ? await servicioApi.actualizar(editing.id, payload) : await servicioApi.crear(payload);
     } else if (deleteType === 'productos') {
-      const payload = isEdit ? editing : { ...editing, stockInicial: Number(editing.stock ?? 0) };
+      const payload = isEdit
+        ? { ...editing, precioVenta: Number(editing.precioVenta ?? 0), stock: Number(editing.stock ?? 0) }
+        : { ...editing, precioVenta: Number(editing.precioVenta ?? 0), stockInicial: Number(editing.stock ?? 0) };
       res = isEdit ? await productoApi.actualizar(editing.id, payload) : await productoApi.crear(payload);
     } else {
-      const payload = { ...editing, servicioIds: selectedServIds, productoIds: selectedPrdIds };
+      const payload = {
+        ...editing,
+        precio: Number(editing.precio ?? 0),
+        descuento: Number(editing.descuento ?? 0),
+        comisionPct: Number(editing.comisionPct ?? 0),
+        servicioIds: selectedServIds,
+        productoIds: selectedPrdIds,
+      };
       res = isEdit ? await paqueteApi.actualizar(editing.id, payload) : await paqueteApi.crear(payload);
     }
     saving = false;
@@ -182,13 +197,13 @@
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(s, 'servicios')} title="Editar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <i class="bi bi-pencil-square"></i>
                       </button>
                       <button class="btn btn-sm {s.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(s, 'servicios')} disabled={togglingId === s.id} title="{s.activo ? 'Desactivar' : 'Activar'}">
                         {#if togglingId === s.id}<span class="spinner-border spinner-border-sm me-1"></span>{/if}{s.activo ? 'Desactivar' : 'Activar'}
                       </button>
                       <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = s.id; deleteType = 'servicios'; confirm = true; }} title="Eliminar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        <i class="bi bi-trash"></i>
                       </button>
                     </div>
                   </td>
@@ -223,10 +238,10 @@
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(p, 'productos')} title="Editar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <i class="bi bi-pencil-square"></i>
                       </button>
                       <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = p.id; deleteType = 'productos'; confirm = true; }} title="Eliminar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        <i class="bi bi-trash"></i>
                       </button>
                     </div>
                   </td>
@@ -278,13 +293,13 @@
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(pkg, 'paquetes')} title="Editar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <i class="bi bi-pencil-square"></i>
                       </button>
                       <button class="btn btn-sm {pkg.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(pkg, 'paquetes')} disabled={togglingId === pkg.id} title="{pkg.activo ? 'Desactivar' : 'Activar'}">
                         {#if togglingId === pkg.id}<span class="spinner-border spinner-border-sm me-1"></span>{/if}{pkg.activo ? 'Desactivar' : 'Activar'}
                       </button>
                       <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = pkg.id; deleteType = 'paquetes'; confirm = true; }} title="Eliminar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        <i class="bi bi-trash"></i>
                       </button>
                     </div>
                   </td>
@@ -305,24 +320,24 @@
       <div class="row g-3">
         <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={editing.nombre} /></div>
         <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Categoría *</label><input class="form-control" bind:value={editing.categoria} /></div>
-        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Precio S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precio} /></div>
-        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Duración (min)</label><input class="form-control" type="number" bind:value={editing.duracionMin} /></div>
-        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Comisión %</label><input class="form-control" type="number" bind:value={editing.comisionPct} /></div>
+        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Precio S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precio} placeholder="0.00" /></div>
+        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Duración (min)</label><input class="form-control" type="number" bind:value={editing.duracionMin} placeholder="0" /></div>
+        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Comisión %</label><input class="form-control" type="number" bind:value={editing.comisionPct} placeholder="0" /></div>
         {#if isEdit}<div class="col-6"><label class="form-label small fw-semibold">Estado</label><select class="form-select" bind:value={editing.activo}><option value={true}>Activo</option><option value={false}>Inactivo</option></select></div>{/if}
       </div>
     {:else if deleteType === 'productos'}
       <div class="row g-3">
         <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={editing.nombre} /></div>
         <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Categoría *</label><input class="form-control" bind:value={editing.categoria} /></div>
-        <div class="col-6"><label class="form-label small fw-semibold">Precio venta S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precioVenta} /></div>
-        <div class="col-6"><label class="form-label small fw-semibold">Stock inicial</label><input class="form-control" type="number" bind:value={editing.stock} /></div>
+        <div class="col-6"><label class="form-label small fw-semibold">Precio venta S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precioVenta} placeholder="0.00" /></div>
+        <div class="col-6"><label class="form-label small fw-semibold">Stock inicial</label><input class="form-control" type="number" bind:value={editing.stock} placeholder="0" /></div>
         {#if isEdit}<div class="col-6"><label class="form-label small fw-semibold">Estado</label><select class="form-select" bind:value={editing.activo}><option value={true}>Activo</option><option value={false}>Inactivo</option></select></div>{/if}
       </div>
     {:else}
       <div class="row g-3">
         <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={editing.nombre} /></div>
-        <div class="col-6 col-md-3"><label class="form-label small fw-semibold">Precio S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precio} /></div>
-        <div class="col-6 col-md-3"><label class="form-label small fw-semibold">Descuento %</label><input class="form-control" type="number" bind:value={editing.descuento} /></div>
+        <div class="col-6 col-md-3"><label class="form-label small fw-semibold">Precio S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precio} placeholder="0.00" /></div>
+        <div class="col-6 col-md-3"><label class="form-label small fw-semibold">Descuento %</label><input class="form-control" type="number" bind:value={editing.descuento} placeholder="0" /></div>
         <div class="col-12"><label class="form-label small fw-semibold">Descripción</label><textarea class="form-control" rows="2" bind:value={editing.descripcion}></textarea></div>
         <div class="col-12">
           <label class="form-label small fw-semibold">Servicios incluidos</label>

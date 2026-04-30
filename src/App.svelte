@@ -42,19 +42,33 @@
     return true;
   }
 
+  function requireAdmin() {
+    if (!$authStore.authenticated) {
+      push('/login');
+      return false;
+    }
+
+    if ($authStore.user?.rol !== 'admin') {
+      push('/');
+      return false;
+    }
+
+    return true;
+  }
+
   const routes = {
     '/login': Login,
     '/': wrap({ component: Dashboard, conditions: [requireAuth] }),
-    '/clientes': wrap({ component: Clientes, conditions: [requireAuth] }),
-    '/empleados': wrap({ component: Empleados, conditions: [requireAuth] }),
+    '/clientes': wrap({ component: Clientes, conditions: [requireAdmin] }),
+    '/empleados': wrap({ component: Empleados, conditions: [requireAdmin] }),
     '/servicios': wrap({ component: Servicios, conditions: [requireAuth] }),
     '/ingresos': wrap({ component: Ingresos, conditions: [requireAuth] }),
     '/egresos': wrap({ component: Egresos, conditions: [requireAuth] }),
     '/caja': wrap({ component: Caja, conditions: [requireAuth] }),
-    '/reportes': wrap({ component: Reportes, conditions: [requireAuth] }),
-    '/stock': wrap({ component: Stock, conditions: [requireAuth] }),
-    '/estadisticas': wrap({ component: Estadisticas, conditions: [requireAuth] }),
-    '/configuracion': wrap({ component: Configuracion, conditions: [requireAuth] }),
+    '/reportes': wrap({ component: Reportes, conditions: [requireAdmin] }),
+    '/stock': wrap({ component: Stock, conditions: [requireAdmin] }),
+    '/estadisticas': wrap({ component: Estadisticas, conditions: [requireAdmin] }),
+    '/configuracion': wrap({ component: Configuracion, conditions: [requireAdmin] }),
   };
 
   $: isLoginPage = $currentPath === '/login';

@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { reporteApi } from '../lib/api/reportes';
+  import EChart from '../lib/components/EChart.svelte';
   import Spinner from '../lib/components/Spinner.svelte';
   import type { ReporteResumen } from '../lib/types';
+  import type { EChartsOption } from 'echarts';
 
   type Periodo = 'semana' | 'mes' | 'trimestre' | 'anio' | 'custom';
 
@@ -52,27 +54,16 @@
     if (abs >= 1000) return `${prefix}S/ ${(abs / 1000).toFixed(1)}k`;
     return `${prefix}S/ ${abs.toFixed(0)}`;
   }
-  function pct(value: number, max: number) { return max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0; }
 
   $: margen = data && data.resumen.totalIngresos > 0
     ? Math.round((data.resumen.utilidadNeta / data.resumen.totalIngresos) * 100) : 0;
-  $: maxServicio = data ? Math.max(1, ...data.topServicios.map(s => s.total)) : 1;
-  $: maxEmpleado = data ? Math.max(1, ...data.porEmpleado.map(e => e.ventas)) : 1;
 
-  // ── Financial bar chart ──────────────────────────────────────────────────────
-  const FB_W = 52;
-  const FB_GAP = 22;
-  const FB_MAX_H = 108;
-  const FB_BASE_Y = 138;
-  // 4 bars + 3 gaps + left/right padding
-  const FB_SVG_W = 4 * FB_W + 3 * FB_GAP + 44;
-  const FB_SVG_H = 185;
   const FB_COLORS = {
-    ingresos:   { bar: '#2e7d5a', bg: '#e8f5ee', text: '#2e7d5a' },
-    egresos:    { bar: '#c0392b', bg: '#fdecea', text: '#c0392b' },
-    utilidad:   { bar: '#1b3a60', bg: '#eef2fa', text: '#1b3a60' },
-    utilidadNeg:{ bar: '#c0392b', bg: '#fdecea', text: '#c0392b' },
-    comisiones: { bar: '#d4a017', bg: '#fef9e7', text: '#d4a017' },
+    ingresos: '#2e7d5a',
+    egresos: '#c0392b',
+    utilidad: '#1b3a60',
+    utilidadNeg: '#c0392b',
+    comisiones: '#d4a017',
   };
 
   $: finBars = data ? [
@@ -82,42 +73,94 @@
     { key: 'comisiones',label: 'Comisiones',   value: data.resumen.totalComisiones,  sub: '' },
   ] : [];
 
-  $: maxFin = finBars.length ? Math.max(1, ...finBars.map(b => Math.abs(b.value))) : 1;
-
-  function finBarH(value: number): number {
-    return Math.max(6, (Math.abs(value) / maxFin) * FB_MAX_H);
-  }
-  function finBarY(value: number): number {
-    return value >= 0 ? FB_BASE_Y - finBarH(value) : FB_BASE_Y;
-  }
-  function finBarX(i: number): number {
-    return 22 + i * (FB_W + FB_GAP);
-  }
-
-  // Grid tick values (4 evenly spaced, including 0 as baseline)
-  $: gridTicks = maxFin > 0 ? [0.25, 0.5, 0.75, 1.0].map(f => maxFin * f) : [];
-
-  // ── Donut chart ──────────────────────────────────────────────────────────────
-  const DONUT_R = 54;
-  const DONUT_C = 70;
   const COLORS = ['#1b3a60', '#2e7d5a', '#d4a017', '#c0392b', '#7b5ea7', '#2196f3', '#ff7043'];
 
-  function donutSegments(items: { metodo: string; total: number }[]) {
-    const total = items.reduce((s, i) => s + i.total, 0);
-    if (total === 0) return [];
-    const circumference = 2 * Math.PI * DONUT_R;
-    let offset = 0;
-    return items.map((item, idx) => {
-      const fraction = item.total / total;
-      const dash = fraction * circumference;
-      const seg = { fraction, dash, offset, color: COLORS[idx % COLORS.length], label: item.metodo, pct: Math.round(fraction * 100), amount: item.total };
-      offset += dash;
-      return seg;
-    });
-  }
-
-  $: segments = data ? donutSegments(data.porMetodoPago) : [];
   $: donutTotal = data ? data.porMetodoPago.reduce((s, m) => s + m.total, 0) : 0;
+
+  const tooltipMoney = (params: any) => {
+    const p = Array.isArray(params) ? params[0] : params;
+    return `${p.name}<br/><strong>${fmt(Number(p.value))}</strong>`;
+  };
+
+  $: financialOption = {
+    color: finBars.map(b => FB_COLORS[b.key as keyof typeof FB_COLORS] ?? FB_COLORS.ingresos),
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: tooltipMoney },
+    grid: { left: 52, right: 16, top: 22, bottom: 44, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: finBars.map(b => b.label),
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: '#d8e0ec' } },
+      axisLabel: { color: '#5a6478', fontSize: 11 },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#8a97b0', fontSize: 10, formatter: (v: number) => fmtK(v) },
+      splitLine: { lineStyle: { color: '#eef1f6' } },
+    },
+    series: [{
+      type: 'bar',
+      data: finBars.map(b => ({
+        value: b.value,
+        itemStyle: { color: FB_COLORS[b.key as keyof typeof FB_COLORS] ?? FB_COLORS.ingresos, borderRadius: [6, 6, 0, 0] },
+      })),
+      barMaxWidth: 44,
+      label: { show: true, position: 'top', color: '#1b3a60', fontSize: 10, fontWeight: 700, formatter: (p: any) => fmtK(Number(p.value)) },
+    }],
+  } satisfies EChartsOption;
+
+  $: paymentOption = {
+    color: COLORS,
+    tooltip: { trigger: 'item', formatter: (p: any) => `${p.name}<br/><strong>${fmt(Number(p.value))}</strong> (${p.percent}%)` },
+    legend: { type: 'scroll', orient: 'vertical', right: 0, top: 'middle', itemWidth: 10, itemHeight: 10, textStyle: { color: '#5a6478', fontSize: 11 } },
+    series: [{
+      type: 'pie',
+      radius: ['50%', '72%'],
+      center: ['36%', '50%'],
+      avoidLabelOverlap: true,
+      label: { show: false },
+      emphasis: { label: { show: true, formatter: '{d}%', fontSize: 14, fontWeight: 700 } },
+      data: data ? data.porMetodoPago.map(m => ({ name: m.metodo, value: m.total })) : [],
+    }],
+  } satisfies EChartsOption;
+
+  $: topServicesOption = {
+    color: ['#2e7d5a'],
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: tooltipMoney },
+    grid: { left: 128, right: 28, top: 8, bottom: 16, containLabel: true },
+    xAxis: { type: 'value', axisLabel: { color: '#8a97b0', formatter: (v: number) => fmtK(v) }, splitLine: { lineStyle: { color: '#eef1f6' } } },
+    yAxis: {
+      type: 'category',
+      data: data ? data.topServicios.map(s => s.nombre).reverse() : [],
+      axisTick: { show: false },
+      axisLabel: { color: '#1b3a60', fontSize: 11, width: 110, overflow: 'truncate' },
+    },
+    series: [{
+      type: 'bar',
+      barMaxWidth: 16,
+      data: data ? data.topServicios.map(s => ({ value: s.total, itemStyle: { borderRadius: [0, 6, 6, 0] } })).reverse() : [],
+      label: { show: true, position: 'right', color: '#1b3a60', fontSize: 10, formatter: (p: any) => fmtK(Number(p.value)) },
+    }],
+  } satisfies EChartsOption;
+
+  $: employeeOption = {
+    color: ['#d4a017'],
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: tooltipMoney },
+    grid: { left: 128, right: 28, top: 8, bottom: 16, containLabel: true },
+    xAxis: { type: 'value', axisLabel: { color: '#8a97b0', formatter: (v: number) => fmtK(v) }, splitLine: { lineStyle: { color: '#eef1f6' } } },
+    yAxis: {
+      type: 'category',
+      data: data ? data.porEmpleado.map(e => e.nombre).reverse() : [],
+      axisTick: { show: false },
+      axisLabel: { color: '#1b3a60', fontSize: 11, width: 110, overflow: 'truncate' },
+    },
+    series: [{
+      type: 'bar',
+      barMaxWidth: 16,
+      data: data ? data.porEmpleado.map(e => ({ value: e.ventas, itemStyle: { borderRadius: [0, 6, 6, 0] } })).reverse() : [],
+      label: { show: true, position: 'right', color: '#1b3a60', fontSize: 10, formatter: (p: any) => fmtK(Number(p.value)) },
+    }],
+  } satisfies EChartsOption;
 
   const periodos: { key: Periodo; label: string }[] = [
     { key: 'semana',    label: '7 días' },
@@ -157,42 +200,23 @@
 
     <div class="charts-grid">
 
-      <!-- ── Resumen financiero — vertical SVG bar chart ── -->
+      <!-- ── Resumen financiero ── -->
       <section class="chart-card">
         <div class="chart-card-header">
           <span class="chart-title">Resumen financiero</span>
           <span class="chart-period">{data.periodo.desde.slice(0,10)} → {data.periodo.hasta.slice(0,10)}</span>
         </div>
-        <div class="chart-card-body">
-          <svg viewBox="0 0 {FB_SVG_W} {FB_SVG_H}" class="fin-svg" role="img" aria-label="Resumen financiero">
-            <!-- Grid lines -->
-            {#each gridTicks as tick, i}
-              {@const gy = FB_BASE_Y - ((i + 1) / gridTicks.length) * FB_MAX_H}
-              <line x1="0" y1={gy} x2={FB_SVG_W} y2={gy} stroke="#eef1f6" stroke-width="1" />
-              <text x="18" y={gy + 4} text-anchor="end" class="grid-label">{fmtK(tick)}</text>
+        <div class="chart-card-body chart-body-tight">
+          <EChart option={financialOption} height="260px" />
+          <div class="metric-strip">
+            {#each finBars as b}
+              <div class="metric-pill">
+                <span>{b.label}</span>
+                <strong>{fmt(b.value)}</strong>
+                {#if b.sub}<small>{b.sub}</small>{/if}
+              </div>
             {/each}
-            <!-- Baseline -->
-            <line x1="0" y1={FB_BASE_Y} x2={FB_SVG_W} y2={FB_BASE_Y} stroke="#d0d9e8" stroke-width="1.5" />
-
-            {#each finBars as b, i}
-              {@const colors = FB_COLORS[b.key as keyof typeof FB_COLORS] ?? FB_COLORS.ingresos}
-              {@const h = finBarH(b.value)}
-              {@const x = finBarX(i)}
-              {@const y = finBarY(b.value)}
-              <!-- Background column -->
-              <rect x={x} y={FB_BASE_Y - FB_MAX_H} width={FB_W} height={FB_MAX_H} rx="4" fill={colors.bg} opacity="0.5" />
-              <!-- Value bar -->
-              <rect x={x} y={y} width={FB_W} height={h} rx="4" fill={colors.bar} />
-              <!-- Value label -->
-              <text x={x + FB_W / 2} y={y - 7} text-anchor="middle" class="bar-value" fill={colors.text}>{fmtK(b.value)}</text>
-              <!-- Sub (txn / margin) -->
-              {#if b.sub}
-                <text x={x + FB_W / 2} y={FB_BASE_Y + 14} text-anchor="middle" class="bar-sub">{b.sub}</text>
-              {/if}
-              <!-- Label -->
-              <text x={x + FB_W / 2} y={FB_BASE_Y + 27} text-anchor="middle" class="bar-label">{b.label}</text>
-            {/each}
-          </svg>
+          </div>
         </div>
       </section>
 
@@ -202,37 +226,11 @@
           <span class="chart-title">Métodos de pago</span>
           <span class="chart-period">{fmt(donutTotal)} total</span>
         </div>
-        <div class="chart-card-body donut-layout">
+        <div class="chart-card-body chart-body-tight">
           {#if data.porMetodoPago.length === 0}
             <p class="no-data">Sin pagos registrados</p>
           {:else}
-            <svg viewBox="0 0 140 140" class="donut-svg">
-              {#each segments as seg}
-                <circle
-                  cx={DONUT_C} cy={DONUT_C} r={DONUT_R}
-                  fill="none"
-                  stroke={seg.color}
-                  stroke-width="22"
-                  stroke-dasharray="{seg.dash} {2 * Math.PI * DONUT_R - seg.dash}"
-                  stroke-dashoffset="{-(seg.offset - 2 * Math.PI * DONUT_R * 0.25)}"
-                  style="transition: stroke-dasharray .3s"
-                />
-              {/each}
-              <text x={DONUT_C} y={DONUT_C - 4} text-anchor="middle" class="donut-center-label">Total</text>
-              <text x={DONUT_C} y={DONUT_C + 14} text-anchor="middle" class="donut-center-value">
-                {donutTotal.toFixed(0)}
-              </text>
-            </svg>
-            <div class="donut-legend">
-              {#each segments as seg}
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:{seg.color}"></span>
-                  <span class="legend-label text-capitalize">{seg.label}</span>
-                  <span class="legend-amount">{fmt(seg.amount)}</span>
-                  <span class="legend-pct">{seg.pct}%</span>
-                </div>
-              {/each}
-            </div>
+            <EChart option={paymentOption} height="260px" />
           {/if}
         </div>
       </section>
@@ -243,25 +241,11 @@
           <span class="chart-title">Top servicios por ingresos</span>
           <span class="chart-period">{data.topServicios.length} servicios en el período</span>
         </div>
-        <div class="chart-card-body">
+        <div class="chart-card-body chart-body-tight">
           {#if data.topServicios.length === 0}
             <p class="no-data">Sin servicios en el período</p>
           {:else}
-            {#each data.topServicios as s, i}
-              <div class="hbar-row">
-                <div class="hbar-label">
-                  <span class="hbar-rank">{i + 1}</span>
-                  <span class="hbar-name">{s.nombre}</span>
-                </div>
-                <div class="hbar-track">
-                  <div class="hbar-fill green" style="width:{pct(s.total, maxServicio)}%"></div>
-                </div>
-                <div class="hbar-values">
-                  <span class="hbar-main">{fmt(s.total)}</span>
-                  <span class="hbar-sub">{s.cantidad} serv.</span>
-                </div>
-              </div>
-            {/each}
+            <EChart option={topServicesOption} height="{Math.max(240, data.topServicios.length * 42)}px" />
           {/if}
         </div>
       </section>
@@ -272,22 +256,11 @@
           <span class="chart-title">Desempeño por empleado</span>
           <span class="chart-period">{data.porEmpleado.length} colaboradores activos</span>
         </div>
-        <div class="chart-card-body">
+        <div class="chart-card-body chart-body-tight">
           {#if data.porEmpleado.length === 0}
             <p class="no-data">Sin empleados en el período</p>
           {:else}
-            {#each data.porEmpleado as e}
-              <div class="emp-row">
-                <div class="emp-info">
-                  <div class="emp-name">{e.nombre}</div>
-                  <div class="emp-meta">{e.servicios} servicios · comisión {fmt(e.comision)}</div>
-                </div>
-                <div class="emp-bar-wrap">
-                  <div class="emp-bar" style="width:{pct(e.ventas, maxEmpleado)}%"></div>
-                </div>
-                <div class="emp-total">{fmt(e.ventas)}</div>
-              </div>
-            {/each}
+            <EChart option={employeeOption} height="{Math.max(240, data.porEmpleado.length * 42)}px" />
           {/if}
         </div>
       </section>
@@ -316,60 +289,37 @@
   .chart-title { font-size: 13px; font-weight: 700; color: #1b3a60; }
   .chart-period { font-size: 11px; color: #8a97b0; white-space: nowrap; }
   .chart-card-body { padding: 16px 20px; }
+  .chart-body-tight { min-width: 0; overflow: hidden; }
   .no-data { text-align: center; color: #8a97b0; font-size: 13px; margin: 20px 0; }
 
-  /* ── Financial SVG bar chart ── */
-  .fin-svg { width: 100%; height: auto; overflow: visible; }
-  .grid-label { font-size: 8px; fill: #b0bdd0; }
-  .bar-value  { font-size: 9px; font-weight: 700; }
-  .bar-sub    { font-size: 8px; fill: #8a97b0; }
-  .bar-label  { font-size: 10px; font-weight: 600; fill: #5a6478; }
-
-  /* ── Donut chart ── */
-  .donut-layout { display: flex; align-items: center; gap: 20px; }
-  .donut-svg { width: 140px; height: 140px; flex-shrink: 0; transform: rotate(-90deg); }
-  .donut-center-label {
-    font-size: 10px; fill: #8a97b0; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
-    transform: rotate(90deg); transform-origin: 70px 70px;
+  .metric-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    border-top: 1px solid #f0f4f8;
+    padding-top: 10px;
   }
-  .donut-center-value {
-    font-size: 16px; fill: #1b3a60; font-weight: 800;
-    transform: rotate(90deg); transform-origin: 70px 70px;
+  .metric-pill {
+    min-width: 0;
+    border: 1px solid #edf1f6;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #fafbfd;
   }
-  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
-  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .legend-label { flex: 1; color: #5a6478; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .legend-amount { font-size: 11px; color: #8a97b0; flex-shrink: 0; }
-  .legend-pct { font-weight: 700; color: #1b3a60; flex-shrink: 0; min-width: 32px; text-align: right; }
-
-  /* ── Horizontal bar chart ── */
-  .hbar-row { display: grid; grid-template-columns: 150px 1fr 110px; align-items: center; gap: 10px; margin-bottom: 14px; }
-  .hbar-row:last-child { margin-bottom: 0; }
-  .hbar-label { display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .hbar-rank { font-size: 11px; font-weight: 700; color: #8a97b0; width: 16px; flex-shrink: 0; }
-  .hbar-name { font-size: 12px; font-weight: 600; color: #1b3a60; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hbar-track { height: 10px; background: #eef1f6; border-radius: 8px; overflow: hidden; }
-  .hbar-fill { height: 100%; border-radius: 8px; transition: width .3s ease; }
-  .hbar-fill.green { background: linear-gradient(90deg, #2e7d5a, #4ade80); }
-  .hbar-values { text-align: right; }
-  .hbar-main { display: block; font-size: 12px; font-weight: 700; color: #1b3a60; }
-  .hbar-sub { font-size: 10px; color: #8a97b0; }
-
-  /* ── Employee bars ── */
-  .emp-row { display: grid; grid-template-columns: 160px 1fr 110px; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f4f8; }
-  .emp-row:last-child { border-bottom: none; }
-  .emp-name { font-size: 13px; font-weight: 600; color: #1b3a60; }
-  .emp-meta { font-size: 11px; color: #8a97b0; margin-top: 1px; }
-  .emp-bar-wrap { height: 10px; background: #eef1f6; border-radius: 8px; overflow: hidden; }
-  .emp-bar { height: 100%; background: linear-gradient(90deg, #d4a017, #f5c518); border-radius: 8px; transition: width .3s ease; }
-  .emp-total { font-size: 13px; font-weight: 700; color: #1b3a60; text-align: right; }
+  .metric-pill span,
+  .metric-pill small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .metric-pill span { font-size: 10px; color: #8a97b0; font-weight: 700; text-transform: uppercase; }
+  .metric-pill strong { display: block; font-size: 12px; color: #1b3a60; margin-top: 2px; }
+  .metric-pill small { font-size: 10px; color: #8a97b0; margin-top: 1px; }
 
   /* ── Responsive ── */
   @media (max-width: 768px) {
     .charts-grid { grid-template-columns: 1fr; }
-    .hbar-row { grid-template-columns: 90px 1fr 80px; }
-    .emp-row { grid-template-columns: 1fr; gap: 4px; }
-    .donut-layout { flex-direction: column; }
+    .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>

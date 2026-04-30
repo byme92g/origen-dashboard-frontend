@@ -10,21 +10,26 @@
   import { authStore } from '../lib/stores/auth';
   import type { Empleado, Usuario } from '../lib/types';
 
-  let tab: 'empleados' | 'usuarios' = 'empleados';
+  let tab: 'empleados' | 'admins' = 'empleados';
 
   // Empleados
   let empleados: Empleado[] = [];
   let empTotal = 0; let empPage = 1; const empSize = 15;
   let empLoading = true;
-  let empModal = false; let empEdit: Partial<Empleado> = {}; let empIsEdit = false; let empSaving = false;
+  let empModal = false; let empEdit: Partial<Empleado & { password?: string }> = {}; let empIsEdit = false; let empSaving = false;
   let empConfirm = false; let empDeleteId: number | null = null; let empDeleting = false;
 
-  // Usuarios
+  // Admins
   let usuarios: Usuario[] = [];
-  let usrTotal = 0; let usrPage = 1; const usrSize = 15;
+  let usrPage = 1; const usrSize = 15;
   let usrLoading = true;
   let usrModal = false; let usrEdit: any = {}; let usrIsEdit = false; let usrSaving = false;
   let usrConfirm = false; let usrDeleteId: number | null = null; let usrDeleting = false;
+  let pwdModal = false; let pwdUser: Usuario | null = null; let pwdValue = ''; let pwdSaving = false;
+  $: admins = usuarios.filter((u) => u.rol === 'admin');
+  $: pagedAdmins = admins.slice((usrPage - 1) * usrSize, usrPage * usrSize);
+  $: usrTotal = admins.length;
+  $: currentAdminId = $authStore.user?.id;
 
   async function loadEmpleados() {
     empLoading = true;
@@ -38,11 +43,8 @@
 
   async function loadUsuarios() {
     usrLoading = true;
-    const res = await usuarioApi.listarPaginado(usrPage, usrSize);
-    if (res.ok && res.data) {
-      if (Array.isArray(res.data)) { usuarios = res.data as unknown as Usuario[]; usrTotal = usuarios.length; }
-      else { usuarios = res.data.items; usrTotal = res.data.total; }
-    }
+    const res = await usuarioApi.listar();
+    if (res.ok && res.data) usuarios = res.data;
     usrLoading = false;
   }
 
@@ -50,12 +52,22 @@
 
   // Empleados CRUD
   async function saveEmp() {
+    if (!empEdit.usuarioLogin?.trim()) {
+      toast('Ingresa el usuario de acceso.', 'error');
+      return;
+    }
+
+    if (!empIsEdit && !empEdit.password?.trim()) {
+      toast('Ingresa la contraseña inicial.', 'error');
+      return;
+    }
+
     empSaving = true;
     const res = empIsEdit && empEdit.id
       ? await empleadoApi.actualizar(empEdit.id, empEdit)
-      : await empleadoApi.crear(empEdit as Omit<Empleado, 'id'>);
+      : await empleadoApi.crear(empEdit);
     empSaving = false;
-    if (res.ok) { toast(empIsEdit ? 'Actualizado' : 'Creado', 'success'); empModal = false; loadEmpleados(); }
+    if (res.ok) { toast(empIsEdit ? 'Actualizado' : 'Creado', 'success'); empModal = false; loadEmpleados(); loadUsuarios(); }
     else toast(res.error ?? 'Error', 'error');
   }
 
@@ -69,12 +81,13 @@
     else toast(res.error ?? 'Error', 'error');
   }
 
-  // Usuarios CRUD
+  // Admins CRUD
   async function saveUsr() {
     usrSaving = true;
+    const payload = { ...usrEdit, rol: 'admin' };
     const res = usrIsEdit && usrEdit.id
-      ? await usuarioApi.actualizar(usrEdit.id, usrEdit)
-      : await usuarioApi.crear(usrEdit);
+      ? await usuarioApi.actualizar(usrEdit.id, payload)
+      : await usuarioApi.crear(payload);
     usrSaving = false;
     if (res.ok) { toast(usrIsEdit ? 'Actualizado' : 'Creado', 'success'); usrModal = false; loadUsuarios(); }
     else toast(res.error ?? 'Error', 'error');
@@ -89,6 +102,49 @@
     if (res.ok) { toast('Eliminado', 'success'); loadUsuarios(); }
     else toast(res.error ?? 'Error', 'error');
   }
+
+  function usuarioDeEmpleado(empleado: Empleado) {
+    if (!empleado.usuarioLogin) return null;
+    return usuarios.find((u) => u.nombreUsuario === empleado.usuarioLogin) ?? null;
+  }
+
+  function openNewEmpleado() {
+    empEdit = {};
+    empIsEdit = false;
+    empModal = true;
+  }
+
+  function openEditEmpleado(empleado: Empleado) {
+    empEdit = { ...empleado, password: '' };
+    empIsEdit = true;
+    empModal = true;
+  }
+
+  function openPasswordModal(usuario: Usuario) {
+    pwdUser = usuario;
+    pwdValue = '';
+    pwdModal = true;
+  }
+
+  async function savePassword() {
+    if (!pwdUser) return;
+    if (!pwdValue.trim()) {
+      toast('Ingresa una contraseña.', 'error');
+      return;
+    }
+
+    pwdSaving = true;
+    const res = await usuarioApi.actualizar(pwdUser.id, { ...pwdUser, password: pwdValue });
+    pwdSaving = false;
+
+    if (res.ok) {
+      toast('Contraseña actualizada', 'success');
+      pwdModal = false;
+      loadUsuarios();
+    } else {
+      toast(res.error ?? 'Error', 'error');
+    }
+  }
 </script>
 
 <div class="p-3 p-md-4">
@@ -99,13 +155,13 @@
       <button class="nav-link" class:active={tab === 'empleados'} on:click={() => (tab = 'empleados')}>Empleados</button>
     </li>
     <li class="nav-item">
-      <button class="nav-link" class:active={tab === 'usuarios'} on:click={() => (tab = 'usuarios')}>Usuarios del sistema</button>
+      <button class="nav-link" class:active={tab === 'admins'} on:click={() => (tab = 'admins')}>Admins</button>
     </li>
   </ul>
 
   {#if tab === 'empleados'}
     <div class="d-flex justify-content-end mb-3">
-      <button class="btn btn-primary btn-sm" on:click={() => { empEdit = {}; empIsEdit = false; empModal = true; }}>+ Nuevo empleado</button>
+      <button class="btn btn-primary btn-sm" on:click={openNewEmpleado}>+ Nuevo empleado</button>
     </div>
     {#if empLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
@@ -123,6 +179,7 @@
             </thead>
             <tbody>
               {#each empleados as e}
+                {@const cuenta = usuarioDeEmpleado(e)}
                 <tr>
                   <td class="ps-3 fw-semibold small">{e.nombre}</td>
                   <td class="small">{e.cargo}</td>
@@ -131,12 +188,17 @@
                   <td><span class="badge badge-origen {e.activo ? 'badge-green' : 'badge-gray'}">{e.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
-                      <button class="btn btn-sm btn-outline-secondary" on:click={() => { empEdit = {...e}; empIsEdit = true; empModal = true; }} title="Editar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      <button class="btn btn-sm btn-outline-secondary" on:click={() => openEditEmpleado(e)} title="Editar">
+                        <i class="bi bi-pencil-square"></i>
                       </button>
+                      {#if cuenta && cuenta.rol !== 'admin'}
+                        <button class="btn btn-sm btn-outline-secondary" on:click={() => openPasswordModal(cuenta)} title="Cambiar contraseña">
+                          <i class="bi bi-key"></i>
+                        </button>
+                      {/if}
                       {#if !e.usuarioLogin || e.usuarioLogin !== $authStore.user?.nombreUsuario}
                         <button class="btn btn-sm btn-outline-danger" on:click={() => { empDeleteId = e.id; empConfirm = true; }} title="Eliminar">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                          <i class="bi bi-trash"></i>
                         </button>
                       {/if}
                     </div>
@@ -156,7 +218,7 @@
 
   {:else}
     <div class="d-flex justify-content-end mb-3">
-      <button class="btn btn-primary btn-sm" on:click={() => { usrEdit = { rol: 'empleado' }; usrIsEdit = false; usrModal = true; }}>+ Nuevo usuario</button>
+      <button class="btn btn-primary btn-sm" on:click={() => { usrEdit = { rol: 'admin' }; usrIsEdit = false; usrModal = true; }}>+ Nuevo admin</button>
     </div>
     {#if usrLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
@@ -172,7 +234,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each usuarios as u}
+              {#each pagedAdmins as u}
                 <tr>
                   <td class="ps-3 fw-semibold small">{u.nombreUsuario}</td>
                   <td class="small">{u.nombreCompleto}</td>
@@ -180,25 +242,24 @@
                   <td><span class="badge badge-origen {u.activo ? 'badge-green' : 'badge-gray'}">{u.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
-                      <button class="btn btn-sm btn-outline-secondary" on:click={() => { usrEdit = {...u}; usrIsEdit = true; usrModal = true; }} title="Editar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
-                      {#if u.id !== $authStore.user?.id}
-                        <button class="btn btn-sm btn-outline-danger" on:click={() => { usrDeleteId = u.id; usrConfirm = true; }} title="Eliminar">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      {#if u.id === currentAdminId}
+                        <button class="btn btn-sm btn-outline-secondary" on:click={() => { usrEdit = {...u}; usrIsEdit = true; usrModal = true; }} title="Editar">
+                          <i class="bi bi-pencil-square"></i>
                         </button>
+                      {:else}
+                        <span class="small text-muted">Protegido</span>
                       {/if}
                     </div>
                   </td>
                 </tr>
               {:else}
-                <tr><td colspan="5" class="text-center text-muted py-4">Sin usuarios</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4">Sin admins</td></tr>
               {/each}
             </tbody>
           </table>
         </div>
         {#if usrTotal > usrSize}
-          <div class="p-3"><Pagination page={usrPage} total={usrTotal} pageSize={usrSize} onChange={(p) => { usrPage = p; loadUsuarios(); }} /></div>
+          <div class="p-3"><Pagination page={usrPage} total={usrTotal} pageSize={usrSize} onChange={(p) => { usrPage = p; }} /></div>
         {/if}
       </div>
     {/if}
@@ -211,7 +272,11 @@
     <div class="mb-3"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={empEdit.nombre} /></div>
     <div class="mb-3"><label class="form-label small fw-semibold">Cargo *</label><input class="form-control" bind:value={empEdit.cargo} /></div>
     <div class="mb-3"><label class="form-label small fw-semibold">Comisión %</label><input class="form-control" type="number" min="0" max="100" bind:value={empEdit.comisionPct} /></div>
-    <div class="mb-3"><label class="form-label small fw-semibold">Usuario login</label><input class="form-control" bind:value={empEdit.usuarioLogin} /></div>
+    <div class="mb-3"><label class="form-label small fw-semibold">Usuario de acceso *</label><input class="form-control" bind:value={empEdit.usuarioLogin} /></div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">{empIsEdit ? 'Nueva contraseña de acceso' : 'Contraseña de acceso *'}</label>
+      <input class="form-control" type="password" bind:value={empEdit.password} placeholder={empIsEdit ? 'Dejar vacío para no cambiar' : ''} />
+    </div>
     {#if empIsEdit}
       <div class="mb-3">
         <label class="form-label small fw-semibold">Estado</label>
@@ -230,8 +295,8 @@
   </svelte:fragment>
 </Modal>
 
-<!-- Modales usuarios -->
-<Modal show={usrModal} title={usrIsEdit ? 'Editar usuario' : 'Nuevo usuario'} onClose={() => (usrModal = false)}>
+<!-- Modales admins -->
+<Modal show={usrModal} title={usrIsEdit ? 'Editar admin' : 'Nuevo admin'} onClose={() => (usrModal = false)}>
   <svelte:fragment slot="body">
     <div class="mb-3"><label class="form-label small fw-semibold">Nombre completo *</label><input class="form-control" bind:value={usrEdit.nombreCompleto} /></div>
     {#if !usrIsEdit}
@@ -240,13 +305,7 @@
     {:else}
       <div class="mb-3"><label class="form-label small fw-semibold">Nueva contraseña</label><input class="form-control" type="password" bind:value={usrEdit.password} placeholder="Dejar vacío para no cambiar" /></div>
     {/if}
-    <div class="mb-3">
-      <label class="form-label small fw-semibold">Rol</label>
-      <select class="form-select" bind:value={usrEdit.rol}>
-        <option value="empleado">Empleado</option>
-        <option value="admin">Admin</option>
-      </select>
-    </div>
+    <input type="hidden" bind:value={usrEdit.rol} />
     {#if usrIsEdit}
       <div class="mb-3">
         <label class="form-label small fw-semibold">Estado</label>
@@ -266,4 +325,23 @@
 </Modal>
 
 <ConfirmDialog show={empConfirm} message="¿Eliminar este empleado?" onConfirm={deleteEmp} onCancel={() => (empConfirm = false)} loading={empDeleting} />
-<ConfirmDialog show={usrConfirm} message="¿Eliminar este usuario?" onConfirm={deleteUsr} onCancel={() => (usrConfirm = false)} loading={usrDeleting} />
+<ConfirmDialog show={usrConfirm} message="¿Eliminar este admin?" onConfirm={deleteUsr} onCancel={() => (usrConfirm = false)} loading={usrDeleting} />
+
+<Modal show={pwdModal} title="Cambiar contraseña" onClose={() => (pwdModal = false)}>
+  <svelte:fragment slot="body">
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Usuario</label>
+      <input class="form-control" value={pwdUser?.nombreUsuario ?? ''} disabled />
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Nueva contraseña *</label>
+      <input class="form-control" type="password" bind:value={pwdValue} />
+    </div>
+  </svelte:fragment>
+  <svelte:fragment slot="footer">
+    <button class="btn btn-secondary btn-sm" on:click={() => (pwdModal = false)}>Cancelar</button>
+    <button class="btn btn-primary btn-sm" on:click={savePassword} disabled={pwdSaving}>
+      {#if pwdSaving}<span class="spinner-border spinner-border-sm me-1"></span>{/if}Guardar
+    </button>
+  </svelte:fragment>
+</Modal>
