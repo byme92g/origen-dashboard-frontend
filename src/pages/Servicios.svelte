@@ -20,6 +20,7 @@
   let svcLoading = true; let prdLoading = true; let pkgLoading = true;
   let modal = false; let editing: any = {}; let isEdit = false; let saving = false;
   let confirm = false; let deleteId: number | null = null; let deleteType = '';
+  let deleting = false; let togglingId: number | null = null;
 
   // All servicios/productos for paquete selector
   let allServicios: Servicio[] = [];
@@ -75,18 +76,28 @@
   function openEdit(item: any, type: string) {
     editing = { ...item }; isEdit = true; deleteType = type;
     if (type === 'paquetes') {
-      selectedServIds = (item.servicios ?? []).map((s: any) => s.id);
-      selectedPrdIds = (item.productos ?? []).map((p: any) => p.id);
+      selectedServIds = (item.servicios ?? []).map((s: any) => s.servicioId);
+      selectedPrdIds = (item.productos ?? []).map((p: any) => p.productoId);
       loadAllForPaquete();
     }
     modal = true;
   }
 
   async function toggleActivo(item: any, type: string) {
+    togglingId = item.id;
     const updated = { ...item, activo: !item.activo };
     let res: any;
-    if (type === 'servicios') res = await servicioApi.actualizar(item.id, updated);
-    else res = await paqueteApi.actualizar(item.id, updated);
+    if (type === 'servicios') {
+      res = await servicioApi.actualizar(item.id, updated);
+    } else {
+      const payload = {
+        ...updated,
+        servicioIds: (item.servicios ?? []).map((s: any) => s.servicioId),
+        productoIds: (item.productos ?? []).map((p: any) => p.productoId),
+      };
+      res = await paqueteApi.actualizar(item.id, payload);
+    }
+    togglingId = null;
     if (res?.ok) {
       toast(item.activo ? 'Desactivado' : 'Activado', 'success');
       if (type === 'servicios') loadServicios();
@@ -119,10 +130,12 @@
 
   async function doDelete() {
     if (!deleteId) return;
+    deleting = true;
     let res;
     if (deleteType === 'servicios') res = await servicioApi.eliminar(deleteId);
     else if (deleteType === 'productos') res = await productoApi.eliminar(deleteId);
     else res = await paqueteApi.eliminar(deleteId);
+    deleting = false;
     confirm = false;
     if (res.ok) {
       toast('Eliminado', 'success');
@@ -171,7 +184,9 @@
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(s, 'servicios')} title="Editar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
-                      <button class="btn btn-sm {s.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(s, 'servicios')} title="{s.activo ? 'Desactivar' : 'Activar'}">{s.activo ? 'Desactivar' : 'Activar'}</button>
+                      <button class="btn btn-sm {s.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(s, 'servicios')} disabled={togglingId === s.id} title="{s.activo ? 'Desactivar' : 'Activar'}">
+                        {#if togglingId === s.id}<span class="spinner-border spinner-border-sm me-1"></span>{/if}{s.activo ? 'Desactivar' : 'Activar'}
+                      </button>
                       <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = s.id; deleteType = 'servicios'; confirm = true; }} title="Eliminar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                       </button>
@@ -250,10 +265,10 @@
                   </td>
                   <td class="small">
                     {#each (pkg.servicios ?? []) as s}
-                      <span class="pk-chip">{s.nombre}</span>
+                      <span class="pk-chip">{s.servicio?.nombre ?? '?'}</span>
                     {/each}
                     {#each (pkg.productos ?? []) as p}
-                      <span class="pk-chip pk-chip-green">{p.nombre}</span>
+                      <span class="pk-chip pk-chip-green">{p.producto?.nombre ?? '?'}</span>
                     {/each}
                     {#if !(pkg.servicios?.length) && !(pkg.productos?.length)}
                       <span class="text-muted">—</span>
@@ -265,7 +280,9 @@
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(pkg, 'paquetes')} title="Editar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
-                      <button class="btn btn-sm {pkg.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(pkg, 'paquetes')} title="{pkg.activo ? 'Desactivar' : 'Activar'}">{pkg.activo ? 'Desactivar' : 'Activar'}</button>
+                      <button class="btn btn-sm {pkg.activo ? 'btn-outline-secondary' : 'btn-outline-success'}" on:click={() => toggleActivo(pkg, 'paquetes')} disabled={togglingId === pkg.id} title="{pkg.activo ? 'Desactivar' : 'Activar'}">
+                        {#if togglingId === pkg.id}<span class="spinner-border spinner-border-sm me-1"></span>{/if}{pkg.activo ? 'Desactivar' : 'Activar'}
+                      </button>
                       <button class="btn btn-sm btn-outline-danger" on:click={() => { deleteId = pkg.id; deleteType = 'paquetes'; confirm = true; }} title="Eliminar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                       </button>
@@ -334,4 +351,4 @@
   </svelte:fragment>
 </Modal>
 
-<ConfirmDialog show={confirm} message="¿Eliminar este elemento? Esta acción no se puede deshacer." onConfirm={doDelete} onCancel={() => (confirm = false)} />
+<ConfirmDialog show={confirm} message="¿Eliminar este elemento? Esta acción no se puede deshacer." onConfirm={doDelete} onCancel={() => (confirm = false)} loading={deleting} />

@@ -3,7 +3,7 @@ import type { Egreso, PaginatedResult } from '../types';
 
 export interface CrearEgresoRequest {
   fecha: string;
-  categoria: string;
+  categoriaId: number;
   descripcion: string;
   monto: number;
   proveedor?: string;
@@ -12,7 +12,7 @@ export interface CrearEgresoRequest {
 }
 
 export interface CategoriaEgreso {
-  key: string;
+  key: number | string;
   label: string;
 }
 

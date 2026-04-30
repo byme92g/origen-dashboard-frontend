@@ -12,11 +12,18 @@
   let productos: Producto[] = [];
   let loading = true;
   let filtro: FiltroStock = 'todos';
+  let selectedCategorias: string[] = [];
   let busqueda = '';
   let modal = false;
   let editing: Partial<Producto> = {};
   let saving = false;
   const bajoMinimo = 5;
+
+  function toggleCategoria(cat: string) {
+    selectedCategorias = selectedCategorias.includes(cat)
+      ? selectedCategorias.filter(c => c !== cat)
+      : [...selectedCategorias, cat];
+  }
 
   async function load() {
     loading = true;
@@ -40,6 +47,7 @@
       if (filtro === 'inactivo') return !p.activo;
       return true;
     })
+    .filter((p) => selectedCategorias.length === 0 || selectedCategorias.includes(p.categoria))
     .filter((p) => `${p.nombre} ${p.categoria}`.toLowerCase().includes(busqueda.trim().toLowerCase()));
 
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
@@ -146,9 +154,17 @@
 
     {#if categorias.length}
       <div class="stock-cats mt-3">
+        {#if selectedCategorias.length > 0}
+          <button class="stock-cat stock-cat-clear" on:click={() => (selectedCategorias = [])}>
+            ✕ Limpiar filtro
+          </button>
+        {/if}
         {#each categorias as c}
           {@const count = productos.filter((p) => p.categoria === c).length}
-          <span class="stock-cat">{c}<strong>{count}</strong></span>
+          <button
+            class="stock-cat {selectedCategorias.includes(c) ? 'active' : ''}"
+            on:click={() => toggleCategoria(c)}
+          >{c}<strong>{count}</strong></button>
         {/each}
       </div>
     {/if}
@@ -198,9 +214,20 @@
     display: inline-flex; align-items: center; gap: 8px;
     padding: 6px 10px; border-radius: 16px; background: #fff;
     color: #5a6478; font-size: 12px; box-shadow: var(--shadow);
+    border: 1.5px solid transparent; cursor: pointer;
+    transition: all .15s; font-family: inherit;
   }
+  .stock-cat:hover { border-color: var(--navy); color: var(--navy); }
+  .stock-cat.active {
+    background: var(--navy); color: white; border-color: var(--navy);
+  }
+  .stock-cat.active strong { background: rgba(255,255,255,.2); color: white; }
   .stock-cat strong {
     background: #eef1f6; color: var(--navy); border-radius: 10px;
     min-width: 22px; text-align: center; padding: 1px 6px;
   }
+  .stock-cat-clear {
+    background: #fdecea; color: #c0392b; border-color: #f5c6cb;
+  }
+  .stock-cat-clear:hover { background: #f8d7da; border-color: #c0392b; }
 </style>

@@ -3,14 +3,16 @@
   import { ingresoApi } from '../lib/api/ingresos';
   import { egresoApi } from '../lib/api/egresos';
   import { empleadoApi } from '../lib/api/empleados';
-  import { cajaApi, type CajaApertura } from '../lib/api/caja';
+  import { cajaApi, getResponsablesStr, type CajaApertura, type CajaMovimiento } from '../lib/api/caja';
   import { isAdmin } from '../lib/stores/auth';
   import Spinner from '../lib/components/Spinner.svelte';
   import type { Empleado, Ingreso, Egreso } from '../lib/types';
 
   type CajaState = 'loading' | 'closed' | 'open' | 'closing';
+  type SubView = 'control' | 'historial' | 'detalle';
 
   let state: CajaState = 'loading';
+  let subView: SubView = 'control';
   let submitting = false;
 
   let apertura: CajaApertura | null = null;
@@ -23,7 +25,13 @@
   let confirmText = '';
 
   let historial: CajaApertura[] = [];
+  let historialLoading = false;
   let errorMsg = '';
+
+  // Detalle de caja seleccionada
+  let detalleCaja: CajaApertura | null = null;
+  let detalleMovs: CajaMovimiento[] = [];
+  let detalleLoading = false;
 
   onMount(async () => {
     const [empRes, estadoRes] = await Promise.all([
@@ -33,8 +41,9 @@
 
     if (empRes.ok && empRes.data) empleados = empRes.data as unknown as Empleado[];
 
-    if (estadoRes.ok) {
-      apertura = estadoRes.data ?? null;
+    if (estadoRes.ok && estadoRes.data) {
+      const estadoData = estadoRes.data;
+      apertura = estadoData.apertura;
       if (apertura) {
         await cargarMovimientos();
         state = 'open';
@@ -45,7 +54,7 @@
       state = 'closed';
     }
 
-    await cargarHistorial();
+    if ($isAdmin) await cargarHistorial();
   });
 
   async function cargarMovimientos() {
@@ -56,18 +65,20 @@
   }
 
   async function cargarHistorial() {
-    const res = await cajaApi.historial(1, 30);
+    historialLoading = true;
+    const res = await cajaApi.historial(1, 50);
     if (res.ok && res.data) historial = (res.data as any).items ?? [];
+    historialLoading = false;
   }
 
   async function abrir() {
+    if (selectedEmpleados.length === 0) {
+      errorMsg = 'Selecciona al menos un responsable.';
+      return;
+    }
     submitting = true;
     errorMsg = '';
-    const responsables = selectedEmpleados
-      .map(id => empleados.find(e => e.id === id)?.nombre ?? '')
-      .filter(Boolean).join(', ') || null;
-
-    const res = await cajaApi.abrir(montoInicial, responsables);
+    const res = await cajaApi.abrir(montoInicial, selectedEmpleados);
     if (res.ok && res.data) {
       apertura = res.data as unknown as CajaApertura;
       await cargarMovimientos();
@@ -83,8 +94,8 @@
   $: saldoActual = (apertura?.montoInicial ?? montoInicial) + totalIngresos - totalEgresos;
 
   $: movimientos = [
-    ...ingresos.map(i => ({ fecha: i.fecha, concepto: i.concepto, sub: i.clienteNombre ?? null, monto: i.monto, esIng: true })),
-    ...egresos.map(e => ({ fecha: e.fecha, concepto: e.descripcion, sub: e.categoria ?? null, monto: e.monto, esIng: false })),
+    ...ingresos.map(i => ({ fecha: i.fecha, concepto: i.concepto ?? i.conceptoPersonalizado ?? '—', sub: i.clienteNombre ?? null, monto: i.monto, esIng: true })),
+    ...egresos.map(e => ({ fecha: e.fecha, concepto: e.descripcion, sub: typeof e.categoria === 'object' ? e.categoria.nombre : String(e.categoria ?? ''), monto: e.monto, esIng: false })),
   ].sort((a, b) => a.fecha.localeCompare(b.fecha));
 
   async function cerrar() {
@@ -93,9 +104,10 @@
     errorMsg = '';
     const res = await cajaApi.cerrar(apertura.id, totalIngresos, totalEgresos, saldoActual);
     if (res.ok) {
-      await cargarHistorial();
+      if ($isAdmin) await cargarHistorial();
       apertura = null;
       state = 'closed';
+      subView = 'control';
       confirmText = '';
       montoInicial = 0;
       selectedEmpleados = [];
@@ -107,6 +119,16 @@
     submitting = false;
   }
 
+  async function verDetalle(caja: CajaApertura) {
+    detalleCaja = caja;
+    detalleMovs = [];
+    detalleLoading = true;
+    subView = 'detalle';
+    const res = await cajaApi.movimientos(caja.id);
+    if (res.ok && res.data) detalleMovs = res.data;
+    detalleLoading = false;
+  }
+
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
 
   function toggleEmp(id: number) {
@@ -115,246 +137,336 @@
       : [...selectedEmpleados, id];
   }
 
-  function fmtTime(iso: string) {
-    return new Date(iso).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+  function fmtTime(iso: string | null | undefined) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function fmtDatetime(iso: string | null | undefined) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit' })
+      + ' ' + d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
   }
 </script>
 
 <div class="caja-wrap">
 
-  {#if state === 'loading'}
-    <div style="padding-top:48px;display:flex;justify-content:center;">
-      <Spinner />
-    </div>
-
-  {:else if state === 'closed'}
-    <div class="apertura-outer">
-      <div class="apertura-card">
-        <div class="apertura-header">
-          <div class="apertura-header-label">Control de Caja · Origen</div>
-          <div class="apertura-header-date">
-            {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </div>
-        </div>
-        <div class="apertura-body">
-          {#if errorMsg}
-            <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
-          {/if}
-          <div style="margin-bottom:18px;">
-            <div class="afield">
-              <label>Monto inicial (S/.)</label>
-              <input type="number" step="0.50" min="0" placeholder="0.00"
-                     bind:value={montoInicial} style="max-width:180px;" />
-            </div>
-          </div>
-          <div class="resp-section">
-            <div class="resp-section-label">Responsable(s)</div>
-            <div class="resp-grid">
-              {#each empleados.filter(e => e.activo) as e}
-                <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-                <div class="resp-chip {selectedEmpleados.includes(e.id) ? 'sel' : ''}"
-                     on:click={() => toggleEmp(e.id)}>
-                  <span>{e.nombre}</span>
-                  <span class="resp-cargo">{e.cargo}</span>
-                </div>
-              {:else}
-                <div style="font-size:12px;color:#8a97b0;">Sin empleados registrados</div>
-              {/each}
-            </div>
-          </div>
-          <div class="apertura-footer">
-            <button class="btn btn-primary" on:click={abrir} disabled={submitting}>
-              {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
-              Abrir caja
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  {:else if state === 'open'}
-    <div class="caja-topbar">
-      <div class="caja-topbar-left">
-        <div class="caja-dot"></div>
-        <div class="caja-topbar-info">
-          <strong>Caja abierta</strong>
-          <span>
-            Desde las {apertura ? fmtTime(apertura.abiertaEn) : '—'}
-            {#if apertura?.responsables} · {apertura.responsables}{/if}
-          </span>
-        </div>
-      </div>
-      <button class="btn-cierre" on:click={() => (state = 'closing')}>Cerrar caja</button>
-    </div>
-
-    <div class="caja-kpis">
-      <div class="caja-kpi">
-        <div class="caja-kpi-label">Saldo inicial</div>
-        <div class="caja-kpi-value">{fmt(apertura?.montoInicial ?? 0)}</div>
-      </div>
-      <div class="caja-kpi ing">
-        <div class="caja-kpi-label">Ingresos del día</div>
-        <div class="caja-kpi-value">+{fmt(totalIngresos)}</div>
-      </div>
-      <div class="caja-kpi egr">
-        <div class="caja-kpi-label">Egresos del día</div>
-        <div class="caja-kpi-value">−{fmt(totalEgresos)}</div>
-      </div>
-      <div class="caja-kpi net">
-        <div class="caja-kpi-label">Saldo actual</div>
-        <div class="caja-kpi-value">{fmt(saldoActual)}</div>
-      </div>
-    </div>
-
-    <div class="movs-card">
-      <div class="movs-head">
-        <span class="movs-head-title">Movimientos del día</span>
-        <span class="movs-head-count">{movimientos.length} operaciones</span>
-      </div>
-      {#if movimientos.length > 0}
-        {#each movimientos as m}
-          <div class="mov-row {m.esIng ? 'is-ing' : 'is-egr'}">
-            <div class="mov-time">{fmtTime(m.fecha)}</div>
-            <div>
-              <div class="mov-main">{m.concepto}</div>
-              {#if m.sub}<div class="mov-sub">{m.sub}</div>{/if}
-            </div>
-            <div class="mov-amt {m.esIng ? 'ing' : 'egr'}">
-              {m.esIng ? '+' : '−'}{fmt(m.monto)}
-            </div>
-          </div>
-        {/each}
-      {:else}
-        <div class="movs-empty">Sin movimientos registrados hoy</div>
-      {/if}
-    </div>
-
-  {:else}
-    <!-- Cierre de caja -->
-    <div class="cierre-outer">
-      <div class="cierre-card">
-        <div class="cierre-top">
-          <div class="cierre-top-title">Cierre de Caja — Origen</div>
-          <div class="cierre-top-sub">
-            {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </div>
-        </div>
-        <div class="cierre-body">
-          {#if errorMsg}
-            <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
-          {/if}
-          <div class="cierre-meta">
-            Responsable(s): <strong>{apertura?.responsables ?? 'Sin asignar'}</strong><br/>
-            Apertura: <strong>{apertura ? fmtTime(apertura.abiertaEn) : '—'}</strong>
-            &nbsp;·&nbsp;
-            Cierre: <strong>{new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</strong>
-          </div>
-
-          <div class="cierre-kpis">
-            <div class="ck ini">
-              <div class="ck-label">Saldo inicial</div>
-              <div class="ck-value">{fmt(apertura?.montoInicial ?? 0)}</div>
-            </div>
-            <div class="ck ing">
-              <div class="ck-label">Ingresos</div>
-              <div class="ck-value">+{fmt(totalIngresos)}</div>
-            </div>
-            <div class="ck egr">
-              <div class="ck-label">Egresos</div>
-              <div class="ck-value">−{fmt(totalEgresos)}</div>
-            </div>
-          </div>
-
-          <div class="cierre-movs">
-            {#each movimientos as m}
-              <div class="cierre-mov {m.esIng ? 'is-ing' : 'is-egr'}">
-                <span class="cierre-mov-time">{fmtTime(m.fecha)}</span>
-                <span class="cierre-mov-desc">{m.concepto}</span>
-                <span class="cierre-mov-amt {m.esIng ? 'ing' : 'egr'}">{m.esIng ? '+' : '−'}{fmt(m.monto)}</span>
-              </div>
-            {:else}
-              <div style="padding:16px;text-align:center;font-size:12px;color:#8a97b0;">Sin movimientos registrados</div>
-            {/each}
-          </div>
-
-          <div class="cierre-totales">
-            <div class="cierre-total-row">
-              <span class="cierre-total-label">Saldo inicial</span>
-              <span class="cierre-total-value">{fmt(apertura?.montoInicial ?? 0)}</span>
-            </div>
-            <div class="cierre-total-row">
-              <span class="cierre-total-label">Ingresos ({ingresos.length} transacciones)</span>
-              <span class="cierre-total-value" style="color:#2e7d5a;">+{fmt(totalIngresos)}</span>
-            </div>
-            <div class="cierre-total-row">
-              <span class="cierre-total-label">Egresos ({egresos.length} transacciones)</span>
-              <span class="cierre-total-value" style="color:#c0392b;">−{fmt(totalEgresos)}</span>
-            </div>
-            <div class="cierre-total-row final">
-              <span class="cierre-total-label" style="font-size:15px;font-weight:700;color:#1b3a60;">Saldo final</span>
-              <span class="cierre-total-value" style="font-size:20px;color:#1b3a60;">{fmt(saldoActual)}</span>
-            </div>
-          </div>
-
-          <div class="cierre-footer" style="flex-direction:column;gap:10px;">
-            <div style="display:flex;align-items:center;gap:8px;width:100%;">
-              <span style="font-size:12px;color:#5a6478;flex-shrink:0;">Escribe «cerrar»:</span>
-              <input class="form-control" style="flex:1;max-width:180px;padding:6px 10px;font-size:13px;"
-                     placeholder="cerrar" bind:value={confirmText} />
-            </div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;width:100%;">
-              <button class="btn btn-outline-secondary btn-sm" on:click={() => (state = 'open')}>Cancelar</button>
-              <button class="btn btn-primary btn-sm" on:click={cerrar}
-                      disabled={confirmText !== 'cerrar' || submitting}>
-                {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
-                Confirmar cierre
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <!-- Sub-nav (admin) -->
+  {#if $isAdmin && state !== 'loading'}
+    <ul class="nav nav-tabs nav-tabs-origen mb-3">
+      <li class="nav-item">
+        <button class="nav-link" class:active={subView === 'control'} on:click={() => (subView = 'control')}>Control de caja</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" class:active={subView === 'historial' || subView === 'detalle'} on:click={() => (subView = 'historial')}>Historial de cajas</button>
+      </li>
+    </ul>
   {/if}
 
-  <!-- Historial (admin) -->
-  {#if $isAdmin && historial.length > 0}
-    <div class="mt-4">
-      <h6 class="fw-semibold mb-3">Historial de cajas</h6>
+  <!-- ─── HISTORIAL ─────────────────────────────────────── -->
+  {#if subView === 'historial'}
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <h6 class="fw-semibold mb-0">Historial de cajas</h6>
+    </div>
+    {#if historialLoading}
+      <Spinner />
+    {:else if historial.length === 0}
+      <div class="text-center text-muted py-5">Sin cajas cerradas registradas</div>
+    {:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-          <table class="table table-sm table-origen mb-0">
+          <table class="table table-sm table-hover table-origen mb-0">
             <thead class="table-origen">
               <tr>
-                <th class="ps-3">Fecha cierre</th>
+                <th class="ps-3">ID</th>
+                <th>Apertura</th>
+                <th>Cierre</th>
                 <th>Inicial</th>
                 <th>Ingresos</th>
                 <th>Egresos</th>
                 <th>Saldo final</th>
                 <th class="pe-3 d-none d-md-table-cell">Responsables</th>
+                <th class="pe-3"></th>
               </tr>
             </thead>
             <tbody>
               {#each historial as h}
                 <tr>
-                  <td class="ps-3 small">{h.cerradaEn ? new Date(h.cerradaEn).toLocaleDateString('es-PE', { dateStyle: 'medium' }) : '—'}</td>
+                  <td class="ps-3 small text-muted">#{h.id}</td>
+                  <td class="small">{fmtDatetime(h.abiertaEn)}</td>
+                  <td class="small">{fmtDatetime(h.cerradaEn)}</td>
                   <td class="small">{fmt(h.montoInicial)}</td>
                   <td class="small" style="color:#2e7d5a;font-weight:600;">+{fmt(h.totalIngresos ?? 0)}</td>
                   <td class="small" style="color:#c0392b;font-weight:600;">−{fmt(h.totalEgresos ?? 0)}</td>
                   <td class="small fw-bold" style="color:#1b3a60;">{fmt(h.saldoFinal ?? 0)}</td>
-                  <td class="small text-muted pe-3 d-none d-md-table-cell">{h.responsables ?? '—'}</td>
+                  <td class="small text-muted pe-3 d-none d-md-table-cell">{getResponsablesStr(h.responsables) || '—'}</td>
+                  <td class="pe-3">
+                    <button class="btn btn-sm btn-outline-secondary" on:click={() => verDetalle(h)}>Ver</button>
+                  </td>
                 </tr>
               {/each}
             </tbody>
           </table>
         </div>
       </div>
+    {/if}
+
+  <!-- ─── DETALLE DE CAJA ───────────────────────────────── -->
+  {:else if subView === 'detalle' && detalleCaja}
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <button class="btn btn-sm btn-outline-secondary" on:click={() => (subView = 'historial')}>← Historial</button>
+      <h6 class="fw-semibold mb-0">Caja #{detalleCaja.id} · {fmtDatetime(detalleCaja.abiertaEn)}</h6>
     </div>
+    <div class="caja-kpis mb-3">
+      <div class="caja-kpi">
+        <div class="caja-kpi-label">Saldo inicial</div>
+        <div class="caja-kpi-value">{fmt(detalleCaja.montoInicial)}</div>
+      </div>
+      <div class="caja-kpi ing">
+        <div class="caja-kpi-label">Ingresos</div>
+        <div class="caja-kpi-value">+{fmt(detalleCaja.totalIngresos ?? 0)}</div>
+      </div>
+      <div class="caja-kpi egr">
+        <div class="caja-kpi-label">Egresos</div>
+        <div class="caja-kpi-value">−{fmt(detalleCaja.totalEgresos ?? 0)}</div>
+      </div>
+      <div class="caja-kpi net">
+        <div class="caja-kpi-label">Saldo final</div>
+        <div class="caja-kpi-value">{fmt(detalleCaja.saldoFinal ?? 0)}</div>
+      </div>
+    </div>
+    <div class="movs-card">
+      <div class="movs-head">
+        <span class="movs-head-title">Movimientos</span>
+        <span class="movs-head-count">{detalleMovs.length} operaciones</span>
+      </div>
+      {#if detalleLoading}
+        <div style="padding:24px;text-align:center;"><Spinner /></div>
+      {:else if detalleMovs.length === 0}
+        <div class="movs-empty">Sin movimientos registrados</div>
+      {:else}
+        {#each detalleMovs as m}
+          <div class="mov-row {m.tipo === 'ingreso' ? 'is-ing' : 'is-egr'}">
+            <div class="mov-time">{fmtTime(m.fecha)}</div>
+            <div>
+              <div class="mov-main">{m.concepto}</div>
+              {#if m.detalle}<div class="mov-sub">{m.detalle}</div>{/if}
+            </div>
+            <div class="mov-amt {m.tipo === 'ingreso' ? 'ing' : 'egr'}">
+              {m.tipo === 'ingreso' ? '+' : '−'}{fmt(m.monto)}
+            </div>
+          </div>
+        {/each}
+      {/if}
+    </div>
+
+  <!-- ─── CONTROL DE CAJA ───────────────────────────────── -->
+  {:else}
+
+    {#if state === 'loading'}
+      <div style="padding-top:48px;display:flex;justify-content:center;">
+        <Spinner />
+      </div>
+
+    {:else if state === 'closed'}
+      <div class="apertura-outer">
+        <div class="apertura-card">
+          <div class="apertura-header">
+            <div class="apertura-header-label">Control de Caja · Origen</div>
+            <div class="apertura-header-date">
+              {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </div>
+          </div>
+          <div class="apertura-body">
+            {#if errorMsg}
+              <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
+            {/if}
+            <div style="margin-bottom:18px;">
+              <div class="afield">
+                <label for="monto-inicial">Monto inicial (S/.)</label>
+                <input id="monto-inicial" type="number" step="0.50" min="0" placeholder="0.00"
+                       bind:value={montoInicial} style="max-width:180px;" />
+              </div>
+            </div>
+            <div class="resp-section">
+              <div class="resp-section-label">Responsable(s) *</div>
+              <div class="resp-grid">
+                {#each empleados.filter(e => e.activo) as e}
+                  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+                  <div class="resp-chip {selectedEmpleados.includes(e.id) ? 'sel' : ''}"
+                       on:click={() => toggleEmp(e.id)}>
+                    <span>{e.nombre}</span>
+                    <span class="resp-cargo">{e.cargo}</span>
+                  </div>
+                {:else}
+                  <div style="font-size:12px;color:#8a97b0;">Sin empleados registrados</div>
+                {/each}
+              </div>
+            </div>
+            <div class="apertura-footer">
+              <button class="btn btn-primary" on:click={abrir} disabled={submitting || selectedEmpleados.length === 0}>
+                {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+                Abrir caja
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {:else if state === 'open'}
+      <div class="caja-topbar">
+        <div class="caja-topbar-left">
+          <div class="caja-dot"></div>
+          <div class="caja-topbar-info">
+            <strong>Caja abierta</strong>
+            <span>
+              Desde las {apertura ? fmtTime(apertura.abiertaEn) : '—'}
+              {#if apertura?.responsables?.length} · {getResponsablesStr(apertura.responsables)}{/if}
+            </span>
+          </div>
+        </div>
+        <button class="btn-cierre" on:click={() => (state = 'closing')}>Cerrar caja</button>
+      </div>
+
+      <div class="caja-kpis">
+        <div class="caja-kpi">
+          <div class="caja-kpi-label">Saldo inicial</div>
+          <div class="caja-kpi-value">{fmt(apertura?.montoInicial ?? 0)}</div>
+        </div>
+        <div class="caja-kpi ing">
+          <div class="caja-kpi-label">Ingresos del día</div>
+          <div class="caja-kpi-value">+{fmt(totalIngresos)}</div>
+        </div>
+        <div class="caja-kpi egr">
+          <div class="caja-kpi-label">Egresos del día</div>
+          <div class="caja-kpi-value">−{fmt(totalEgresos)}</div>
+        </div>
+        <div class="caja-kpi net">
+          <div class="caja-kpi-label">Saldo actual</div>
+          <div class="caja-kpi-value">{fmt(saldoActual)}</div>
+        </div>
+      </div>
+
+      <div class="movs-card">
+        <div class="movs-head">
+          <span class="movs-head-title">Movimientos del día</span>
+          <span class="movs-head-count">{movimientos.length} operaciones</span>
+        </div>
+        {#if movimientos.length > 0}
+          {#each movimientos as m}
+            <div class="mov-row {m.esIng ? 'is-ing' : 'is-egr'}">
+              <div class="mov-time">{fmtTime(m.fecha)}</div>
+              <div>
+                <div class="mov-main">{m.concepto}</div>
+                {#if m.sub}<div class="mov-sub">{m.sub}</div>{/if}
+              </div>
+              <div class="mov-amt {m.esIng ? 'ing' : 'egr'}">
+                {m.esIng ? '+' : '−'}{fmt(m.monto)}
+              </div>
+            </div>
+          {/each}
+        {:else}
+          <div class="movs-empty">Sin movimientos registrados hoy</div>
+        {/if}
+      </div>
+
+    {:else}
+      <!-- Cierre de caja -->
+      <div class="cierre-outer">
+        <div class="cierre-card">
+          <div class="cierre-top">
+            <div class="cierre-top-title">Cierre de Caja — Origen</div>
+            <div class="cierre-top-sub">
+              {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+          </div>
+          <div class="cierre-body">
+            {#if errorMsg}
+              <div class="alert alert-danger py-2 small mb-3">{errorMsg}</div>
+            {/if}
+            <div class="cierre-meta">
+              Responsable(s): <strong>{apertura ? getResponsablesStr(apertura.responsables) || 'Sin asignar' : 'Sin asignar'}</strong><br/>
+              Apertura: <strong>{apertura ? fmtTime(apertura.abiertaEn) : '—'}</strong>
+              &nbsp;·&nbsp;
+              Cierre: <strong>{new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</strong>
+            </div>
+
+            <div class="cierre-kpis">
+              <div class="ck ini">
+                <div class="ck-label">Saldo inicial</div>
+                <div class="ck-value">{fmt(apertura?.montoInicial ?? 0)}</div>
+              </div>
+              <div class="ck ing">
+                <div class="ck-label">Ingresos</div>
+                <div class="ck-value">+{fmt(totalIngresos)}</div>
+              </div>
+              <div class="ck egr">
+                <div class="ck-label">Egresos</div>
+                <div class="ck-value">−{fmt(totalEgresos)}</div>
+              </div>
+            </div>
+
+            <div class="cierre-movs">
+              {#each movimientos as m}
+                <div class="cierre-mov {m.esIng ? 'is-ing' : 'is-egr'}">
+                  <span class="cierre-mov-time">{fmtTime(m.fecha)}</span>
+                  <span class="cierre-mov-desc">{m.concepto}</span>
+                  <span class="cierre-mov-amt {m.esIng ? 'ing' : 'egr'}">{m.esIng ? '+' : '−'}{fmt(m.monto)}</span>
+                </div>
+              {:else}
+                <div style="padding:16px;text-align:center;font-size:12px;color:#8a97b0;">Sin movimientos registrados</div>
+              {/each}
+            </div>
+
+            <div class="cierre-totales">
+              <div class="cierre-total-row">
+                <span class="cierre-total-label">Saldo inicial</span>
+                <span class="cierre-total-value">{fmt(apertura?.montoInicial ?? 0)}</span>
+              </div>
+              <div class="cierre-total-row">
+                <span class="cierre-total-label">Ingresos ({ingresos.length} transacciones)</span>
+                <span class="cierre-total-value" style="color:#2e7d5a;">+{fmt(totalIngresos)}</span>
+              </div>
+              <div class="cierre-total-row">
+                <span class="cierre-total-label">Egresos ({egresos.length} transacciones)</span>
+                <span class="cierre-total-value" style="color:#c0392b;">−{fmt(totalEgresos)}</span>
+              </div>
+              <div class="cierre-total-row final">
+                <span class="cierre-total-label" style="font-size:15px;font-weight:700;color:#1b3a60;">Saldo final</span>
+                <span class="cierre-total-value" style="font-size:20px;color:#1b3a60;">{fmt(saldoActual)}</span>
+              </div>
+            </div>
+
+            <div class="cierre-footer" style="flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                <span style="font-size:12px;color:#5a6478;flex-shrink:0;">Escribe «cerrar»:</span>
+                <input class="form-control" style="flex:1;max-width:180px;padding:6px 10px;font-size:13px;"
+                       placeholder="cerrar" bind:value={confirmText} />
+              </div>
+              <div style="display:flex;gap:8px;justify-content:flex-end;width:100%;">
+                <button class="btn btn-outline-secondary btn-sm" on:click={() => (state = 'open')}>Cancelar</button>
+                <button class="btn btn-primary btn-sm" on:click={cerrar}
+                        disabled={confirmText !== 'cerrar' || submitting}>
+                  {#if submitting}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+                  Confirmar cierre
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
   {/if}
 
 </div>
 
 <style>
-/* ── Layout ───────────────────────────────────────────────── */
+/* ── Layout ───────────────────────────────────────────── */
 .caja-wrap { max-width: 820px; margin: 0 auto; padding: 16px; }
 
 /* ── Apertura (caja cerrada) ──────────────────────────────── */
@@ -424,7 +536,7 @@
 }
 .btn-cierre:hover { background: rgba(255,255,255,.2); }
 
-/* ── KPIs ─────────────────────────────────────────────────── */
+/* ── KPIs ─────────────────────────────────────────────── */
 .caja-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
 .caja-kpi {
   border-radius: 10px; padding: 15px 18px;
@@ -443,7 +555,7 @@
 .caja-kpi.net .caja-kpi-label { color: rgba(255,255,255,.65); }
 .caja-kpi.net .caja-kpi-value { color: white; }
 
-/* ── Movimientos ──────────────────────────────────────────── */
+/* ── Movimientos ──────────────────────────────────────── */
 .movs-card {
   background: white; border-radius: 10px;
   box-shadow: 0 2px 8px rgba(27,58,96,.08);
@@ -473,7 +585,7 @@
 .mov-amt.egr { color: #c0392b; }
 .movs-empty { padding: 36px; text-align: center; font-size: 13px; color: #8a97b0; }
 
-/* ── Cierre ───────────────────────────────────────────────── */
+/* ── Cierre ───────────────────────────────────────────── */
 .cierre-outer { display: flex; justify-content: center; }
 .cierre-card {
   background: white; border-radius: 10px;
@@ -533,7 +645,7 @@
   margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f4f8;
 }
 
-/* ── Responsive ───────────────────────────────────────────── */
+/* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 600px) {
   .caja-wrap { padding: 12px; }
   .caja-kpis { grid-template-columns: repeat(2, 1fr); }

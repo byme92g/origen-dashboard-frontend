@@ -63,6 +63,21 @@ export interface Producto {
   activo: boolean;
 }
 
+export interface PaqueteServicio {
+  id: number;
+  paqueteId: number;
+  servicioId: number;
+  servicio?: Servicio;
+}
+
+export interface PaqueteProducto {
+  id: number;
+  paqueteId: number;
+  productoId: number;
+  cantidad: number;
+  producto?: Producto;
+}
+
 export interface Paquete {
   id: number;
   nombre: string;
@@ -71,8 +86,8 @@ export interface Paquete {
   descuento: number;
   comisionPct: number;
   activo: boolean;
-  servicios?: Servicio[];
-  productos?: Producto[];
+  servicios?: PaqueteServicio[];
+  productos?: PaqueteProducto[];
 }
 
 export interface Ingreso {
@@ -104,7 +119,8 @@ export interface Ingreso {
 export interface Egreso {
   id: number;
   fecha: string;
-  categoria: string;
+  categoriaId: number;
+  categoria: { id: number; nombre: string } | string;
   descripcion: string;
   monto: number;
   proveedor?: string;

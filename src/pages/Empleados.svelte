@@ -7,6 +7,7 @@
   import Modal from '../lib/components/Modal.svelte';
   import ConfirmDialog from '../lib/components/ConfirmDialog.svelte';
   import { toast } from '../lib/stores/toast';
+  import { authStore } from '../lib/stores/auth';
   import type { Empleado, Usuario } from '../lib/types';
 
   let tab: 'empleados' | 'usuarios' = 'empleados';
@@ -16,14 +17,14 @@
   let empTotal = 0; let empPage = 1; const empSize = 15;
   let empLoading = true;
   let empModal = false; let empEdit: Partial<Empleado> = {}; let empIsEdit = false; let empSaving = false;
-  let empConfirm = false; let empDeleteId: number | null = null;
+  let empConfirm = false; let empDeleteId: number | null = null; let empDeleting = false;
 
   // Usuarios
   let usuarios: Usuario[] = [];
   let usrTotal = 0; let usrPage = 1; const usrSize = 15;
   let usrLoading = true;
   let usrModal = false; let usrEdit: any = {}; let usrIsEdit = false; let usrSaving = false;
-  let usrConfirm = false; let usrDeleteId: number | null = null;
+  let usrConfirm = false; let usrDeleteId: number | null = null; let usrDeleting = false;
 
   async function loadEmpleados() {
     empLoading = true;
@@ -60,7 +61,9 @@
 
   async function deleteEmp() {
     if (!empDeleteId) return;
+    empDeleting = true;
     const res = await empleadoApi.eliminar(empDeleteId);
+    empDeleting = false;
     empConfirm = false;
     if (res.ok) { toast('Eliminado', 'success'); loadEmpleados(); }
     else toast(res.error ?? 'Error', 'error');
@@ -79,7 +82,9 @@
 
   async function deleteUsr() {
     if (!usrDeleteId) return;
+    usrDeleting = true;
     const res = await usuarioApi.eliminar(usrDeleteId);
+    usrDeleting = false;
     usrConfirm = false;
     if (res.ok) { toast('Eliminado', 'success'); loadUsuarios(); }
     else toast(res.error ?? 'Error', 'error');
@@ -129,9 +134,11 @@
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => { empEdit = {...e}; empIsEdit = true; empModal = true; }} title="Editar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
-                      <button class="btn btn-sm btn-outline-danger" on:click={() => { empDeleteId = e.id; empConfirm = true; }} title="Eliminar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                      </button>
+                      {#if !e.usuarioLogin || e.usuarioLogin !== $authStore.user?.nombreUsuario}
+                        <button class="btn btn-sm btn-outline-danger" on:click={() => { empDeleteId = e.id; empConfirm = true; }} title="Eliminar">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        </button>
+                      {/if}
                     </div>
                   </td>
                 </tr>
@@ -176,9 +183,11 @@
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => { usrEdit = {...u}; usrIsEdit = true; usrModal = true; }} title="Editar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
-                      <button class="btn btn-sm btn-outline-danger" on:click={() => { usrDeleteId = u.id; usrConfirm = true; }} title="Eliminar">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                      </button>
+                      {#if u.id !== $authStore.user?.id}
+                        <button class="btn btn-sm btn-outline-danger" on:click={() => { usrDeleteId = u.id; usrConfirm = true; }} title="Eliminar">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        </button>
+                      {/if}
                     </div>
                   </td>
                 </tr>
@@ -256,5 +265,5 @@
   </svelte:fragment>
 </Modal>
 
-<ConfirmDialog show={empConfirm} message="¿Eliminar este empleado?" onConfirm={deleteEmp} onCancel={() => (empConfirm = false)} />
-<ConfirmDialog show={usrConfirm} message="¿Eliminar este usuario?" onConfirm={deleteUsr} onCancel={() => (usrConfirm = false)} />
+<ConfirmDialog show={empConfirm} message="¿Eliminar este empleado?" onConfirm={deleteEmp} onCancel={() => (empConfirm = false)} loading={empDeleting} />
+<ConfirmDialog show={usrConfirm} message="¿Eliminar este usuario?" onConfirm={deleteUsr} onCancel={() => (usrConfirm = false)} loading={usrDeleting} />

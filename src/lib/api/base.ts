@@ -48,7 +48,7 @@ function humanError(status: number, fallback?: string): string {
   if (status === 401) return 'Tu sesión venció o no tienes autorización. Vuelve a iniciar sesión.';
   if (status === 403) return 'No tienes permiso para realizar esta acción.';
   if (status === 404) return fallback ?? 'No se encontró el registro solicitado.';
-  if (status >= 500) return 'Hubo un error de procesamiento. Contacta al administrador si el problema continúa.';
+  if (status >= 500) return fallback ?? 'Hubo un error de procesamiento. Contacta al administrador si el problema continúa.';
   return fallback ?? 'No se pudo completar la operación. Inténtalo nuevamente.';
 }
 

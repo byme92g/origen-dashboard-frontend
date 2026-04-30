@@ -21,21 +21,21 @@
   let saving = false;
   let showReceipt = false;
   let lastEgreso: Egreso | null = null;
-  let deleteConfirm = false; let deleteId: number | null = null;
+  let deleteConfirm = false; let deleteId: number | null = null; let deleting = false;
 
   // ── Category config ────────────────────────────────────────────────────────
   const fallbackCategorias: CategoriaEgreso[] = [
-    { key: 'suministros', label: 'Insumos y productos' },
-    { key: 'servicios', label: 'Servicios y utilidades' },
-    { key: 'salarios', label: 'Sueldos y comisiones' },
-    { key: 'renta', label: 'Alquiler' },
-    { key: 'marketing', label: 'Marketing y publicidad' },
-    { key: 'mantenimiento', label: 'Equipos y mantenimiento' },
-    { key: 'impuestos', label: 'Impuestos' },
-    { key: 'otros', label: 'Otros' },
+    { key: 1, label: 'Insumos y productos' },
+    { key: 2, label: 'Servicios y utilidades' },
+    { key: 3, label: 'Sueldos y comisiones' },
+    { key: 4, label: 'Alquiler' },
+    { key: 5, label: 'Marketing y publicidad' },
+    { key: 6, label: 'Equipos y mantenimiento' },
+    { key: 7, label: 'Impuestos' },
+    { key: 8, label: 'Otros' },
   ];
   let categorias: CategoriaEgreso[] = fallbackCategorias;
-  let categoriaLabels: Record<string, string> = Object.fromEntries(fallbackCategorias.map((c) => [c.key, c.label]));
+  let categoriaLabels: Record<string | number, string> = Object.fromEntries(fallbackCategorias.map((c) => [c.key, c.label]));
 
   const categoriaIcons: Record<string, string> = {
     suministros: '<path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.43 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>',
@@ -79,7 +79,7 @@
   });
 
   function openWizard() {
-    form = { fecha: today, categoria: '', monto: 0 };
+    form = { fecha: today, categoriaId: 0, monto: 0 };
     step = 1; showWizard = true;
   }
 
@@ -89,7 +89,8 @@
     saving = false;
     if (res.ok && res.data) {
       toast('Egreso registrado', 'success');
-      lastEgreso = res.data;
+      // Backend wraps response as { egreso, message }
+      lastEgreso = (res.data as any).egreso ?? res.data;
       showWizard = false; showReceipt = true;
       load();
     } else toast(res.error ?? 'Error', 'error');
@@ -97,7 +98,9 @@
 
   async function doDelete() {
     if (!deleteId) return;
+    deleting = true;
     const res = await egresoApi.eliminar(deleteId);
+    deleting = false;
     deleteConfirm = false;
     if (res.ok) { toast('Eliminado', 'success'); load(); }
     else toast(res.error ?? 'Error', 'error');
@@ -108,7 +111,11 @@
     return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit' });
   }
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
-  function catLabel(key: string) { return categoriaLabels[key] ?? key; }
+  function catLabel(key: string | number | { id: number; nombre: string } | undefined | null): string {
+    if (!key && key !== 0) return '—';
+    if (typeof key === 'object') return key.nombre;
+    return categoriaLabels[key] ?? String(key);
+  }
 
   $: step2Valid = !!(form.descripcion && (form.monto ?? 0) > 0);
 </script>
@@ -159,7 +166,7 @@
               <tr>
                 <td class="ps-3 small text-muted" style="white-space:nowrap">{fmtDate(e.fecha)}</td>
                 <td class="small fw-semibold">{e.descripcion}</td>
-                <td><span class="cat-badge cat-{e.categoria}">{catLabel(e.categoria)}</span></td>
+                <td><span class="cat-badge">{catLabel(e.categoria)}</span></td>
                 <td class="small text-muted d-none d-md-table-cell">{e.proveedor ?? '—'}</td>
                 <td class="text-end fw-bold small text-danger">-{fmt(e.monto)}</td>
                 {#if $isAdmin}
@@ -213,7 +220,7 @@
             <p class="text-muted small mb-3">Selecciona la categoría que mejor describe este gasto</p>
             <div class="cat-grid mb-3">
               {#each categoriaItems as c}
-                <button type="button" class="cat-btn {form.categoria === c.key ? 'active' : ''}" on:click={() => (form.categoria = c.key)}>
+                <button type="button" class="cat-btn {form.categoriaId === c.key ? 'active' : ''}" on:click={() => (form.categoriaId = Number(c.key))}>
                   <span class="cat-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">{@html c.svg}</svg>
                   </span>
@@ -224,7 +231,7 @@
 
           <!-- ── PASO 2: DETALLE ── -->
           {:else if step === 2}
-            <p class="text-muted small mb-3">Ingresa los datos del gasto en <strong>{catLabel(form.categoria ?? '')}</strong></p>
+            <p class="text-muted small mb-3">Ingresa los datos del gasto en <strong>{catLabel(form.categoriaId)}</strong></p>
 
             <div class="mb-3">
               <label class="form-label" style="font-size:11px;font-weight:700;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Monto (S/)</label>
@@ -263,7 +270,7 @@
               <div class="resumen-header-label">Resumen del egreso</div>
               <div class="resumen-row">
                 <span>Categoría</span>
-                <span class="cat-badge cat-{form.categoria}">{catLabel(form.categoria ?? '')}</span>
+                <span class="cat-badge">{catLabel(form.categoriaId)}</span>
               </div>
               <div class="resumen-row">
                 <span>Descripción</span>
@@ -296,7 +303,7 @@
           {#if step > 1}<button class="btn btn-outline-secondary btn-sm" on:click={() => step--}>← Atrás</button>{/if}
           {#if step < 3}
             <button class="btn btn-danger btn-sm" on:click={() => step++}
-              disabled={step === 1 ? !form.categoria : !step2Valid}>
+              disabled={step === 1 ? !form.categoriaId : !step2Valid}>
               Siguiente →
             </button>
           {:else}
@@ -338,7 +345,7 @@
   </div>
 {/if}
 
-<ConfirmDialog show={deleteConfirm} message="¿Eliminar este egreso?" onConfirm={doDelete} onCancel={() => (deleteConfirm=false)} />
+<ConfirmDialog show={deleteConfirm} message="¿Eliminar este egreso?" onConfirm={doDelete} onCancel={() => (deleteConfirm=false)} loading={deleting} />
 
 <style>
   /* ── Categoria grid ──────────────────────────────────────────────────────── */
@@ -397,14 +404,6 @@
     font-size: 11px; font-weight: 600; background: #f0f4ff; color: var(--navy);
     white-space: nowrap;
   }
-  .cat-badge.cat-suministros   { background: #e3f2fd; color: #1565c0; }
-  .cat-badge.cat-servicios     { background: #ede7f6; color: #6b21a8; }
-  .cat-badge.cat-salarios      { background: #fff3e0; color: #e65100; }
-  .cat-badge.cat-renta         { background: #e8f5e9; color: #2e7d32; }
-  .cat-badge.cat-marketing     { background: #fce4ec; color: #c2185b; }
-  .cat-badge.cat-mantenimiento { background: #fff8e1; color: #f57f17; }
-  .cat-badge.cat-impuestos     { background: #fdecea; color: #c0392b; }
-  .cat-badge.cat-otros         { background: #f0f4ff; color: var(--navy); }
 
   /* ── Delete button ───────────────────────────────────────────────────────── */
   .btn-icon-sm {

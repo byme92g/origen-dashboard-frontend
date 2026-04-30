@@ -22,6 +22,7 @@
 
   let showConfirm = false;
   let deleteTarget: number | null = null;
+  let deleting = false;
 
   async function load() {
     loading = true;
@@ -61,7 +62,9 @@
   function confirmDelete(id: number) { deleteTarget = id; showConfirm = true; }
   async function doDelete() {
     if (!deleteTarget) return;
+    deleting = true;
     const res = await clienteApi.eliminar(deleteTarget);
+    deleting = false;
     showConfirm = false;
     if (res.ok) { toast('Cliente eliminado', 'success'); load(); }
     else toast(res.error ?? 'Error al eliminar', 'error');
@@ -161,4 +164,5 @@
   message="¿Eliminar este cliente? Esta acción no se puede deshacer."
   onConfirm={doDelete}
   onCancel={() => (showConfirm = false)}
+  loading={deleting}
 />

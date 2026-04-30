@@ -3,6 +3,7 @@
   export let message = '¿Estás seguro de esta acción?';
   export let onConfirm: () => void;
   export let onCancel: () => void = () => { show = false; };
+  export let loading = false;
 </script>
 
 {#if show}
@@ -15,8 +16,10 @@
         </div>
         <div class="modal-body pt-2">{message}</div>
         <div class="modal-footer border-0">
-          <button class="btn btn-outline-secondary btn-sm" on:click={onCancel}>Cancelar</button>
-          <button class="btn btn-danger btn-sm" on:click={onConfirm}>Confirmar</button>
+          <button class="btn btn-outline-secondary btn-sm" on:click={onCancel} disabled={loading}>Cancelar</button>
+          <button class="btn btn-danger btn-sm" on:click={onConfirm} disabled={loading}>
+            {#if loading}<span class="spinner-border spinner-border-sm me-1"></span>{/if}Confirmar
+          </button>
         </div>
       </div>
     </div>
