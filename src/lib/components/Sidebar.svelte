@@ -117,6 +117,7 @@ $: initials =
     display: block;
   }
   .sidebar-logo-sub {
+    font-family: var(--font-heading);
     font-size: 10px;
     font-weight: 500;
     color: rgba(255,255,255,.45);
@@ -145,20 +146,23 @@ $: initials =
     flex-shrink: 0;
   }
   .sidebar-user-name {
-    font-size: 12px;
-    font-weight: 500;
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 600;
     color: rgba(255,255,255,.9);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .sidebar-user-role {
-    font-size: 10px;
+    font-family: var(--font-heading);
+    font-size: 11px;
     color: rgba(255,255,255,.45);
     text-transform: capitalize;
   }
   .sidebar-section-label {
-    font-size: 9px;
+    font-family: var(--font-heading);
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .12em;
@@ -172,7 +176,8 @@ $: initials =
     padding: 8px 20px;
     color: rgba(255,255,255,.65);
     text-decoration: none;
-    font-size: 13px;
+    font-family: var(--font-heading);
+    font-size: 14px;
     font-weight: 400;
     border-left: 3px solid transparent;
     transition: background .15s, color .15s;

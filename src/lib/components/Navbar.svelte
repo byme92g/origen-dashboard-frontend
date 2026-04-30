@@ -63,13 +63,15 @@
   }
   .hamburger:hover { background: #eef2fa; }
   .user-name {
-    font-size: 12px;
+    font-family: var(--font-heading);
+    font-size: 13px;
     font-weight: 600;
     color: var(--navy);
     line-height: 1.2;
   }
   .user-role {
-    font-size: 10px;
+    font-family: var(--font-heading);
+    font-size: 11px;
     color: #8a97b0;
     text-transform: capitalize;
   }

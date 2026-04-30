@@ -10,7 +10,6 @@ export function getToken(): string | null {
       localStorage.removeItem('origen_token');
       localStorage.removeItem('origen_user');
       localStorage.removeItem('origen_expiry');
-      window.location.hash = '#/login';
       return null;
     }
     return localStorage.getItem('origen_token');
@@ -28,7 +27,15 @@ function headers(auth = true): HeadersInit {
   return h;
 }
 
+let loggingOut = false;
+
+export function resetLogoutFlag(): void {
+  loggingOut = false;
+}
+
 async function handle401(): Promise<void> {
+  if (loggingOut) return;
+  loggingOut = true;
   localStorage.removeItem('origen_token');
   localStorage.removeItem('origen_user');
   localStorage.removeItem('origen_expiry');
@@ -43,13 +50,16 @@ function firstValidationError(errors: unknown): string | null {
   return null;
 }
 
+const dotnetAutoMsg = /^The .+ field is required\.$/i;
+
 function humanError(status: number, fallback?: string): string {
-  if (status === 400) return fallback ?? 'Revisa los datos ingresados. Hay un valor inválido o incompleto.';
+  const msg = fallback && !dotnetAutoMsg.test(fallback) ? fallback : undefined;
+  if (status === 400) return msg ?? 'Revisa los datos ingresados. Hay un valor inválido o incompleto.';
   if (status === 401) return 'Tu sesión venció o no tienes autorización. Vuelve a iniciar sesión.';
   if (status === 403) return 'No tienes permiso para realizar esta acción.';
-  if (status === 404) return fallback ?? 'No se encontró el registro solicitado.';
-  if (status >= 500) return fallback ?? 'Hubo un error de procesamiento. Contacta al administrador si el problema continúa.';
-  return fallback ?? 'No se pudo completar la operación. Inténtalo nuevamente.';
+  if (status === 404) return msg ?? 'No se encontró el registro solicitado.';
+  if (status >= 500) return msg ?? 'Hubo un error de procesamiento. Contacta al administrador si el problema continúa.';
+  return msg ?? 'No se pudo completar la operación. Inténtalo nuevamente.';
 }
 
 async function parseResponse<T>(res: Response): Promise<ApiResponse<T>> {

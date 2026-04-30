@@ -236,9 +236,9 @@
             <div class="mb-3">
               <label class="form-label" style="font-size:11px;font-weight:700;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Monto (S/)</label>
               <div style="position:relative">
-                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.3rem;font-weight:700;color:#c0392b;pointer-events:none;font-family:var(--font-heading)">-S/</span>
+                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.3rem;font-weight:700;color:#c0392b;pointer-events:none">-S/</span>
                 <input type="number" step="0.01" min="0" bind:value={form.monto}
-                  style="width:100%;padding:14px 14px 14px 62px;font-size:1.8rem;font-weight:800;font-family:var(--font-heading);color:#c0392b;border:2.5px solid {(form.monto ?? 0) > 0 ? '#c0392b' : '#d0d8e8'};border-radius:8px;outline:none;background:white;transition:border-color .15s" />
+                  style="width:100%;padding:14px 14px 14px 62px;font-size:1.8rem;font-weight:800;color:#c0392b;border:2.5px solid {(form.monto ?? 0) > 0 ? '#c0392b' : '#d0d8e8'};border-radius:8px;outline:none;background:white;transition:border-color .15s" />
               </div>
             </div>
 
@@ -334,7 +334,7 @@
           </div>
           <h5 class="fw-bold">Egreso Registrado</h5>
           <p class="text-muted small">{lastEgreso.descripcion} · {catLabel(lastEgreso.categoria)}</p>
-          <p class="fw-bold fs-3 text-danger" style="font-family:var(--font-heading)">-{fmt(lastEgreso.monto)}</p>
+          <p class="fw-bold fs-3 text-danger">-{fmt(lastEgreso.monto)}</p>
           <p class="text-muted small">{fmtDate(lastEgreso.fecha)}</p>
         </div>
         <div class="modal-footer border-0 justify-content-center">
@@ -384,7 +384,7 @@
   .resumen-total {
     padding-top: 12px; font-size: 14px; font-weight: 700; color: #c0392b;
   }
-  .resumen-total span:last-child { font-family: var(--font-heading); font-size: 1.4rem; }
+  .resumen-total span:last-child { font-size: 1.4rem; }
 
   /* ── Step progress ───────────────────────────────────────────────────────── */
   .progress-num {

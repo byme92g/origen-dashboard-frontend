@@ -1,8 +1,17 @@
 import { apiGet, apiPost, apiDelete } from './base';
 import type { Ingreso, PaginatedResult } from '../types';
 
+export interface DetalleIngresoRequest {
+  tipo: string;
+  servicioId?: number;
+  productoId?: number;
+  paqueteId?: number;
+  conceptoPersonalizado?: string;
+  cantidad: number;
+  monto: number;
+}
+
 export interface CrearIngresoRequest {
-  fecha: string;
   clienteId?: number;
   empleadoId?: number;
   tipo: string;
@@ -17,6 +26,7 @@ export interface CrearIngresoRequest {
   referencia?: string;
   comision: number;
   observaciones?: string;
+  detalles?: DetalleIngresoRequest[];
 }
 
 function normalizeIngreso(i: Ingreso): Ingreso {

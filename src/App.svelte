@@ -25,7 +25,11 @@
   const currentPath = writable(window.location.hash.replace('#', '') || '/');
 
   onMount(() => {
-    const update = () => currentPath.set(window.location.hash.replace('#', '') || '/');
+    const update = () => {
+      const path = window.location.hash.replace('#', '') || '/';
+      currentPath.set(path);
+      if (path === '/login') authStore.refresh();
+    };
     window.addEventListener('hashchange', update);
     return () => window.removeEventListener('hashchange', update);
   });

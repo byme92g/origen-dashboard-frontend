@@ -90,6 +90,21 @@ export interface Paquete {
   productos?: PaqueteProducto[];
 }
 
+export interface IngresoDetalle {
+  id: number;
+  ingresoId: number;
+  tipo: string;
+  servicioId?: number;
+  productoId?: number;
+  paqueteId?: number;
+  conceptoPersonalizado?: string;
+  cantidad: number;
+  monto: number;
+  servicio?: { id: number; nombre: string };
+  producto?: { id: number; nombre: string };
+  paquete?: { id: number; nombre: string };
+}
+
 export interface Ingreso {
   id: number;
   fecha: string;
@@ -114,6 +129,7 @@ export interface Ingreso {
   servicio?: { id: number; nombre: string; precio: number };
   producto?: { id: number; nombre: string; precioVenta: number };
   paquete?: { id: number; nombre: string; precio: number };
+  detalles?: IngresoDetalle[];
 }
 
 export interface Egreso {

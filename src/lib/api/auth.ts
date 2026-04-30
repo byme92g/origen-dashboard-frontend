@@ -1,4 +1,4 @@
-import { apiPost } from './base';
+import { apiPost, resetLogoutFlag } from './base';
 import type { UsuarioInfo } from '../types';
 
 interface LoginResponse {
@@ -29,6 +29,7 @@ export async function login(usuario: string, password: string): Promise<{ ok: bo
   localStorage.setItem('origen_token', token);
   localStorage.setItem('origen_user', JSON.stringify(payload.usuario));
   localStorage.setItem('origen_expiry', String(expiry));
+  resetLogoutFlag();
   return { ok: true };
 }
 
