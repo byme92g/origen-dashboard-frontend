@@ -326,26 +326,33 @@
 </script>
 
 <div class="p-3 p-md-4">
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-    <div>
-      <h5 class="fw-bold mb-0">Ingresos</h5>
-      <p class="text-muted small mb-0">Historial de transacciones registradas</p>
+  <div class="page-panel mb-3">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon">
+          <i class="bi bi-arrow-down-circle"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold mb-0">Ingresos</h5>
+          <p class="text-muted small mb-0">Historial de transacciones registradas</p>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" on:click={openWizard}>
+        <i class="bi bi-plus-lg me-1"></i>Nuevo Ingreso
+      </button>
     </div>
-    <button class="btn btn-primary btn-sm" on:click={openWizard}>+ Nuevo Ingreso</button>
-  </div>
-
-  <!-- Filtros -->
-  <div class="card border-0 shadow-sm p-3 mb-3">
-    <div class="d-flex gap-2 flex-wrap align-items-end">
+    <div class="page-panel-filters">
+      <i class="bi bi-calendar3 filter-cal-icon"></i>
       <div>
-        <label class="form-label small fw-semibold mb-1" style="text-transform:uppercase;font-size:10px;color:#8a97b0;letter-spacing:.06em">Desde</label>
-        <input type="date" class="form-control form-control-sm" style="width:150px" bind:value={desde} />
+        <label class="filter-label">Desde</label>
+        <input type="date" class="form-control form-control-sm filter-date" bind:value={desde} />
       </div>
+      <span class="filter-sep">→</span>
       <div>
-        <label class="form-label small fw-semibold mb-1" style="text-transform:uppercase;font-size:10px;color:#8a97b0;letter-spacing:.06em">Hasta</label>
-        <input type="date" class="form-control form-control-sm" style="width:150px" bind:value={hasta} />
+        <label class="filter-label">Hasta</label>
+        <input type="date" class="form-control form-control-sm filter-date" bind:value={hasta} />
       </div>
-      <button class="btn btn-sm btn-outline-secondary" on:click={() => { page=1; load(); }}>Filtrar</button>
+      <button class="btn btn-sm btn-primary" on:click={() => { page=1; load(); }}>Filtrar</button>
       {#if desde !== thirtyAgo || hasta !== today}
         <button class="btn btn-sm btn-link text-muted p-0" on:click={() => { desde=thirtyAgo; hasta=today; page=1; load(); }}>Limpiar</button>
       {/if}
@@ -356,7 +363,7 @@
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table table-sm table-hover table-origen mb-0">
-          <thead class="table-origen">
+          <thead class="table-origen table-navy">
             <tr>
               <th class="ps-3">Fecha</th>
               <th>Concepto</th>

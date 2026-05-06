@@ -79,24 +79,34 @@
 
 <div class="p-3 p-md-4">
 
-  <!-- Toolbar de período -->
-  <div class="report-toolbar mb-4">
-    <div class="report-toolbar-row mb-2">
-      <span class="report-date-label me-1">Período:</span>
+  <div class="page-panel mb-4">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div>
+          <h5 class="fw-bold mb-0">Reportes</h5>
+          <p class="text-muted small mb-0">Resumen financiero exportable del período</p>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" on:click={() => exportar('csv')}>
+          <i class="bi bi-filetype-csv me-1"></i>CSV
+        </button>
+        <button class="btn btn-outline-primary btn-sm" on:click={() => exportar('pdf')}>
+          <i class="bi bi-file-pdf me-1"></i>PDF
+        </button>
+      </div>
+    </div>
+    <div class="page-panel-filters">
       {#each PERIODOS as p}
         <button class="rango-btn" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
       {/each}
-    </div>
-    <div class="report-toolbar-row">
-      <span class="report-date-label">Desde:</span>
-      <input type="date" class="report-date-input" bind:value={desde} />
-      <span class="report-date-label ms-2">Hasta:</span>
-      <input type="date" class="report-date-input" bind:value={hasta} />
-      <div class="report-toolbar-divider"></div>
-      <button class="btn btn-primary btn-sm" on:click={load}>Aplicar rango</button>
-      <button class="btn btn-outline-primary btn-sm" on:click={() => exportar('csv')}>Exportar CSV</button>
-      <button class="btn btn-outline-primary btn-sm" on:click={() => exportar('pdf')}>Exportar PDF</button>
-      {#if loading}<span class="text-muted ms-2" style="font-size:12px;">Cargando...</span>{/if}
+      <i class="bi bi-calendar3 filter-cal-icon"></i>
+      <div><label class="filter-label">Desde</label><input type="date" class="form-control form-control-sm filter-date" bind:value={desde} /></div>
+      <span class="filter-sep">→</span>
+      <div><label class="filter-label">Hasta</label><input type="date" class="form-control form-control-sm filter-date" bind:value={hasta} /></div>
+      <button class="btn btn-sm btn-primary" on:click={load}>Aplicar</button>
+      {#if loading}<span class="filter-sep small text-muted">Cargando...</span>{/if}
     </div>
   </div>
 
@@ -152,7 +162,7 @@
         <div class="card-header-origen"><span class="card-title">Top servicios</span></div>
         <div class="table-responsive">
           <table class="table table-sm table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr><th class="ps-3">#</th><th>Servicio</th><th>Cantidad</th><th class="pe-3 text-end">Total</th></tr>
             </thead>
             <tbody>
@@ -176,7 +186,7 @@
         <div class="card-header-origen"><span class="card-title">Por empleado</span></div>
         <div class="table-responsive">
           <table class="table table-sm table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr><th class="ps-3">Empleado</th><th>Servicios</th><th>Ventas</th><th class="pe-3 text-end">Comisión</th></tr>
             </thead>
             <tbody>
@@ -222,19 +232,6 @@
 </div>
 
 <style>
-.report-toolbar {
-  background: white; border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(27,58,96,.08);
-  padding: 16px 20px;
-}
-.report-toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.report-toolbar-divider { width: 1px; height: 24px; background: #e0e6f0; margin: 0 4px; flex-shrink: 0; }
-.report-date-label { font-size: 11px; font-weight: 600; color: #8a97b0; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
-.report-date-input {
-  border: 1.5px solid #d0d8e8; border-radius: 6px; padding: 6px 10px;
-  font-size: 13px; color: #1b3a60; outline: none; font-family: inherit;
-}
-.report-date-input:focus { border-color: #1b3a60; }
 .rango-btn {
   padding: 6px 16px; border: 1.5px solid #d0d8e8; border-radius: 20px;
   background: white; cursor: pointer; font-size: 12px; font-weight: 600;

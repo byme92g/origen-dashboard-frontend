@@ -4,6 +4,7 @@
   import { isAdmin } from '../lib/stores/auth';
   import Spinner from '../lib/components/Spinner.svelte';
   import Modal from '../lib/components/Modal.svelte';
+  import Pagination from '../lib/components/Pagination.svelte';
   import { toast } from '../lib/stores/toast';
   import type { Producto } from '../lib/types';
 
@@ -18,6 +19,8 @@
   let editing: Partial<Producto> = {};
   let saving = false;
   const bajoMinimo = 5;
+  let page = 1;
+  const pageSize = 20;
 
   function toggleCategoria(cat: string) {
     selectedCategorias = selectedCategorias.includes(cat)
@@ -49,6 +52,9 @@
     })
     .filter((p) => selectedCategorias.length === 0 || selectedCategorias.includes(p.categoria))
     .filter((p) => `${p.nombre} ${p.categoria}`.toLowerCase().includes(busqueda.trim().toLowerCase()));
+
+  $: { filtro; busqueda; selectedCategorias; page = 1; }
+  $: paged = visibles.slice((page - 1) * pageSize, page * pageSize);
 
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
   function stockClass(p: Producto) {
@@ -85,24 +91,19 @@
 </script>
 
 <div class="p-3 p-md-4">
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-    <div>
-      <h5 class="fw-bold mb-0">Control de stock</h5>
-      <p class="text-muted small mb-0">Inventario de productos y alertas de disponibilidad</p>
+  <div class="page-panel mb-3">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon"><i class="bi bi-box-seam"></i></div>
+        <div>
+          <h5 class="fw-bold mb-0">Control de stock</h5>
+          <p class="text-muted small mb-0">Inventario de productos y alertas de disponibilidad</p>
+        </div>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" on:click={load}>Actualizar</button>
     </div>
-    <button class="btn btn-outline-secondary btn-sm" on:click={load}>Actualizar</button>
-  </div>
-
-  <div class="kpi-grid mb-4">
-    <div class="kpi-card green"><div><div class="kpi-label">Productos activos</div><div class="kpi-value">{activos.length}</div></div></div>
-    <div class="kpi-card gold"><div><div class="kpi-label">Stock bajo</div><div class="kpi-value">{bajos.length}</div></div></div>
-    <div class="kpi-card red"><div><div class="kpi-label">Agotados</div><div class="kpi-value">{agotados.length}</div></div></div>
-    <div class="kpi-card"><div><div class="kpi-label">Valor inventario</div><div class="kpi-value">{fmt(valorizado)}</div></div></div>
-  </div>
-
-  <div class="card border-0 shadow-sm p-3 mb-3">
-    <div class="d-flex gap-2 flex-wrap align-items-center">
-      <input class="form-control form-control-sm stock-search" placeholder="Buscar producto o categoría" bind:value={busqueda} />
+    <div class="page-panel-filters">
+      <input class="form-control form-control-sm" style="width:220px;" placeholder="Buscar producto o categoría" bind:value={busqueda} />
       <div class="btn-group btn-group-sm" role="group">
         <button class="btn btn-outline-secondary" class:active={filtro === 'todos'} on:click={() => (filtro = 'todos')}>Todos</button>
         <button class="btn btn-outline-secondary" class:active={filtro === 'bajo'} on:click={() => (filtro = 'bajo')}>Bajo</button>
@@ -112,13 +113,21 @@
     </div>
   </div>
 
+  <div class="kpi-grid mb-4">
+    <div class="kpi-card green"><div><div class="kpi-label">Productos activos</div><div class="kpi-value">{activos.length}</div></div></div>
+    <div class="kpi-card gold"><div><div class="kpi-label">Stock bajo</div><div class="kpi-value">{bajos.length}</div></div></div>
+    <div class="kpi-card red"><div><div class="kpi-label">Agotados</div><div class="kpi-value">{agotados.length}</div></div></div>
+    <div class="kpi-card"><div><div class="kpi-label">Valor inventario</div><div class="kpi-value">{fmt(valorizado)}</div></div></div>
+  </div>
+
+
   {#if loading}
     <Spinner />
   {:else}
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table table-sm table-hover table-origen mb-0">
-          <thead class="table-origen">
+          <thead class="table-origen table-navy">
             <tr>
               <th class="ps-3">Producto</th>
               <th>Categoría</th>
@@ -130,7 +139,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each visibles as p}
+            {#each paged as p}
               <tr class:row-inactive={!p.activo}>
                 <td class="ps-3 fw-semibold small">{p.nombre}</td>
                 <td class="small">{p.categoria || '-'}</td>
@@ -150,6 +159,10 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <div class="mt-3">
+      <Pagination {page} total={visibles.length} {pageSize} onChange={(p) => { page = p; }} />
     </div>
 
     {#if categorias.length}
@@ -208,7 +221,6 @@
 </Modal>
 
 <style>
-  .stock-search { max-width: 320px; }
   .stock-cats { display: flex; flex-wrap: wrap; gap: 8px; }
   .stock-cat {
     display: inline-flex; align-items: center; gap: 8px;

@@ -79,9 +79,16 @@
 </script>
 
 <div class="p-3 p-md-4">
-  <div class="mb-4">
-    <h5 class="fw-bold mb-0">Configuración</h5>
-    <p class="text-muted small mb-0">Datos del negocio y seguridad de la cuenta administradora</p>
+  <div class="page-panel mb-4">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon"><i class="bi bi-gear"></i></div>
+        <div>
+          <h5 class="fw-bold mb-0">Configuración</h5>
+          <p class="text-muted small mb-0">Datos del negocio y seguridad de la cuenta administradora</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="config-grid">

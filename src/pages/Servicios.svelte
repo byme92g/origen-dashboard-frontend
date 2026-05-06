@@ -166,23 +166,39 @@
 </script>
 
 <div class="p-3 p-md-4">
-  <h5 class="fw-bold mb-3">Servicios y productos</h5>
+  <div class="page-panel mb-3">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon"><i class="bi bi-bag-check"></i></div>
+        <div>
+          <h5 class="fw-bold mb-0">Servicios y productos</h5>
+          <p class="text-muted small mb-0">Catálogo de servicios, productos y paquetes</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <ul class="nav nav-tabs nav-tabs-origen mb-3">
-    <li class="nav-item"><button class="nav-link" class:active={tab==='servicios'} on:click={() => (tab='servicios')}>Servicios</button></li>
-    <li class="nav-item"><button class="nav-link" class:active={tab==='productos'} on:click={() => (tab='productos')}>Productos</button></li>
-    <li class="nav-item"><button class="nav-link" class:active={tab==='paquetes'} on:click={() => (tab='paquetes')}>Paquetes</button></li>
-  </ul>
+  <div class="d-flex align-items-end justify-content-between mb-3 flex-wrap gap-2">
+    <ul class="nav nav-tabs nav-tabs-origen mb-0">
+      <li class="nav-item"><button class="nav-link" class:active={tab==='servicios'} on:click={() => (tab='servicios')}>Servicios</button></li>
+      <li class="nav-item"><button class="nav-link" class:active={tab==='productos'} on:click={() => (tab='productos')}>Productos</button></li>
+      <li class="nav-item"><button class="nav-link" class:active={tab==='paquetes'} on:click={() => (tab='paquetes')}>Paquetes</button></li>
+    </ul>
+    {#if tab === 'servicios'}
+      <button class="btn btn-primary btn-sm" on:click={() => openNew('servicios')}><i class="bi bi-plus-lg me-1"></i>Nuevo servicio</button>
+    {:else if tab === 'productos'}
+      <button class="btn btn-primary btn-sm" on:click={() => openNew('productos')}><i class="bi bi-plus-lg me-1"></i>Nuevo producto</button>
+    {:else}
+      <button class="btn btn-primary btn-sm" on:click={() => openNew('paquetes')}><i class="bi bi-plus-lg me-1"></i>Nuevo paquete</button>
+    {/if}
+  </div>
 
   {#if tab === 'servicios'}
-    <div class="d-flex justify-content-end mb-3">
-      <button class="btn btn-primary btn-sm" on:click={() => openNew('servicios')}>+ Nuevo servicio</button>
-    </div>
     {#if svcLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th class="d-none d-md-table-cell">Duración</th><th>Comisión</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
@@ -217,14 +233,11 @@
     {/if}
 
   {:else if tab === 'productos'}
-    <div class="d-flex justify-content-end mb-3">
-      <button class="btn btn-primary btn-sm" on:click={() => openNew('productos')}>+ Nuevo producto</button>
-    </div>
     {#if prdLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
@@ -255,14 +268,11 @@
     {/if}
 
   {:else}
-    <div class="d-flex justify-content-end mb-3">
-      <button class="btn btn-primary btn-sm" on:click={() => openNew('paquetes')}>+ Nuevo paquete</button>
-    </div>
     {#if pkgLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr><th class="ps-3">Nombre</th><th class="d-none d-md-table-cell">Descripción</th><th>Precio</th><th>Descuento</th><th>Incluye</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>

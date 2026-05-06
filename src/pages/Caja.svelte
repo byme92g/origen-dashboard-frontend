@@ -4,6 +4,7 @@
   import { cajaApi, getResponsablesStr, type CajaApertura, type CajaMovimiento } from '../lib/api/caja';
   import { isAdmin } from '../lib/stores/auth';
   import Spinner from '../lib/components/Spinner.svelte';
+  import Pagination from '../lib/components/Pagination.svelte';
   import type { Empleado } from '../lib/types';
 
   type CajaState = 'loading' | 'closed' | 'open' | 'closing';
@@ -23,7 +24,11 @@
 
   let historial: CajaApertura[] = [];
   let historialLoading = false;
+  let historialPage = 1;
+  const historialSize = 15;
   let errorMsg = '';
+
+  $: historialPaged = historial.slice((historialPage - 1) * historialSize, historialPage * historialSize);
 
   // Detalle de caja seleccionada
   let detalleCaja: CajaApertura | null = null;
@@ -183,7 +188,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each historial as h}
+              {#each historialPaged as h}
                 <tr>
                   <td class="ps-3 small">{fmtDatetime(h.abiertaEn)}</td>
                   <td class="small">{fmtDatetime(h.cerradaEn)}</td>
@@ -199,6 +204,9 @@
               {/each}
             </tbody>
           </table>
+        </div>
+        <div class="p-3">
+          <Pagination page={historialPage} total={historial.length} pageSize={historialSize} onChange={(p) => { historialPage = p; }} />
         </div>
       </div>
     {/if}

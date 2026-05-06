@@ -148,26 +148,44 @@
 </script>
 
 <div class="p-3 p-md-4">
-  <h5 class="fw-bold mb-3">Personal</h5>
+  <div class="page-panel mb-3">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon"><i class="bi bi-person-badge"></i></div>
+        <div>
+          <h5 class="fw-bold mb-0">Personal</h5>
+          <p class="text-muted small mb-0">Empleados y administradores del sistema</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <ul class="nav nav-tabs nav-tabs-origen mb-3">
-    <li class="nav-item">
-      <button class="nav-link" class:active={tab === 'empleados'} on:click={() => (tab = 'empleados')}>Empleados</button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" class:active={tab === 'admins'} on:click={() => (tab = 'admins')}>Admins</button>
-    </li>
-  </ul>
+  <div class="d-flex align-items-end justify-content-between mb-3 flex-wrap gap-2">
+    <ul class="nav nav-tabs nav-tabs-origen mb-0">
+      <li class="nav-item">
+        <button class="nav-link" class:active={tab === 'empleados'} on:click={() => (tab = 'empleados')}>Empleados</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" class:active={tab === 'admins'} on:click={() => (tab = 'admins')}>Admins</button>
+      </li>
+    </ul>
+    {#if tab === 'empleados'}
+      <button class="btn btn-primary btn-sm" on:click={openNewEmpleado}>
+        <i class="bi bi-plus-lg me-1"></i>Nuevo empleado
+      </button>
+    {:else}
+      <button class="btn btn-primary btn-sm" on:click={() => { usrEdit = { rol: 'admin' }; usrIsEdit = false; usrModal = true; }}>
+        <i class="bi bi-plus-lg me-1"></i>Nuevo admin
+      </button>
+    {/if}
+  </div>
 
   {#if tab === 'empleados'}
-    <div class="d-flex justify-content-end mb-3">
-      <button class="btn btn-primary btn-sm" on:click={openNewEmpleado}>+ Nuevo empleado</button>
-    </div>
     {#if empLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr>
                 <th class="ps-3">Nombre</th>
                 <th>Cargo</th>
@@ -217,14 +235,11 @@
     {/if}
 
   {:else}
-    <div class="d-flex justify-content-end mb-3">
-      <button class="btn btn-primary btn-sm" on:click={() => { usrEdit = { rol: 'admin' }; usrIsEdit = false; usrModal = true; }}>+ Nuevo admin</button>
-    </div>
     {#if usrLoading}<Spinner />{:else}
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr>
                 <th class="ps-3">Usuario</th>
                 <th>Nombre completo</th>

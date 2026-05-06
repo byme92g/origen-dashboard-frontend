@@ -46,7 +46,7 @@
       icon: 'bi-arrow-up-circle' },
     { label: 'Utilidad mes',    value: fmt(d.kpis.utilidadMes),     color: 'green',
       icon: 'bi-graph-up-arrow' },
-    { label: 'Clientes totales', value: String(d.kpis.totalClientes), color: '',
+    { label: 'Clientes totales', value: String(d.kpis.totalClientes), color: 'navy',
       icon: 'bi-people' },
     { label: 'Servicios hoy',   value: String(d.kpis.serviciosHoy), color: 'amber',
       icon: 'bi-bag-check' },
@@ -56,6 +56,7 @@
 <div class="p-3 p-md-4">
 
   <!-- Quick Actions -->
+  <div class="dash-section-label">Accesos rápidos</div>
   <div class="quick-actions mb-4">
     {#each visibleQuickActions as qa}
       <a href={qa.href} class="quick-action">
@@ -72,6 +73,7 @@
   {:else if data}
 
     <!-- KPI Cards -->
+    <div class="dash-section-label">Resumen del día</div>
     <div class="kpi-grid mb-4">
       {#each kpis(data) as kpi}
         <div class="kpi-card {kpi.color}">
@@ -87,6 +89,7 @@
     </div>
 
     <!-- Bottom two-col -->
+    <div class="dash-section-label">Actividad</div>
     <div class="two-col-grid">
       <!-- Últimas transacciones -->
       <div class="card border-0 shadow-sm dashboard-transactions">
@@ -94,8 +97,8 @@
           <span class="card-title">Últimas transacciones hoy</span>
         </div>
         <div class="table-responsive">
-          <table class="table table-sm table-hover table-navy mb-0">
-            <thead>
+          <table class="table table-sm table-hover table-origen mb-0">
+            <thead class="table-origen table-navy">
               <tr>
                 <th>Cliente</th>
                 <th>Concepto</th>
@@ -133,7 +136,7 @@
                 <span class="fw-semibold">{fmt(m.total)} <span class="text-muted">({pct}%)</span></span>
               </div>
               <div class="progress" style="height:6px;background:#eef1f6;border-radius:4px">
-                <div class="progress-bar bg-primary" style="width:{pct}%;border-radius:4px;transition:width .3s"></div>
+                <div class="progress-bar progress-bar-navy" style="width:{pct}%;border-radius:4px;transition:width .3s"></div>
               </div>
             </div>
           {:else}
@@ -184,6 +187,7 @@
     background: rgba(27,58,96,.08);
     color: var(--navy);
     transition: background .15s;
+    font-size: 1.35rem;
   }
   .qa-icon-wrap.green  { background: rgba(46,125,90,.1);   color: #2e7d5a; }
   .qa-icon-wrap.red    { background: rgba(192,57,43,.1);   color: #c0392b; }
@@ -213,6 +217,16 @@
   .dashboard-transactions :global(.table th:last-child),
   .dashboard-transactions :global(.table td:last-child) {
     padding-right: 20px;
+  }
+
+  /* ── Section labels ─────────────────────────────────────────────────────── */
+  .dash-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b0bdd0;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 10px;
   }
 
   /* ── Responsive (quick-actions only — kpi/two-col-grid in origen.css) ───── */

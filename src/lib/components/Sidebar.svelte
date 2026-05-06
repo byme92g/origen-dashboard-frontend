@@ -1,10 +1,32 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { authStore, isAdmin } from '../stores/auth';
+  import { cajaApi } from '../api/caja';
 
   export let currentPath: string = '/';
 
-  type NavItem = { href: string; label: string; icon: string; adminOnly?: boolean };
+  type NavItem = { href: string; label: string; icon: string; adminOnly?: boolean; isCaja?: boolean };
   type Section = { label: string; items: NavItem[] };
+
+  let cajaAbierta: boolean | null = null;
+
+  async function loadCajaEstado() {
+    if (!$authStore.authenticated) { cajaAbierta = null; return; }
+    const res = await cajaApi.estado();
+    if (res.ok && res.data) cajaAbierta = res.data.abierta;
+  }
+
+  onMount(() => {
+    loadCajaEstado();
+    const interval = window.setInterval(loadCajaEstado, 30000);
+    window.addEventListener('focus', loadCajaEstado);
+    window.addEventListener('hashchange', loadCajaEstado);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', loadCajaEstado);
+      window.removeEventListener('hashchange', loadCajaEstado);
+    };
+  });
 
   const sections: Section[] = [
     {
@@ -18,7 +40,7 @@
       items: [
         { href: '/ingresos', label: 'Ingresos',        icon: 'bi-arrow-down-circle' },
         { href: '/egresos',  label: 'Egresos',         icon: 'bi-arrow-up-circle' },
-        { href: '/caja',     label: 'Control de Caja', icon: 'bi-cash-coin' },
+        { href: '/caja',     label: 'Control de Caja', icon: 'bi-cash-coin', isCaja: true },
       ],
     },
     {
@@ -89,7 +111,10 @@ $: initials =
             <span class="nav-icon">
               <i class="bi {item.icon}"></i>
             </span>
-            <span>{item.label}</span>
+            <span class="flex-grow-1">{item.label}</span>
+            {#if item.isCaja && cajaAbierta !== null}
+              <span class="caja-dot {cajaAbierta ? 'dot-open' : 'dot-closed'}" title={cajaAbierta ? 'Caja abierta' : 'Caja sin abrir'}></span>
+            {/if}
           </a>
         {/each}
       {/if}
@@ -197,4 +222,9 @@ $: initials =
     justify-content: center;
     flex-shrink: 0;
   }
+  .caja-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-open  { background: #4db87a; box-shadow: 0 0 0 2px rgba(77,184,122,.25); }
+  .dot-closed { background: #f0a030; box-shadow: 0 0 0 2px rgba(240,160,48,.25); }
 </style>

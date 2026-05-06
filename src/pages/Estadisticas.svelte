@@ -172,26 +172,31 @@
 </script>
 
 <div class="p-3 p-md-4">
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-    <div>
-      <h5 class="fw-bold mb-0">Estadísticas</h5>
-      <p class="text-muted small mb-0">Análisis visual del período seleccionado</p>
+  <div class="page-panel mb-4">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon"><i class="bi bi-bar-chart-line"></i></div>
+        <div>
+          <h5 class="fw-bold mb-0">Estadísticas</h5>
+          <p class="text-muted small mb-0">Análisis visual del período seleccionado</p>
+        </div>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" on:click={load}>
+        {#if loading}<span class="spinner-border spinner-border-sm me-1"></span>{/if}Actualizar
+      </button>
     </div>
-    <button class="btn btn-outline-secondary btn-sm" on:click={load}>
-      {#if loading}<span class="spinner-border spinner-border-sm me-1"></span>{/if}Actualizar
-    </button>
-  </div>
-
-  <!-- Period toolbar -->
-  <div class="stats-toolbar mb-4">
-    <div class="btn-group btn-group-sm">
-      {#each periodos as p}
-        <button class="btn btn-outline-secondary" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
-      {/each}
+    <div class="page-panel-filters">
+      <div class="btn-group btn-group-sm">
+        {#each periodos as p}
+          <button class="btn btn-outline-secondary" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
+        {/each}
+      </div>
+      <i class="bi bi-calendar3 filter-cal-icon"></i>
+      <div><label class="filter-label">Desde</label><input type="date" class="form-control form-control-sm filter-date" bind:value={desde} disabled={periodo !== 'custom'} /></div>
+      <span class="filter-sep">→</span>
+      <div><label class="filter-label">Hasta</label><input type="date" class="form-control form-control-sm filter-date" bind:value={hasta} disabled={periodo !== 'custom'} /></div>
+      <button class="btn btn-sm btn-primary" on:click={load} disabled={loading || periodo !== 'custom'}>Aplicar</button>
     </div>
-    <input type="date" class="form-control form-control-sm stats-date" bind:value={desde} disabled={periodo !== 'custom'} />
-    <input type="date" class="form-control form-control-sm stats-date" bind:value={hasta} disabled={periodo !== 'custom'} />
-    <button class="btn btn-primary btn-sm" on:click={load} disabled={loading}>Aplicar</button>
   </div>
 
   {#if loading && !data}
@@ -272,9 +277,6 @@
 </div>
 
 <style>
-  .stats-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .stats-date { width: 150px; }
-
   /* ── Charts grid ── */
   .charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .chart-wide { grid-column: 1 / -1; }

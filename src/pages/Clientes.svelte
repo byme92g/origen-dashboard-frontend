@@ -72,9 +72,19 @@
 </script>
 
 <div class="p-3 p-md-4">
-  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-    <h5 class="fw-bold mb-0">Clientes</h5>
-    <button class="btn btn-primary btn-sm" on:click={openCreate}>+ Nuevo cliente</button>
+  <div class="page-panel mb-3">
+    <div class="page-panel-top">
+      <div class="d-flex align-items-center gap-3">
+        <div class="page-panel-icon"><i class="bi bi-people"></i></div>
+        <div>
+          <h5 class="fw-bold mb-0">Clientes</h5>
+          <p class="text-muted small mb-0">Directorio de clientes registrados</p>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" on:click={openCreate}>
+        <i class="bi bi-plus-lg me-1"></i>Nuevo cliente
+      </button>
+    </div>
   </div>
 
   {#if loading}
@@ -84,7 +94,7 @@
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen">
+            <thead class="table-origen table-navy">
               <tr>
                 <th class="ps-3">Nombre</th>
                 <th>Teléfono</th>
