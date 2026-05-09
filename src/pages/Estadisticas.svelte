@@ -173,9 +173,9 @@
 
 <div class="p-3 p-md-4">
   <div class="page-panel mb-4">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-bar-chart-line"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-bar-chart-line"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Estadísticas</h5>
           <p class="text-muted small mb-0">Análisis visual del período seleccionado</p>
@@ -185,16 +185,16 @@
         {#if loading}<span class="spinner-border spinner-border-sm me-1"></span>{/if}Actualizar
       </button>
     </div>
-    <div class="page-panel-filters">
+    <div class="page-panel__filters">
       <div class="btn-group btn-group-sm">
         {#each periodos as p}
           <button class="btn btn-outline-secondary" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
         {/each}
       </div>
-      <i class="bi bi-calendar3 filter-cal-icon"></i>
-      <div><label class="filter-label">Desde</label><input type="date" class="form-control form-control-sm filter-date" bind:value={desde} disabled={periodo !== 'custom'} /></div>
-      <span class="filter-sep">→</span>
-      <div><label class="filter-label">Hasta</label><input type="date" class="form-control form-control-sm filter-date" bind:value={hasta} disabled={periodo !== 'custom'} /></div>
+      <i class="bi bi-calendar3 page-panel__filter-cal-icon"></i>
+      <div><label class="page-panel__filter-label">Desde</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} disabled={periodo !== 'custom'} /></div>
+      <span class="page-panel__filter-sep">→</span>
+      <div><label class="page-panel__filter-label">Hasta</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} disabled={periodo !== 'custom'} /></div>
       <button class="btn btn-sm btn-primary" on:click={load} disabled={loading || periodo !== 'custom'}>Aplicar</button>
     </div>
   </div>

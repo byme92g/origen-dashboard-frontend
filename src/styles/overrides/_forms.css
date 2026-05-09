@@ -1,0 +1,19 @@
+/* Bootstrap form overrides */
+.form-control,
+.form-select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  border-color: #d0d8e8;
+  color: #1a1a2e;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(27,58,96,.10);
+}
+.form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5a6478;
+  margin-bottom: 4px;
+}

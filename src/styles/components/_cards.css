@@ -1,0 +1,21 @@
+.card-origen {
+  border-radius: var(--radius);
+  border: none;
+  box-shadow: var(--shadow);
+}
+.card-origen__header {
+  padding: 14px 20px;
+  border-bottom: 1px solid #e8edf4;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.card-origen__title {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0;
+}

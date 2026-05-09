@@ -76,13 +76,13 @@
     <div class="dash-section-label">Resumen del día</div>
     <div class="kpi-grid mb-4">
       {#each kpis(data) as kpi}
-        <div class="kpi-card {kpi.color}">
-          <div class="kpi-icon">
+        <div class="kpi-card kpi-card--{kpi.color}">
+          <div class="kpi-card__icon">
             <i class="bi {kpi.icon}"></i>
           </div>
           <div>
-            <div class="kpi-label">{kpi.label}</div>
-            <div class="kpi-value">{kpi.value}</div>
+            <div class="kpi-card__label">{kpi.label}</div>
+            <div class="kpi-card__value">{kpi.value}</div>
           </div>
         </div>
       {/each}
@@ -93,12 +93,12 @@
     <div class="two-col-grid">
       <!-- Últimas transacciones -->
       <div class="card border-0 shadow-sm dashboard-transactions">
-        <div class="card-header-origen">
-          <span class="card-title">Últimas transacciones hoy</span>
+        <div class="card-origen__header">
+          <span class="card-origen__title">Últimas transacciones hoy</span>
         </div>
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr>
                 <th>Cliente</th>
                 <th>Concepto</th>
@@ -111,7 +111,7 @@
                 <tr>
                   <td class="text-muted">{t.clienteNombre ?? '—'}</td>
                   <td>{t.concepto}</td>
-                  <td><span class="badge badge-navy">{t.metodoPago}</span></td>
+                  <td><span class="badge badge-origen badge-origen--navy">{t.metodoPago}</span></td>
                   <td class="text-end fw-semibold">{fmt(t.monto - t.descuento)}</td>
                 </tr>
               {:else}
@@ -124,8 +124,8 @@
 
       <!-- Por método de pago -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header-origen">
-          <span class="card-title">Ingresos hoy por método</span>
+        <div class="card-origen__header">
+          <span class="card-origen__title">Ingresos hoy por método</span>
         </div>
         <div class="card-body">
           {#each data.porMetodoPago as m}
@@ -136,7 +136,7 @@
                 <span class="fw-semibold">{fmt(m.total)} <span class="text-muted">({pct}%)</span></span>
               </div>
               <div class="progress" style="height:6px;background:#eef1f6;border-radius:4px">
-                <div class="progress-bar progress-bar-navy" style="width:{pct}%;border-radius:4px;transition:width .3s"></div>
+                <div class="progress-bar progress-bar-origen--navy" style="width:{pct}%;border-radius:4px;transition:width .3s"></div>
               </div>
             </div>
           {:else}

@@ -1,0 +1,11 @@
+.badge-origen {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+}
+.badge-origen--navy  { background: #eaf0f8; color: var(--navy);  }
+.badge-origen--green { background: #e6f4ed; color: #2e7d5a;      }
+.badge-origen--red   { background: #fdecea; color: #c0392b;      }
+.badge-origen--gold  { background: #fdf3e3; color: var(--gold);  }
+.badge-origen--amber { background: #fef3e2; color: #d4860a;      }
+.badge-origen--gray  { background: #f0f2f5; color: #5a6478;      }

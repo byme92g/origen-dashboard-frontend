@@ -80,9 +80,9 @@
 <div class="p-3 p-md-4">
 
   <div class="page-panel mb-4">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Reportes</h5>
           <p class="text-muted small mb-0">Resumen financiero exportable del período</p>
@@ -97,16 +97,16 @@
         </button>
       </div>
     </div>
-    <div class="page-panel-filters">
+    <div class="page-panel__filters">
       {#each PERIODOS as p}
         <button class="rango-btn" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
       {/each}
-      <i class="bi bi-calendar3 filter-cal-icon"></i>
-      <div><label class="filter-label">Desde</label><input type="date" class="form-control form-control-sm filter-date" bind:value={desde} /></div>
-      <span class="filter-sep">→</span>
-      <div><label class="filter-label">Hasta</label><input type="date" class="form-control form-control-sm filter-date" bind:value={hasta} /></div>
+      <i class="bi bi-calendar3 page-panel__filter-cal-icon"></i>
+      <div><label class="page-panel__filter-label">Desde</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} /></div>
+      <span class="page-panel__filter-sep">→</span>
+      <div><label class="page-panel__filter-label">Hasta</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} /></div>
       <button class="btn btn-sm btn-primary" on:click={load}>Aplicar</button>
-      {#if loading}<span class="filter-sep small text-muted">Cargando...</span>{/if}
+      {#if loading}<span class="page-panel__filter-sep small text-muted">Cargando...</span>{/if}
     </div>
   </div>
 
@@ -115,42 +115,42 @@
   {:else if data}
     <!-- KPI Cards -->
     <div class="kpi-grid mb-4">
-      <div class="kpi-card green">
-        <div class="kpi-icon">
+      <div class="kpi-card kpi-card--green">
+        <div class="kpi-card__icon">
           <i class="bi bi-arrow-down-circle"></i>
         </div>
         <div>
-          <div class="kpi-label">Total ingresos</div>
-          <div class="kpi-value">{fmt(data.resumen.totalIngresos)}</div>
+          <div class="kpi-card__label">Total ingresos</div>
+          <div class="kpi-card__value">{fmt(data.resumen.totalIngresos)}</div>
           <div style="font-size:11px;color:#8a97b0;">{data.resumen.cantidadIngresos} transacciones</div>
         </div>
       </div>
-      <div class="kpi-card red">
-        <div class="kpi-icon">
+      <div class="kpi-card kpi-card--red">
+        <div class="kpi-card__icon">
           <i class="bi bi-arrow-up-circle"></i>
         </div>
         <div>
-          <div class="kpi-label">Total egresos</div>
-          <div class="kpi-value">{fmt(data.resumen.totalEgresos)}</div>
+          <div class="kpi-card__label">Total egresos</div>
+          <div class="kpi-card__value">{fmt(data.resumen.totalEgresos)}</div>
           <div style="font-size:11px;color:#8a97b0;">{data.resumen.cantidadEgresos} transacciones</div>
         </div>
       </div>
-      <div class="kpi-card {data.resumen.utilidadNeta >= 0 ? 'green' : 'red'}">
-        <div class="kpi-icon">
+      <div class="kpi-card kpi-card--{data.resumen.utilidadNeta >= 0 ? 'green' : 'red'}">
+        <div class="kpi-card__icon">
           <i class="bi bi-graph-up-arrow"></i>
         </div>
         <div>
-          <div class="kpi-label">Utilidad neta</div>
-          <div class="kpi-value">{fmt(data.resumen.utilidadNeta)}</div>
+          <div class="kpi-card__label">Utilidad neta</div>
+          <div class="kpi-card__value">{fmt(data.resumen.utilidadNeta)}</div>
         </div>
       </div>
-      <div class="kpi-card gold">
-        <div class="kpi-icon">
+      <div class="kpi-card kpi-card--gold">
+        <div class="kpi-card__icon">
           <i class="bi bi-person-vcard"></i>
         </div>
         <div>
-          <div class="kpi-label">Comisiones</div>
-          <div class="kpi-value">{fmt(data.resumen.totalComisiones)}</div>
+          <div class="kpi-card__label">Comisiones</div>
+          <div class="kpi-card__value">{fmt(data.resumen.totalComisiones)}</div>
         </div>
       </div>
     </div>
@@ -159,10 +159,10 @@
     <div class="two-col-grid">
       <!-- Top servicios -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header-origen"><span class="card-title">Top servicios</span></div>
+        <div class="card-origen__header"><span class="card-origen__title">Top servicios</span></div>
         <div class="table-responsive">
           <table class="table table-sm table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr><th class="ps-3">#</th><th>Servicio</th><th>Cantidad</th><th class="pe-3 text-end">Total</th></tr>
             </thead>
             <tbody>
@@ -183,10 +183,10 @@
 
       <!-- Por empleado -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header-origen"><span class="card-title">Por empleado</span></div>
+        <div class="card-origen__header"><span class="card-origen__title">Por empleado</span></div>
         <div class="table-responsive">
           <table class="table table-sm table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr><th class="ps-3">Empleado</th><th>Servicios</th><th>Ventas</th><th class="pe-3 text-end">Comisión</th></tr>
             </thead>
             <tbody>
@@ -207,7 +207,7 @@
 
       <!-- Por método de pago -->
       <div class="card border-0 shadow-sm" style="grid-column: 1 / -1;">
-        <div class="card-header-origen"><span class="card-title">Por método de pago</span></div>
+        <div class="card-origen__header"><span class="card-origen__title">Por método de pago</span></div>
         <div class="card-body">
           {#each data.porMetodoPago as m}
             {@const pct = data.resumen.totalIngresos > 0 ? Math.round(m.total / data.resumen.totalIngresos * 100) : 0}

@@ -58,10 +58,10 @@
 
   function fmt(v: number) { return `S/ ${v.toFixed(2)}`; }
   function stockClass(p: Producto) {
-    if (!p.activo) return 'badge-gray';
-    if (p.stock <= 0) return 'badge-red';
-    if (p.stock <= bajoMinimo) return 'badge-gold';
-    return 'badge-green';
+    if (!p.activo) return 'badge-origen--gray';
+    if (p.stock <= 0) return 'badge-origen--red';
+    if (p.stock <= bajoMinimo) return 'badge-origen--gold';
+    return 'badge-origen--green';
   }
   function stockLabel(p: Producto) {
     if (!p.activo) return 'Inactivo';
@@ -92,9 +92,9 @@
 
 <div class="p-3 p-md-4">
   <div class="page-panel mb-3">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-box-seam"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-box-seam"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Control de stock</h5>
           <p class="text-muted small mb-0">Inventario de productos y alertas de disponibilidad</p>
@@ -102,7 +102,7 @@
       </div>
       <button class="btn btn-outline-secondary btn-sm" on:click={load}>Actualizar</button>
     </div>
-    <div class="page-panel-filters">
+    <div class="page-panel__filters">
       <input class="form-control form-control-sm" style="width:220px;" placeholder="Buscar producto o categoría" bind:value={busqueda} />
       <div class="btn-group btn-group-sm" role="group">
         <button class="btn btn-outline-secondary" class:active={filtro === 'todos'} on:click={() => (filtro = 'todos')}>Todos</button>
@@ -114,10 +114,10 @@
   </div>
 
   <div class="kpi-grid mb-4">
-    <div class="kpi-card green"><div><div class="kpi-label">Productos activos</div><div class="kpi-value">{activos.length}</div></div></div>
-    <div class="kpi-card gold"><div><div class="kpi-label">Stock bajo</div><div class="kpi-value">{bajos.length}</div></div></div>
-    <div class="kpi-card red"><div><div class="kpi-label">Agotados</div><div class="kpi-value">{agotados.length}</div></div></div>
-    <div class="kpi-card"><div><div class="kpi-label">Valor inventario</div><div class="kpi-value">{fmt(valorizado)}</div></div></div>
+    <div class="kpi-card kpi-card--green"><div><div class="kpi-card__label">Productos activos</div><div class="kpi-card__value">{activos.length}</div></div></div>
+    <div class="kpi-card kpi-card--gold"><div><div class="kpi-card__label">Stock bajo</div><div class="kpi-card__value">{bajos.length}</div></div></div>
+    <div class="kpi-card kpi-card--red"><div><div class="kpi-card__label">Agotados</div><div class="kpi-card__value">{agotados.length}</div></div></div>
+    <div class="kpi-card"><div><div class="kpi-card__label">Valor inventario</div><div class="kpi-card__value">{fmt(valorizado)}</div></div></div>
   </div>
 
 
@@ -127,7 +127,7 @@
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table table-sm table-hover table-origen mb-0">
-          <thead class="table-origen table-navy">
+          <thead class="table-origen table-origen--navy">
             <tr>
               <th class="ps-3">Producto</th>
               <th>Categoría</th>
@@ -140,7 +140,7 @@
           </thead>
           <tbody>
             {#each paged as p}
-              <tr class:row-inactive={!p.activo}>
+              <tr class:row-origen--inactive={!p.activo}>
                 <td class="ps-3 fw-semibold small">{p.nombre}</td>
                 <td class="small">{p.categoria || '-'}</td>
                 <td class="small">{fmt(p.precioVenta)}</td>

@@ -80,9 +80,9 @@
 
 <div class="p-3 p-md-4">
   <div class="page-panel mb-4">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-gear"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-gear"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Configuración</h5>
           <p class="text-muted small mb-0">Datos del negocio y seguridad de la cuenta administradora</p>
@@ -93,7 +93,7 @@
 
   <div class="config-grid">
     <section class="card border-0 shadow-sm">
-      <div class="card-header-origen"><span class="card-title">Negocio</span></div>
+      <div class="card-origen__header"><span class="card-origen__title">Negocio</span></div>
       <div class="card-body">
         <div class="mb-3">
           <label for="cfg-negocio-nombre" class="form-label small fw-semibold">Nombre comercial</label>
@@ -124,7 +124,7 @@
     </section>
 
     <section class="card border-0 shadow-sm">
-      <div class="card-header-origen"><span class="card-title">Cuenta administradora</span></div>
+      <div class="card-origen__header"><span class="card-origen__title">Cuenta administradora</span></div>
       <div class="card-body">
         <div class="account-box mb-3">
           <div class="account-avatar">{user?.nombreCompleto?.slice(0, 1).toUpperCase() ?? 'A'}</div>
@@ -155,7 +155,7 @@
     </section>
 
     <section class="card border-0 shadow-sm config-wide">
-      <div class="card-header-origen"><span class="card-title">Parámetros activos</span></div>
+      <div class="card-origen__header"><span class="card-origen__title">Parámetros activos</span></div>
       <div class="card-body">
         <div class="settings-list">
           <div><span>Autenticación</span><strong>JWT con expiración</strong></div>

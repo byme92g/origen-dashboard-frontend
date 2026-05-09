@@ -167,9 +167,9 @@
 
 <div class="p-3 p-md-4">
   <div class="page-panel mb-3">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-bag-check"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-bag-check"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Servicios y productos</h5>
           <p class="text-muted small mb-0">Catálogo de servicios, productos y paquetes</p>
@@ -198,18 +198,18 @@
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th class="d-none d-md-table-cell">Duración</th><th>Comisión</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each servicios as s}
-                <tr class:row-inactive={!s.activo}>
+                <tr class:row-origen--inactive={!s.activo}>
                   <td class="ps-3 fw-semibold small">{s.nombre}</td>
                   <td class="small">{s.categoria}</td>
                   <td class="small">S/ {s.precio.toFixed(2)}</td>
                   <td class="small d-none d-md-table-cell">{s.duracionMin} min</td>
                   <td class="small">{s.comisionPct}%</td>
-                  <td><span class="badge badge-origen {s.activo ? 'badge-green' : 'badge-gray'}">{s.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {s.activo ? 'badge-origen--green' : 'badge-origen--gray'}">{s.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(s, 'servicios')} title="Editar">
@@ -237,17 +237,17 @@
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each productos as p}
-                <tr class:row-inactive={!p.activo}>
+                <tr class:row-origen--inactive={!p.activo}>
                   <td class="ps-3 fw-semibold small">{p.nombre}</td>
                   <td class="small">{p.categoria}</td>
                   <td class="small">S/ {p.precioVenta.toFixed(2)}</td>
-                  <td><span class="badge badge-origen {p.stock <= 0 ? 'badge-red' : p.stock <= 5 ? 'badge-gold' : 'badge-green'}">{p.stock} unid.</span></td>
-                  <td><span class="badge badge-origen {p.activo ? 'badge-green' : 'badge-gray'}">{p.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {p.stock <= 0 ? 'badge-origen--red' : p.stock <= 5 ? 'badge-origen--gold' : 'badge-origen--green'}">{p.stock} unid.</span></td>
+                  <td><span class="badge badge-origen {p.activo ? 'badge-origen--green' : 'badge-origen--gray'}">{p.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(p, 'productos')} title="Editar">
@@ -272,18 +272,18 @@
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr><th class="ps-3">Nombre</th><th class="d-none d-md-table-cell">Descripción</th><th>Precio</th><th>Descuento</th><th>Incluye</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each paquetes as pkg}
-                <tr class:row-inactive={!pkg.activo}>
+                <tr class:row-origen--inactive={!pkg.activo}>
                   <td class="ps-3 fw-semibold small">{pkg.nombre}</td>
                   <td class="small text-muted d-none d-md-table-cell">{pkg.descripcion ?? '—'}</td>
                   <td class="small">S/ {pkg.precio.toFixed(2)}</td>
                   <td class="small">
                     {#if pkg.descuento > 0}
-                      <span class="badge badge-origen badge-green">{pkg.descuento}%</span>
+                      <span class="badge badge-origen badge-origen--green">{pkg.descuento}%</span>
                     {:else}
                       <span class="text-muted">—</span>
                     {/if}
@@ -293,13 +293,13 @@
                       <span class="pk-chip">{s.servicio?.nombre ?? '?'}</span>
                     {/each}
                     {#each (pkg.productos ?? []) as p}
-                      <span class="pk-chip pk-chip-green">{p.producto?.nombre ?? '?'}</span>
+                      <span class="pk-chip pk-chip--green">{p.producto?.nombre ?? '?'}</span>
                     {/each}
                     {#if !(pkg.servicios?.length) && !(pkg.productos?.length)}
                       <span class="text-muted">—</span>
                     {/if}
                   </td>
-                  <td><span class="badge badge-origen {pkg.activo ? 'badge-green' : 'badge-gray'}">{pkg.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {pkg.activo ? 'badge-origen--green' : 'badge-origen--gray'}">{pkg.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEdit(pkg, 'paquetes')} title="Editar">

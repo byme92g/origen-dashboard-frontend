@@ -16,6 +16,7 @@
   let empleados: Empleado[] = [];
   let empTotal = 0; let empPage = 1; const empSize = 15;
   let empLoading = true;
+  let empInactivos = false;
   let empModal = false; let empEdit: Partial<Empleado & { password?: string }> = {}; let empIsEdit = false; let empSaving = false;
   let empConfirm = false; let empDeleteId: number | null = null; let empDeleting = false;
 
@@ -33,7 +34,7 @@
 
   async function loadEmpleados() {
     empLoading = true;
-    const res = await empleadoApi.listarPaginado(empPage, empSize);
+    const res = await empleadoApi.listarPaginado(empPage, empSize, empInactivos);
     if (res.ok && res.data) {
       if (Array.isArray(res.data)) { empleados = res.data as unknown as Empleado[]; empTotal = empleados.length; }
       else { empleados = res.data.items; empTotal = res.data.total; }
@@ -77,7 +78,13 @@
     const res = await empleadoApi.eliminar(empDeleteId);
     empDeleting = false;
     empConfirm = false;
-    if (res.ok) { toast('Eliminado', 'success'); loadEmpleados(); }
+    if (res.ok) { toast('Empleado desactivado', 'success'); loadEmpleados(); }
+    else toast(res.error ?? 'Error', 'error');
+  }
+
+  async function reactivarEmp(empleado: Empleado) {
+    const res = await empleadoApi.actualizar(empleado.id, { ...empleado, activo: true, password: '' });
+    if (res.ok) { toast('Empleado reactivado', 'success'); loadEmpleados(); }
     else toast(res.error ?? 'Error', 'error');
   }
 
@@ -149,9 +156,9 @@
 
 <div class="p-3 p-md-4">
   <div class="page-panel mb-3">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-person-badge"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-person-badge"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Personal</h5>
           <p class="text-muted small mb-0">Empleados y administradores del sistema</p>
@@ -170,9 +177,15 @@
       </li>
     </ul>
     {#if tab === 'empleados'}
-      <button class="btn btn-primary btn-sm" on:click={openNewEmpleado}>
-        <i class="bi bi-plus-lg me-1"></i>Nuevo empleado
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" id="chkInactivos" bind:checked={empInactivos} on:change={() => { empPage = 1; loadEmpleados(); }} />
+          <label class="form-check-label small text-muted" for="chkInactivos">Ver inactivos</label>
+        </div>
+        <button class="btn btn-primary btn-sm" on:click={openNewEmpleado}>
+          <i class="bi bi-plus-lg me-1"></i>Nuevo empleado
+        </button>
+      </div>
     {:else}
       <button class="btn btn-primary btn-sm" on:click={() => { usrEdit = { rol: 'admin' }; usrIsEdit = false; usrModal = true; }}>
         <i class="bi bi-plus-lg me-1"></i>Nuevo admin
@@ -185,7 +198,7 @@
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr>
                 <th class="ps-3">Nombre</th>
                 <th>Cargo</th>
@@ -203,7 +216,7 @@
                   <td class="small">{e.cargo}</td>
                   <td class="small">{e.comisionPct}%</td>
                   <td class="small text-muted d-none d-md-table-cell">{e.usuarioLogin ?? '—'}</td>
-                  <td><span class="badge badge-origen {e.activo ? 'badge-green' : 'badge-gray'}">{e.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {e.activo ? 'badge-origen--green' : 'badge-origen--gray'}">{e.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="btn btn-sm btn-outline-secondary" on:click={() => openEditEmpleado(e)} title="Editar">
@@ -215,9 +228,15 @@
                         </button>
                       {/if}
                       {#if !e.usuarioLogin || e.usuarioLogin !== $authStore.user?.nombreUsuario}
-                        <button class="btn btn-sm btn-outline-danger" on:click={() => { empDeleteId = e.id; empConfirm = true; }} title="Eliminar">
-                          <i class="bi bi-trash"></i>
-                        </button>
+                        {#if e.activo}
+                          <button class="btn btn-sm btn-outline-danger" on:click={() => { empDeleteId = e.id; empConfirm = true; }} title="Desactivar">
+                            <i class="bi bi-person-dash"></i>
+                          </button>
+                        {:else}
+                          <button class="btn btn-sm btn-outline-success" on:click={() => reactivarEmp(e)} title="Reactivar">
+                            <i class="bi bi-person-check"></i>
+                          </button>
+                        {/if}
                       {/if}
                     </div>
                   </td>
@@ -239,7 +258,7 @@
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr>
                 <th class="ps-3">Usuario</th>
                 <th>Nombre completo</th>
@@ -253,8 +272,8 @@
                 <tr>
                   <td class="ps-3 fw-semibold small">{u.nombreUsuario}</td>
                   <td class="small">{u.nombreCompleto}</td>
-                  <td><span class="badge badge-origen {u.rol === 'admin' ? 'badge-navy' : 'badge-gold'}">{u.rol}</span></td>
-                  <td><span class="badge badge-origen {u.activo ? 'badge-green' : 'badge-gray'}">{u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td><span class="badge badge-origen {u.rol === 'admin' ? 'badge-origen--navy' : 'badge-origen--gold'}">{u.rol}</span></td>
+                  <td><span class="badge badge-origen {u.activo ? 'badge-origen--green' : 'badge-origen--gray'}">{u.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
                       {#if u.id === currentAdminId}
@@ -339,7 +358,7 @@
   </svelte:fragment>
 </Modal>
 
-<ConfirmDialog show={empConfirm} message="¿Eliminar este empleado?" onConfirm={deleteEmp} onCancel={() => (empConfirm = false)} loading={empDeleting} />
+<ConfirmDialog show={empConfirm} message="¿Desactivar este empleado?" onConfirm={deleteEmp} onCancel={() => (empConfirm = false)} loading={empDeleting} />
 <ConfirmDialog show={usrConfirm} message="¿Eliminar este admin?" onConfirm={deleteUsr} onCancel={() => (usrConfirm = false)} loading={usrDeleting} />
 
 <Modal show={pwdModal} title="Cambiar contraseña" onClose={() => (pwdModal = false)}>

@@ -151,9 +151,9 @@
 
 <div class="p-3 p-md-4">
   <div class="page-panel mb-3">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-arrow-up-circle"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-arrow-up-circle"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Egresos</h5>
           <p class="text-muted small mb-0">Historial de gastos y salidas registradas</p>
@@ -163,11 +163,11 @@
         <i class="bi bi-plus-lg me-1"></i>Registrar Egreso
       </button>
     </div>
-    <div class="page-panel-filters">
-      <i class="bi bi-calendar3 filter-cal-icon"></i>
-      <div><label class="filter-label">Desde</label><input type="date" class="form-control form-control-sm filter-date" bind:value={desde} /></div>
-      <span class="filter-sep">→</span>
-      <div><label class="filter-label">Hasta</label><input type="date" class="form-control form-control-sm filter-date" bind:value={hasta} /></div>
+    <div class="page-panel__filters">
+      <i class="bi bi-calendar3 page-panel__filter-cal-icon"></i>
+      <div><label class="page-panel__filter-label">Desde</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} /></div>
+      <span class="page-panel__filter-sep">→</span>
+      <div><label class="page-panel__filter-label">Hasta</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} /></div>
       <button class="btn btn-sm btn-primary" on:click={() => { page=1; load(); }}>Filtrar</button>
       {#if desde !== thirtyAgo || hasta !== today}
         <button class="btn btn-sm btn-link text-muted p-0" on:click={() => { desde=thirtyAgo; hasta=today; page=1; load(); }}>Limpiar</button>
@@ -179,7 +179,7 @@
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table table-sm table-hover table-origen mb-0">
-          <thead class="table-origen table-navy">
+          <thead class="table-origen table-origen--navy">
             <tr>
               <th class="ps-3">Fecha</th>
               <th>Descripción</th>

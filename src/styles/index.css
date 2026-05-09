@@ -1,0 +1,22 @@
+/* ── Variables ───────────────────────────────────────────────────────────── */
+@import './_variables.css';
+
+/* ── Base & tipografía ───────────────────────────────────────────────────── */
+@import './_base.css';
+@import './_typography.css';
+
+/* ── Overrides Bootstrap (sin !important) ────────────────────────────────── */
+@import './overrides/_buttons.css';
+@import './overrides/_forms.css';
+
+/* ── Componentes ─────────────────────────────────────────────────────────── */
+@import './components/_badges.css';
+@import './components/_cards.css';
+@import './components/_tables.css';
+@import './components/_modals.css';
+@import './components/_pagination.css';
+@import './components/_page-panel.css';
+@import './components/_kpi.css';
+@import './components/_nav-tabs.css';
+@import './components/_progress.css';
+@import './components/_chips.css';

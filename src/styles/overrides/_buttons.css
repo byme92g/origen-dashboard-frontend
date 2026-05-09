@@ -1,0 +1,31 @@
+/* Bootstrap button overrides — mayor especificidad (.btn.btn-*) elimina necesidad de !important */
+.btn.btn-primary {
+  background-color: var(--navy);
+  border-color: var(--navy);
+  font-family: var(--font-body);
+}
+.btn.btn-primary:hover,
+.btn.btn-primary:focus {
+  background-color: var(--navy-light);
+  border-color: var(--navy-light);
+}
+.btn.btn-outline-primary {
+  color: var(--navy);
+  border-color: var(--navy);
+}
+.btn.btn-outline-primary:hover,
+.btn.btn-outline-primary:focus {
+  background-color: var(--navy);
+  border-color: var(--navy);
+}
+.btn.btn-outline-secondary {
+  color: #5a6478;
+  border-color: #d0d8e8;
+}
+.btn.btn-outline-secondary:hover {
+  background: #f0f4fa;
+  border-color: var(--navy);
+  color: var(--navy);
+}
+.btn.btn-success { background-color: #2e7d5a; border-color: #2e7d5a; }
+.btn.btn-danger  { background-color: #c0392b; border-color: #c0392b; }

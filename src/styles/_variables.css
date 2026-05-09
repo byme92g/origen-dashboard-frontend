@@ -1,0 +1,12 @@
+:root {
+  --navy:       #1b3a60;
+  --navy-dark:  #142d4c;
+  --navy-light: #2a4f80;
+  --gold:       #a07838;
+  --gold-light: #c09848;
+  --font-heading: "Cormorant Garamond", Georgia, serif;
+  --font-body:    "DM Sans", system-ui, sans-serif;
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(27,58,96,.10);
+  --shadow-md: 0 4px 16px rgba(27,58,96,.14);
+}

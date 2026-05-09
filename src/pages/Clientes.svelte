@@ -73,9 +73,9 @@
 
 <div class="p-3 p-md-4">
   <div class="page-panel mb-3">
-    <div class="page-panel-top">
+    <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
-        <div class="page-panel-icon"><i class="bi bi-people"></i></div>
+        <div class="page-panel__icon"><i class="bi bi-people"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Clientes</h5>
           <p class="text-muted small mb-0">Directorio de clientes registrados</p>
@@ -94,7 +94,7 @@
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
-            <thead class="table-origen table-navy">
+            <thead class="table-origen table-origen--navy">
               <tr>
                 <th class="ps-3">Nombre</th>
                 <th>Teléfono</th>

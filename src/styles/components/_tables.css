@@ -1,0 +1,31 @@
+thead.table-origen th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #8a97b0;
+  background: #f8fafc;
+  border-bottom-width: 1px;
+  white-space: nowrap;
+  padding: 10px 14px;
+}
+table.table-origen tbody td,
+table.table-origen tfoot td {
+  vertical-align: middle;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef1f6;
+}
+table.table-origen tbody tr:last-child td {
+  border-bottom: none;
+}
+table.table-origen.table-hover tbody tr:hover td {
+  background: #f8fafc;
+}
+
+thead.table-origen--navy th {
+  background: var(--navy);
+  color: white;
+}
+
+.row-origen--inactive td { opacity: 0.45; }

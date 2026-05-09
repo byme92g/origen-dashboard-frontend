@@ -1,0 +1,63 @@
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.kpi-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid #e6edf5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.kpi-card--navy  { background: #f4f7fb; border-color: #b8c8dc; }
+.kpi-card--gold  { background: #fffcf5; border-color: #e8d5a0; }
+.kpi-card--green { background: #f5fbf8; border-color: #a8d4bc; }
+.kpi-card--red   { background: #fdf6f5; border-color: #e8bcb8; }
+.kpi-card--amber { background: #fffcf4; border-color: #e8d0a0; }
+
+.kpi-card__icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  background: rgba(27,58,96,.08);
+  color: var(--navy);
+}
+.kpi-card__icon i { font-size: 1.25rem; }
+.kpi-card--navy  .kpi-card__icon { background: rgba(27,58,96,.12);   color: var(--navy); }
+.kpi-card--gold  .kpi-card__icon { background: rgba(160,120,56,.12); color: var(--gold); }
+.kpi-card--green .kpi-card__icon { background: rgba(46,125,90,.12);  color: #2e7d5a; }
+.kpi-card--red   .kpi-card__icon { background: rgba(192,57,43,.12);  color: #c0392b; }
+.kpi-card--amber .kpi-card__icon { background: rgba(212,134,10,.12); color: #d4860a; }
+
+.kpi-card__label {
+  font-size: 11px;
+  color: #8a97b0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.kpi-card__value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.2;
+}
+.kpi-card--gold  .kpi-card__value { color: var(--gold); }
+.kpi-card--green .kpi-card__value { color: #2e7d5a; }
+.kpi-card--red   .kpi-card__value { color: #c0392b; }
+.kpi-card--amber .kpi-card__value { color: #d4860a; }
+
+.two-col-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+
+@media (max-width: 768px) {
+  .kpi-grid        { grid-template-columns: repeat(2, 1fr); }
+  .kpi-card        { padding: 12px; gap: 10px; }
+  .kpi-card__icon  { width: 32px; height: 32px; border-radius: 8px; }
+  .kpi-card__value { font-size: 1.05rem; }
+  .two-col-grid    { grid-template-columns: 1fr; }
+}

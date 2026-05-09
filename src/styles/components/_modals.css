@@ -1,0 +1,10 @@
+.modal-origen .modal-title {
+  font-family: var(--font-body);
+  color: var(--navy);
+  font-size: 1.15rem;
+}
+.modal-origen .modal-content {
+  border-radius: var(--radius);
+  border: none;
+  box-shadow: var(--shadow-md);
+}
