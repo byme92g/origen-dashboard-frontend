@@ -27,6 +27,11 @@ export interface Cliente {
   fechaRegistro: string;
 }
 
+export interface Cargo {
+  id: number;
+  nombre: string;
+}
+
 export interface Empleado {
   id: number;
   nombre: string;

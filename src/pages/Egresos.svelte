@@ -159,7 +159,12 @@
           <p class="text-muted small mb-0">Historial de gastos y salidas registradas</p>
         </div>
       </div>
-      <button class="btn btn-danger btn-sm" on:click={openWizard}>
+      <button class="btn btn-danger btn-sm d-none d-sm-block" on:click={openWizard}>
+        <i class="bi bi-plus-lg me-1"></i>Registrar Egreso
+      </button>
+    </div>
+    <div class="d-sm-none px-3 pb-2">
+      <button class="btn btn-danger btn-sm w-100 rounded-pill btn-cta-origen" on:click={openWizard}>
         <i class="bi bi-plus-lg me-1"></i>Registrar Egreso
       </button>
     </div>

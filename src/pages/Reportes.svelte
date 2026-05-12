@@ -98,9 +98,11 @@
       </div>
     </div>
     <div class="page-panel__filters">
-      {#each PERIODOS as p}
-        <button class="rango-btn" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
-      {/each}
+      <div class="rango-group">
+        {#each PERIODOS as p}
+          <button class="rango-btn" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
+        {/each}
+      </div>
       <i class="bi bi-calendar3 page-panel__filter-cal-icon"></i>
       <div><label class="page-panel__filter-label">Desde</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} /></div>
       <span class="page-panel__filter-sep">→</span>

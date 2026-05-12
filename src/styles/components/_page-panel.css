@@ -56,12 +56,33 @@
   box-shadow: 0 4px 14px rgba(27, 58, 96, 0.35);
 }
 
+.page-panel__filters > .rango-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 575.98px) {
   .page-panel__top { border-bottom: none; }
   .page-panel__filter-cal-icon { display: none; }
   .page-panel__filters {
     padding: 10px 14px;
     gap: 8px;
+  }
+  .page-panel__filters > .btn-group {
+    flex-basis: 100%;
+    width: 100%;
+  }
+  .page-panel__filters > .btn-group .btn {
+    flex: 1;
+    font-size: 10px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .page-panel__filters > .rango-group {
+    flex: none;
+    flex-basis: 100%;
+    width: 100%;
   }
   .page-panel__filters > div {
     flex: 1;

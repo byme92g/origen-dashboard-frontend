@@ -85,7 +85,7 @@
   $: financialOption = {
     color: finBars.map(b => FB_COLORS[b.key as keyof typeof FB_COLORS] ?? FB_COLORS.ingresos),
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: tooltipMoney },
-    grid: { left: 52, right: 16, top: 22, bottom: 44, containLabel: true },
+    grid: { left: 52, right: 16, top: 32, bottom: 44, containLabel: true },
     xAxis: {
       type: 'category',
       data: finBars.map(b => b.label),
@@ -102,10 +102,10 @@
       type: 'bar',
       data: finBars.map(b => ({
         value: b.value,
-        itemStyle: { color: FB_COLORS[b.key as keyof typeof FB_COLORS] ?? FB_COLORS.ingresos, borderRadius: [6, 6, 0, 0] },
+        itemStyle: { color: FB_COLORS[b.key as keyof typeof FB_COLORS] ?? FB_COLORS.ingresos, borderRadius: b.value >= 0 ? [6, 6, 0, 0] : [0, 0, 6, 6] },
+        label: { show: true, position: b.value < 0 ? 'bottom' : 'top', color: '#1b3a60', fontSize: 10, fontWeight: 700, formatter: (p: any) => fmtK(Number(p.value)) },
       })),
       barMaxWidth: 44,
-      label: { show: true, position: 'top', color: '#1b3a60', fontSize: 10, fontWeight: 700, formatter: (p: any) => fmtK(Number(p.value)) },
     }],
   } satisfies EChartsOption;
 
@@ -127,8 +127,8 @@
   $: topServicesOption = {
     color: ['#2e7d5a'],
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: tooltipMoney },
-    grid: { left: 128, right: 28, top: 8, bottom: 16, containLabel: true },
-    xAxis: { type: 'value', axisLabel: { color: '#8a97b0', formatter: (v: number) => fmtK(v) }, splitLine: { lineStyle: { color: '#eef1f6' } } },
+    grid: { left: 128, right: 52, top: 8, bottom: 16, containLabel: true },
+    xAxis: { type: 'value', axisLabel: { color: '#8a97b0', formatter: (v: number) => fmtK(v), hideOverlap: true }, splitLine: { lineStyle: { color: '#eef1f6' } } },
     yAxis: {
       type: 'category',
       data: data ? data.topServicios.map(s => s.nombre).reverse() : [],
@@ -146,8 +146,8 @@
   $: employeeOption = {
     color: ['#d4a017'],
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: tooltipMoney },
-    grid: { left: 128, right: 28, top: 8, bottom: 16, containLabel: true },
-    xAxis: { type: 'value', axisLabel: { color: '#8a97b0', formatter: (v: number) => fmtK(v) }, splitLine: { lineStyle: { color: '#eef1f6' } } },
+    grid: { left: 128, right: 52, top: 8, bottom: 16, containLabel: true },
+    xAxis: { type: 'value', axisLabel: { color: '#8a97b0', formatter: (v: number) => fmtK(v), hideOverlap: true }, splitLine: { lineStyle: { color: '#eef1f6' } } },
     yAxis: {
       type: 'category',
       data: data ? data.porEmpleado.map(e => e.nombre).reverse() : [],
@@ -171,7 +171,7 @@
   ];
 </script>
 
-<div class="p-3 p-md-4">
+<div class="p-2 p-md-4">
   <div class="page-panel mb-4">
     <div class="page-panel__top">
       <div class="d-flex align-items-center gap-3">
@@ -321,7 +321,9 @@
 
   /* ── Responsive ── */
   @media (max-width: 768px) {
-    .charts-grid { grid-template-columns: 1fr; }
+    .charts-grid { grid-template-columns: 1fr; gap: 10px; }
     .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chart-card-header { padding: 10px 12px 8px; }
+    .chart-card-body { padding: 10px 10px; }
   }
 </style>

@@ -27,5 +27,11 @@
   border-color: var(--navy);
   color: var(--navy);
 }
+.btn.btn-outline-secondary.active,
+.btn.btn-outline-secondary:active {
+  background-color: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
 .btn.btn-success { background-color: #2e7d5a; border-color: #2e7d5a; }
 .btn.btn-danger  { background-color: #c0392b; border-color: #c0392b; }

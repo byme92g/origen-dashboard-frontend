@@ -1,33 +1,26 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { usuarioApi } from '../lib/api/usuarios';
+  import { cargoApi } from '../lib/api/cargos';
   import { authStore } from '../lib/stores/auth';
   import { toast } from '../lib/stores/toast';
-  import { config } from '../lib/config';
+  import type { Cargo } from '../lib/types';
+
+  type Tab = 'negocio' | 'cuenta' | 'cargos';
+  let tab: Tab = 'negocio';
 
   type NegocioConfig = {
-    nombre: string;
-    ruc: string;
-    telefono: string;
-    direccion: string;
-    email: string;
+    nombre: string; ruc: string; telefono: string; direccion: string; email: string;
   };
 
   const negocioKey = 'origen_negocio_config';
-  const defaultNegocio: NegocioConfig = {
-    nombre: 'Origen Capilar Estética',
-    ruc: '',
-    telefono: '',
-    direccion: '',
-    email: '',
-  };
+  const defaultNegocio: NegocioConfig = { nombre: 'Origen Capilar Estética', ruc: '', telefono: '', direccion: '', email: '' };
 
   function loadNegocio(): NegocioConfig {
     try {
       const raw = localStorage.getItem(negocioKey);
       return raw ? { ...defaultNegocio, ...JSON.parse(raw) } : defaultNegocio;
-    } catch {
-      return defaultNegocio;
-    }
+    } catch { return defaultNegocio; }
   }
 
   let negocio = loadNegocio();
@@ -40,7 +33,23 @@
   let savingPerfil = false;
   let savingNegocio = false;
 
+  // Cargos
+  let cargos: Cargo[] = [];
+  let cargosLoading = false;
+  let nuevoCargo = '';
+  let savingCargo = false;
+  let deletingId: number | null = null;
+
   $: user = $authStore.user;
+
+  async function loadCargos() {
+    cargosLoading = true;
+    const res = await cargoApi.listar();
+    if (res.ok && res.data) cargos = res.data;
+    cargosLoading = false;
+  }
+
+  onMount(loadCargos);
 
   function saveNegocio() {
     savingNegocio = true;
@@ -52,29 +61,49 @@
   async function savePerfil() {
     if (!user) return;
     if (perfil.password && perfil.password !== perfil.confirmPassword) {
-      toast('Las contraseñas no coinciden', 'error');
-      return;
+      toast('Las contraseñas no coinciden', 'error'); return;
     }
-
     savingPerfil = true;
     const res = await usuarioApi.actualizar(user.id, {
-      nombreCompleto: perfil.nombreCompleto,
-      rol: user.rol,
-      activo: true,
+      nombreCompleto: perfil.nombreCompleto, rol: user.rol, activo: true,
       password: perfil.password || undefined,
     });
     savingPerfil = false;
-
     if (res.ok) {
       const updatedUser = { ...user, nombreCompleto: perfil.nombreCompleto };
       localStorage.setItem('origen_user', JSON.stringify(updatedUser));
       authStore.refresh();
-      perfil.password = '';
-      perfil.confirmPassword = '';
+      perfil.password = ''; perfil.confirmPassword = '';
       toast('Configuración actualizada', 'success');
     } else {
       toast(res.error ?? 'No se pudo actualizar la configuración', 'error');
     }
+  }
+
+  async function agregarCargo() {
+    const nombre = nuevoCargo.trim();
+    if (!nombre) return;
+    savingCargo = true;
+    const res = await cargoApi.crear(nombre);
+    savingCargo = false;
+    if (res.ok && res.data) {
+      cargos = [...cargos, res.data].sort((a, b) => a.nombre.localeCompare(b.nombre));
+      nuevoCargo = '';
+    } else {
+      toast(res.error ?? 'Error al crear cargo', 'error');
+    }
+  }
+
+  async function eliminarCargo(id: number) {
+    deletingId = id;
+    const res = await cargoApi.eliminar(id);
+    deletingId = null;
+    if (res.ok) cargos = cargos.filter(c => c.id !== id);
+    else toast(res.error ?? 'Error al eliminar', 'error');
+  }
+
+  function onNuevoCargoKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') agregarCargo();
   }
 </script>
 
@@ -85,104 +114,161 @@
         <div class="page-panel__icon"><i class="bi bi-gear"></i></div>
         <div>
           <h5 class="fw-bold mb-0">Configuración</h5>
-          <p class="text-muted small mb-0">Datos del negocio y seguridad de la cuenta administradora</p>
+          <p class="text-muted small mb-0">Datos del negocio y parámetros del sistema</p>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="config-grid">
-    <section class="card border-0 shadow-sm">
-      <div class="card-origen__header"><span class="card-origen__title">Negocio</span></div>
-      <div class="card-body">
-        <div class="mb-3">
-          <label for="cfg-negocio-nombre" class="form-label small fw-semibold">Nombre comercial</label>
-          <input id="cfg-negocio-nombre" class="form-control" bind:value={negocio.nombre} />
-        </div>
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <label for="cfg-negocio-ruc" class="form-label small fw-semibold">RUC</label>
-            <input id="cfg-negocio-ruc" class="form-control" bind:value={negocio.ruc} />
-          </div>
-          <div class="col-12 col-md-6">
-            <label for="cfg-negocio-telefono" class="form-label small fw-semibold">Teléfono</label>
-            <input id="cfg-negocio-telefono" class="form-control" bind:value={negocio.telefono} />
-          </div>
-          <div class="col-12">
-            <label for="cfg-negocio-direccion" class="form-label small fw-semibold">Dirección</label>
-            <input id="cfg-negocio-direccion" class="form-control" bind:value={negocio.direccion} />
-          </div>
-          <div class="col-12">
-            <label for="cfg-negocio-email" class="form-label small fw-semibold">Email</label>
-            <input id="cfg-negocio-email" class="form-control" type="email" bind:value={negocio.email} />
-          </div>
-        </div>
-      </div>
-      <div class="card-footer bg-white border-0 text-end">
-        <button class="btn btn-primary btn-sm" on:click={saveNegocio} disabled={savingNegocio}>Guardar negocio</button>
-      </div>
-    </section>
+  <ul class="nav nav-tabs nav-tabs-origen mb-4">
+    <li class="nav-item"><button class="nav-link" class:active={tab === 'negocio'} on:click={() => tab = 'negocio'}>Negocio</button></li>
+    <li class="nav-item"><button class="nav-link" class:active={tab === 'cuenta'} on:click={() => tab = 'cuenta'}>Cuenta</button></li>
+    <li class="nav-item"><button class="nav-link" class:active={tab === 'cargos'} on:click={() => tab = 'cargos'}>Cargos</button></li>
+  </ul>
 
-    <section class="card border-0 shadow-sm">
-      <div class="card-origen__header"><span class="card-origen__title">Cuenta administradora</span></div>
-      <div class="card-body">
-        <div class="account-box mb-3">
-          <div class="account-avatar">{user?.nombreCompleto?.slice(0, 1).toUpperCase() ?? 'A'}</div>
-          <div>
-            <div class="fw-semibold">{user?.nombreUsuario}</div>
-            <div class="text-muted small text-capitalize">{user?.rol}</div>
+  {#if tab === 'negocio'}
+    <div class="config-grid">
+      <section class="card border-0 shadow-sm config-wide">
+        <div class="card-origen__header"><span class="card-origen__title">Negocio</span></div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="cfg-negocio-nombre" class="form-label small fw-semibold">Nombre comercial</label>
+            <input id="cfg-negocio-nombre" class="form-control" bind:value={negocio.nombre} />
+          </div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="cfg-negocio-ruc" class="form-label small fw-semibold">RUC</label>
+              <input id="cfg-negocio-ruc" class="form-control" bind:value={negocio.ruc} />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="cfg-negocio-telefono" class="form-label small fw-semibold">Teléfono</label>
+              <input id="cfg-negocio-telefono" class="form-control" bind:value={negocio.telefono} />
+            </div>
+            <div class="col-12">
+              <label for="cfg-negocio-direccion" class="form-label small fw-semibold">Dirección</label>
+              <input id="cfg-negocio-direccion" class="form-control" bind:value={negocio.direccion} />
+            </div>
+            <div class="col-12">
+              <label for="cfg-negocio-email" class="form-label small fw-semibold">Email</label>
+              <input id="cfg-negocio-email" class="form-control" type="email" bind:value={negocio.email} />
+            </div>
           </div>
         </div>
+        <div class="card-footer bg-white border-0 text-end">
+          <button class="btn btn-primary btn-sm" on:click={saveNegocio} disabled={savingNegocio}>Guardar negocio</button>
+        </div>
+      </section>
 
-        <div class="mb-3">
-          <label for="cfg-perfil-nombre" class="form-label small fw-semibold">Nombre completo</label>
-          <input id="cfg-perfil-nombre" class="form-control" bind:value={perfil.nombreCompleto} />
-        </div>
-        <div class="mb-3">
-          <label for="cfg-perfil-password" class="form-label small fw-semibold">Nueva contraseña</label>
-          <input id="cfg-perfil-password" class="form-control" type="password" bind:value={perfil.password} placeholder="Dejar vacío para no cambiar" />
-        </div>
-        <div class="mb-3">
-          <label for="cfg-perfil-confirm" class="form-label small fw-semibold">Confirmar contraseña</label>
-          <input id="cfg-perfil-confirm" class="form-control" type="password" bind:value={perfil.confirmPassword} placeholder="Repite la nueva contraseña" />
-        </div>
-      </div>
-      <div class="card-footer bg-white border-0 text-end">
-        <button class="btn btn-primary btn-sm" on:click={savePerfil} disabled={savingPerfil || !user}>
-          {#if savingPerfil}<span class="spinner-border spinner-border-sm me-1"></span>{/if}Guardar cuenta
-        </button>
-      </div>
-    </section>
+    </div>
 
-    <section class="card border-0 shadow-sm config-wide">
-      <div class="card-origen__header"><span class="card-origen__title">Parámetros activos</span></div>
+  {:else if tab === 'cuenta'}
+    <div class="config-grid">
+      <section class="card border-0 shadow-sm config-wide">
+        <div class="card-origen__header"><span class="card-origen__title">Cuenta administradora</span></div>
+        <div class="card-body">
+          <div class="account-box mb-3">
+            <div class="account-avatar">{user?.nombreCompleto?.slice(0, 1).toUpperCase() ?? 'A'}</div>
+            <div>
+              <div class="fw-semibold">{user?.nombreUsuario}</div>
+              <div class="text-muted small text-capitalize">{user?.rol}</div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="cfg-perfil-nombre" class="form-label small fw-semibold">Nombre completo</label>
+            <input id="cfg-perfil-nombre" class="form-control" bind:value={perfil.nombreCompleto} />
+          </div>
+          <div class="mb-3">
+            <label for="cfg-perfil-password" class="form-label small fw-semibold">Nueva contraseña</label>
+            <input id="cfg-perfil-password" class="form-control" type="password" bind:value={perfil.password} placeholder="Dejar vacío para no cambiar" />
+          </div>
+          <div class="mb-3">
+            <label for="cfg-perfil-confirm" class="form-label small fw-semibold">Confirmar contraseña</label>
+            <input id="cfg-perfil-confirm" class="form-control" type="password" bind:value={perfil.confirmPassword} placeholder="Repite la nueva contraseña" />
+          </div>
+        </div>
+        <div class="card-footer bg-white border-0 text-end">
+          <button class="btn btn-primary btn-sm" on:click={savePerfil} disabled={savingPerfil || !user}>
+            {#if savingPerfil}<span class="spinner-border spinner-border-sm me-1"></span>{/if}Guardar cuenta
+          </button>
+        </div>
+      </section>
+    </div>
+
+  {:else if tab === 'cargos'}
+    <div class="card border-0 shadow-sm">
+      <div class="card-origen__header">
+        <span class="card-origen__title">Cargos de empleados</span>
+        <span class="text-muted small">{cargos.length} cargos</span>
+      </div>
       <div class="card-body">
-        <div class="settings-list">
-          <div><span>Autenticación</span><strong>JWT con expiración</strong></div>
-          <div><span>Rol requerido</span><strong>Admin</strong></div>
-          <div><span>API frontend</span><strong>{config.apiUrl}</strong></div>
-          <div><span>Persistencia negocio</span><strong>Local del navegador</strong></div>
-        </div>
+        {#if cargosLoading}
+          <p class="text-muted small">Cargando...</p>
+        {:else}
+          <div class="cargos-pills">
+            {#each cargos as c (c.id)}
+              <span class="cargo-pill">
+                {c.nombre}
+                <button
+                  class="cargo-pill__del"
+                  on:click={() => eliminarCargo(c.id)}
+                  disabled={deletingId === c.id}
+                  title="Eliminar"
+                >
+                  {#if deletingId === c.id}
+                    <span class="spinner-border spinner-border-sm" style="width:10px;height:10px;"></span>
+                  {:else}
+                    <i class="bi bi-x"></i>
+                  {/if}
+                </button>
+              </span>
+            {:else}
+              <span class="text-muted small">Sin cargos registrados</span>
+            {/each}
+          </div>
+          <div class="cargo-add mt-3">
+            <input
+              class="form-control form-control-sm cargo-add__input"
+              bind:value={nuevoCargo}
+              on:keydown={onNuevoCargoKeydown}
+              placeholder="Nuevo cargo (ej: Estilista)"
+              maxlength="60"
+            />
+            <button class="btn btn-sm btn-primary cargo-add__btn" on:click={agregarCargo} disabled={savingCargo || !nuevoCargo.trim()}>
+              {#if savingCargo}<span class="spinner-border spinner-border-sm"></span>{:else}<i class="bi bi-plus-lg"></i>{/if}
+            </button>
+          </div>
+        {/if}
       </div>
-    </section>
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .config-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .config-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
   .config-wide { grid-column: 1 / -1; }
   .account-box { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f4f6fa; border-radius: 8px; }
   .account-avatar {
     width: 40px; height: 40px; border-radius: 50%; background: var(--gold);
-    color: white; display: flex; align-items: center; justify-content: center;
-    font-weight: 700;
+    color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
   }
-  .settings-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .settings-list div { padding: 12px; background: #f8fafc; border: 1px solid #eef1f6; border-radius: 8px; }
-  .settings-list span { display: block; color: #8a97b0; font-size: 11px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
-  .settings-list strong { color: var(--navy); font-size: 13px; word-break: break-word; }
-  @media (max-width: 768px) {
-    .config-grid, .settings-list { grid-template-columns: 1fr; }
-    .config-wide { grid-column: auto; }
+  /* Cargos */
+  .cargos-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cargo-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #eef2fa; border: 1px solid #d0d8ee; border-radius: 20px;
+    padding: 5px 10px 5px 12px; font-size: 13px; font-weight: 600; color: var(--navy);
   }
+  .cargo-pill__del {
+    display: flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    border: none; background: #c5cfdf; color: var(--navy);
+    cursor: pointer; padding: 0; line-height: 1; font-size: 12px;
+    transition: background .15s;
+  }
+  .cargo-pill__del:hover:not(:disabled) { background: #c0392b; color: white; }
+  .cargo-pill__del:disabled { opacity: .5; cursor: default; }
+  .cargo-add { display: flex; gap: 8px; max-width: 360px; }
+  .cargo-add__input { flex: 1; }
+  .cargo-add__btn { flex-shrink: 0; }
+
 </style>

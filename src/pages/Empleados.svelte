@@ -2,13 +2,14 @@
   import { onMount } from 'svelte';
   import { empleadoApi } from '../lib/api/empleados';
   import { usuarioApi } from '../lib/api/usuarios';
+  import { cargoApi } from '../lib/api/cargos';
   import Spinner from '../lib/components/Spinner.svelte';
   import Pagination from '../lib/components/Pagination.svelte';
   import Modal from '../lib/components/Modal.svelte';
   import ConfirmDialog from '../lib/components/ConfirmDialog.svelte';
   import { toast } from '../lib/stores/toast';
   import { authStore } from '../lib/stores/auth';
-  import type { Empleado, Usuario } from '../lib/types';
+  import type { Empleado, Usuario, Cargo } from '../lib/types';
 
   let tab: 'empleados' | 'admins' = 'empleados';
 
@@ -18,6 +19,8 @@
   let empLoading = true;
   let empInactivos = false;
   let empModal = false; let empEdit: Partial<Empleado & { password?: string }> = {}; let empIsEdit = false; let empSaving = false;
+  let loginAutoSync = false;
+  let cargos: Cargo[] = [];
   let empConfirm = false; let empDeleteId: number | null = null; let empDeleting = false;
 
   // Admins
@@ -49,7 +52,12 @@
     usrLoading = false;
   }
 
-  onMount(() => { loadEmpleados(); loadUsuarios(); });
+  async function loadCargos() {
+    const res = await cargoApi.listar();
+    if (res.ok && res.data) cargos = res.data;
+  }
+
+  onMount(() => { loadEmpleados(); loadUsuarios(); loadCargos(); });
 
   // Empleados CRUD
   async function saveEmp() {
@@ -115,9 +123,29 @@
     return usuarios.find((u) => u.nombreUsuario === empleado.usuarioLogin) ?? null;
   }
 
+  function sugerirLogin(nombre: string): string {
+    const sinAcentos = nombre.trim().toLowerCase()
+      .normalize('NFD').replace(/\p{Mn}/gu, '');
+    const partes = sinAcentos.split(/\s+/).filter(Boolean);
+    if (partes.length === 0) return '';
+    if (partes.length === 1) return partes[0];
+    return `${partes[0]}.${partes[1]}`;
+  }
+
+  function onNombreInput() {
+    if (!empIsEdit && loginAutoSync) {
+      empEdit.usuarioLogin = sugerirLogin(empEdit.nombre ?? '');
+    }
+  }
+
+  function onLoginInput() {
+    loginAutoSync = false;
+  }
+
   function openNewEmpleado() {
     empEdit = {};
     empIsEdit = false;
+    loginAutoSync = true;
     empModal = true;
   }
 
@@ -303,23 +331,28 @@
 <!-- Modales empleados -->
 <Modal show={empModal} title={empIsEdit ? 'Editar empleado' : 'Nuevo empleado'} onClose={() => (empModal = false)}>
   <svelte:fragment slot="body">
-    <div class="mb-3"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={empEdit.nombre} /></div>
-    <div class="mb-3"><label class="form-label small fw-semibold">Cargo *</label><input class="form-control" bind:value={empEdit.cargo} /></div>
+    <div class="mb-3"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={empEdit.nombre} on:input={onNombreInput} /></div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Cargo *</label>
+      <select class="form-select" bind:value={empEdit.cargo}>
+        <option value="">— Seleccionar cargo —</option>
+        {#each cargos as c}
+          <option value={c.nombre}>{c.nombre}</option>
+        {/each}
+      </select>
+      {#if cargos.length === 0}
+        <div class="form-text text-warning">No hay cargos configurados. Agrégalos en Configuración → Cargos.</div>
+      {/if}
+    </div>
     <div class="mb-3"><label class="form-label small fw-semibold">Comisión %</label><input class="form-control" type="number" min="0" max="100" bind:value={empEdit.comisionPct} /></div>
-    <div class="mb-3"><label class="form-label small fw-semibold">Usuario de acceso *</label><input class="form-control" bind:value={empEdit.usuarioLogin} /></div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Usuario de acceso *</label>
+      <input class="form-control" bind:value={empEdit.usuarioLogin} on:input={onLoginInput} placeholder={!empIsEdit ? (sugerirLogin(empEdit.nombre ?? '') || 'ej. pedro.suarez') : ''} />
+    </div>
     <div class="mb-3">
       <label class="form-label small fw-semibold">{empIsEdit ? 'Nueva contraseña de acceso' : 'Contraseña de acceso *'}</label>
       <input class="form-control" type="password" bind:value={empEdit.password} placeholder={empIsEdit ? 'Dejar vacío para no cambiar' : ''} />
     </div>
-    {#if empIsEdit}
-      <div class="mb-3">
-        <label class="form-label small fw-semibold">Estado</label>
-        <select class="form-select" bind:value={empEdit.activo}>
-          <option value={true}>Activo</option>
-          <option value={false}>Inactivo</option>
-        </select>
-      </div>
-    {/if}
   </svelte:fragment>
   <svelte:fragment slot="footer">
     <button class="btn btn-secondary btn-sm" on:click={() => (empModal = false)}>Cancelar</button>
