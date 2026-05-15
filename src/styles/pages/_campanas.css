@@ -1,0 +1,135 @@
+.campana-card {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  height: 100%;
+}
+
+.campana-card__body {
+  padding: 16px;
+}
+
+.campana-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.campana-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.campana-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+.campana-card__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.campana-card__status {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.campana-card__status--activa {
+  background: rgba(27, 58, 96, .1);
+  color: var(--navy);
+}
+
+.campana-card__status--programada,
+.campana-card__status--inactiva {
+  background: var(--bg-soft);
+  color: var(--text-muted);
+}
+
+.campana-card__product {
+  background: var(--bg-soft);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.campana-card__type-chip {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--navy);
+  background: rgba(27, 58, 96, .1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.campana-card__product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campana-card__product-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.campana-card__dates {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.campana-card__days {
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.campana-card__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.campana-empty {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.campana-empty__icon {
+  font-size: 3rem;
+  opacity: .2;
+  display: block;
+}
+
+.campana-empty__text {
+  color: var(--text-muted);
+  margin: 12px 0 0;
+}

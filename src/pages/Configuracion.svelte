@@ -2,11 +2,14 @@
   import { onMount } from 'svelte';
   import { usuarioApi } from '../lib/api/usuarios';
   import { cargoApi } from '../lib/api/cargos';
+  import { permisoApi } from '../lib/api/permisos';
+  import type { PermisoVista } from '../lib/api/permisos';
   import { authStore } from '../lib/stores/auth';
   import { toast } from '../lib/stores/toast';
   import type { Cargo } from '../lib/types';
+  import '../styles/pages/_configuracion.css';
 
-  type Tab = 'negocio' | 'cuenta' | 'cargos';
+  type Tab = 'negocio' | 'cuenta' | 'cargos' | 'permisos';
   let tab: Tab = 'negocio';
 
   type NegocioConfig = {
@@ -105,6 +108,50 @@
   function onNuevoCargoKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') agregarCargo();
   }
+
+  // Permisos
+  const rutaLabels: Record<string, string> = {
+    '/':              'Dashboard',
+    '/ingresos':      'Ingresos',
+    '/egresos':       'Egresos',
+    '/caja':          'Control de Caja',
+    '/clientes':      'Clientes',
+    '/campanas':      'Campañas',
+    '/servicios':     'Servicios & Productos',
+    '/stock':         'Stock',
+    '/empleados':     'Personal',
+    '/estadisticas':  'Estadísticas',
+    '/comisiones':    'Comisiones',
+    '/reportes':      'Reportes',
+    '/ayuda':         'Ayuda',
+  };
+
+  let permisos: PermisoVista[] = [];
+  let permisosLoading = false;
+  let savingPermiso: string | null = null;
+
+  async function loadPermisos() {
+    permisosLoading = true;
+    const res = await permisoApi.listar();
+    if (res.ok && res.data) permisos = res.data;
+    permisosLoading = false;
+  }
+
+  async function togglePermiso(p: PermisoVista) {
+    const key = `${p.rol}-${p.ruta}`;
+    savingPermiso = key;
+    const res = await permisoApi.actualizar(p.rol, p.ruta, !p.habilitado);
+    savingPermiso = null;
+    if (res.ok) {
+      permisos = permisos.map(x =>
+        x.rol === p.rol && x.ruta === p.ruta ? { ...x, habilitado: !x.habilitado } : x
+      );
+    } else {
+      toast(res.error ?? 'Error al actualizar permiso', 'error');
+    }
+  }
+
+  $: if (tab === 'permisos' && permisos.length === 0 && !permisosLoading) loadPermisos();
 </script>
 
 <div class="p-3 p-md-4">
@@ -124,11 +171,12 @@
     <li class="nav-item"><button class="nav-link" class:active={tab === 'negocio'} on:click={() => tab = 'negocio'}>Negocio</button></li>
     <li class="nav-item"><button class="nav-link" class:active={tab === 'cuenta'} on:click={() => tab = 'cuenta'}>Cuenta</button></li>
     <li class="nav-item"><button class="nav-link" class:active={tab === 'cargos'} on:click={() => tab = 'cargos'}>Cargos</button></li>
+    <li class="nav-item"><button class="nav-link" class:active={tab === 'permisos'} on:click={() => tab = 'permisos'}>Permisos</button></li>
   </ul>
 
   {#if tab === 'negocio'}
     <div class="config-grid">
-      <section class="card border-0 shadow-sm config-wide">
+      <section class="card border-0 shadow-sm config-grid__wide">
         <div class="card-origen__header"><span class="card-origen__title">Negocio</span></div>
         <div class="card-body">
           <div class="mb-3">
@@ -163,11 +211,11 @@
 
   {:else if tab === 'cuenta'}
     <div class="config-grid">
-      <section class="card border-0 shadow-sm config-wide">
+      <section class="card border-0 shadow-sm config-grid__wide">
         <div class="card-origen__header"><span class="card-origen__title">Cuenta administradora</span></div>
         <div class="card-body">
           <div class="account-box mb-3">
-            <div class="account-avatar">{user?.nombreCompleto?.slice(0, 1).toUpperCase() ?? 'A'}</div>
+            <div class="account-box__avatar">{user?.nombreCompleto?.slice(0, 1).toUpperCase() ?? 'A'}</div>
             <div>
               <div class="fw-semibold">{user?.nombreUsuario}</div>
               <div class="text-muted small text-capitalize">{user?.rol}</div>
@@ -204,7 +252,7 @@
         {#if cargosLoading}
           <p class="text-muted small">Cargando...</p>
         {:else}
-          <div class="cargos-pills">
+          <div class="cargo-list">
             {#each cargos as c (c.id)}
               <span class="cargo-pill">
                 {c.nombre}
@@ -240,35 +288,60 @@
         {/if}
       </div>
     </div>
+  {:else if tab === 'permisos'}
+    <div class="card border-0 shadow-sm">
+      <div class="card-origen__header">
+        <span class="card-origen__title">Permisos por rol</span>
+        <span class="text-muted small">Configura qué secciones puede acceder cada rol</span>
+      </div>
+      <div class="card-body p-0">
+        {#if permisosLoading}
+          <div class="text-center py-4 text-muted small">Cargando permisos...</div>
+        {:else}
+          <div class="p-3">
+            <div class="alert alert-info border-0 small mb-3" style="background:#e8f0fe">
+              <i class="bi bi-info-circle me-1"></i>
+              Los administradores siempre tienen acceso completo. Aquí configuras el acceso para empleados.
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-origen mb-0">
+                <thead class="table-origen table-origen--navy">
+                  <tr>
+                    <th class="ps-3">Sección</th>
+                    <th>Ruta</th>
+                    <th class="text-center">Empleado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each permisos as p (p.id)}
+                    {@const label = rutaLabels[p.ruta] ?? p.ruta}
+                    {@const key = `${p.rol}-${p.ruta}`}
+                    <tr>
+                      <td class="ps-3 fw-semibold small">{label}</td>
+                      <td class="small text-muted">{p.ruta}</td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block mb-0">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            role="switch"
+                            id="perm-{key}"
+                            checked={p.habilitado}
+                            disabled={savingPermiso === key || p.ruta === '/'}
+                            on:change={() => togglePermiso(p)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  {:else}
+                    <tr><td colspan="3" class="text-center text-muted py-3 small">Sin permisos cargados</td></tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {/if}
+      </div>
+    </div>
   {/if}
 </div>
-
-<style>
-  .config-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  .config-wide { grid-column: 1 / -1; }
-  .account-box { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f4f6fa; border-radius: 8px; }
-  .account-avatar {
-    width: 40px; height: 40px; border-radius: 50%; background: var(--gold);
-    color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
-  }
-  /* Cargos */
-  .cargos-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-  .cargo-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #eef2fa; border: 1px solid #d0d8ee; border-radius: 20px;
-    padding: 5px 10px 5px 12px; font-size: 13px; font-weight: 600; color: var(--navy);
-  }
-  .cargo-pill__del {
-    display: flex; align-items: center; justify-content: center;
-    width: 18px; height: 18px; border-radius: 50%;
-    border: none; background: #c5cfdf; color: var(--navy);
-    cursor: pointer; padding: 0; line-height: 1; font-size: 12px;
-    transition: background .15s;
-  }
-  .cargo-pill__del:hover:not(:disabled) { background: #c0392b; color: white; }
-  .cargo-pill__del:disabled { opacity: .5; cursor: default; }
-  .cargo-add { display: flex; gap: 8px; max-width: 360px; }
-  .cargo-add__input { flex: 1; }
-  .cargo-add__btn { flex-shrink: 0; }
-
-</style>

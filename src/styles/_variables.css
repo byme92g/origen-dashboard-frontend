@@ -1,12 +1,37 @@
 :root {
+  /* Brand */
   --navy:       #1b3a60;
   --navy-dark:  #142d4c;
   --navy-light: #2a4f80;
   --gold:       #a07838;
   --gold-light: #c09848;
+
+  /* State colors */
+  --green:       #2e7d5a;
+  --green-bg:    #e8f5ee;
+  --red:         #c0392b;
+  --red-bg:      #fdecea;
+  --amber:       #d4860a;
+  --amber-bg:    #fdf3e3;
+
+  /* Text grays */
+  --text-dark:   #1a1a2e;
+  --text-body:   #5a6478;
+  --text-muted:  #8a97b0;
+  --text-light:  #b0bdd0;
+
+  /* Surface */
+  --border:      #d0d8e8;
+  --border-light:#e0e6f0;
+  --bg-soft:     #f8fafc;
+  --bg-hover:    #f5f7fb;
+
+  /* Typography */
   --font-heading: "Cormorant Garamond", Georgia, serif;
   --font-body:    "DM Sans", system-ui, sans-serif;
-  --radius: 8px;
-  --shadow: 0 2px 8px rgba(27,58,96,.10);
+
+  /* Misc */
+  --radius:    8px;
+  --shadow:    0 2px 8px rgba(27,58,96,.10);
   --shadow-md: 0 4px 16px rgba(27,58,96,.14);
 }

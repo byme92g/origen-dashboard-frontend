@@ -9,6 +9,7 @@ thead.table-origen th {
   white-space: nowrap;
   padding: 10px 14px;
 }
+
 table.table-origen tbody td,
 table.table-origen tfoot td {
   vertical-align: middle;
@@ -16,9 +17,11 @@ table.table-origen tfoot td {
   padding: 10px 14px;
   border-bottom: 1px solid #eef1f6;
 }
+
 table.table-origen tbody tr:last-child td {
   border-bottom: none;
 }
+
 table.table-origen.table-hover tbody tr:hover td {
   background: #f8fafc;
 }
@@ -28,4 +31,6 @@ thead.table-origen--navy th {
   color: white;
 }
 
-.row-origen--inactive td { opacity: 0.45; }
+.row-origen--inactive td {
+  opacity: 0.45;
+}

@@ -3,6 +3,7 @@
   font-size: 13px;
   font-family: var(--font-body);
 }
+
 .pagination-origen .page-item.active .page-link {
   background-color: var(--navy);
   border-color: var(--navy);

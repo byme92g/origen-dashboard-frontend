@@ -3,9 +3,117 @@
   font-weight: 500;
   font-size: 11px;
 }
-.badge-origen--navy  { background: #eaf0f8; color: var(--navy);  }
-.badge-origen--green { background: #e6f4ed; color: #2e7d5a;      }
-.badge-origen--red   { background: #fdecea; color: #c0392b;      }
-.badge-origen--gold  { background: #fdf3e3; color: var(--gold);  }
-.badge-origen--amber { background: #fef3e2; color: #d4860a;      }
-.badge-origen--gray  { background: #f0f2f5; color: #5a6478;      }
+
+.badge-origen--navy {
+  background: #eaf0f8;
+  color: var(--navy);
+}
+
+.badge-origen--green {
+  background: #e6f4ed;
+  color: #2e7d5a;
+}
+
+.badge-origen--red {
+  background: #fdecea;
+  color: #c0392b;
+}
+
+.badge-origen--gold {
+  background: #fdf3e3;
+  color: var(--gold);
+}
+
+.badge-origen--amber {
+  background: #fef3e2;
+  color: #d4860a;
+}
+
+.badge-origen--gray {
+  background: #f0f2f5;
+  color: #5a6478;
+}
+
+/* ── Tipo pills ──────────────────────────────────────────────────────────── */
+.tipo-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.tipo-pill--servicio {
+  background: #e8f5ee;
+  color: #1a5c35;
+}
+
+.tipo-pill--producto {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.tipo-pill--paquete {
+  background: #fdf3e3;
+  color: var(--gold);
+}
+
+.tipo-pill--personalizado {
+  background: #f0f2f5;
+  color: var(--text-body);
+}
+
+/* ── Método de pago badges ───────────────────────────────────────────────── */
+.metodo-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.metodo-badge--efectivo {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.metodo-badge--yape {
+  background: #ede7f6;
+  color: #6b21a8;
+}
+
+.metodo-badge--plin {
+  background: #e0f7fa;
+  color: #00838f;
+}
+
+.metodo-badge--transferencia {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.metodo-badge--pos {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.metodo-badge--otro {
+  background: #f0f4ff;
+  color: var(--navy);
+}
+
+/* ── Categoría badge ─────────────────────────────────────────────────────── */
+.cat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f0f4ff;
+  color: var(--navy);
+  white-space: nowrap;
+}

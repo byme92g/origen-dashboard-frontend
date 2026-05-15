@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface ToastItem {
   id: number;
@@ -11,8 +11,11 @@ export interface ToastItem {
 export const toasts = writable<ToastItem[]>([]);
 let counter = 0;
 
-export function toast(message: string, type: ToastType = 'info') {
+/** duration=0 → no auto-dismiss (manual close only) */
+export function toast(message: string, type: ToastType = 'info', duration = 3500) {
   const id = ++counter;
   toasts.update((t) => [...t, { id, message, type }]);
-  setTimeout(() => toasts.update((t) => t.filter((x) => x.id !== id)), 3500);
+  if (duration > 0) {
+    setTimeout(() => toasts.update((t) => t.filter((x) => x.id !== id)), duration);
+  }
 }

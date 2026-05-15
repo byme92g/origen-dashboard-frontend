@@ -1,0 +1,50 @@
+/* ── Charts grid ─────────────────────────────────────────────────────────── */
+.charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.charts-grid__item--wide { grid-column: 1 / -1; }
+.charts-grid__card {
+  background: white; border-radius: 10px;
+  box-shadow: 0 2px 8px var(--shadow); overflow: hidden;
+}
+.charts-grid__card-header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 14px 20px 12px; border-bottom: 1px solid #f0f4f8;
+}
+.charts-grid__card-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+.charts-grid__card-period { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.charts-grid__card-body { padding: 16px 20px; }
+.charts-grid__card-body--tight { min-width: 0; overflow: hidden; }
+.charts-grid__no-data { text-align: center; color: var(--text-muted); font-size: 13px; margin: 20px 0; }
+
+/* ── Metric strip ────────────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  border-top: 1px solid #f0f4f8;
+  padding-top: 10px;
+}
+.metric-strip__pill {
+  min-width: 0;
+  border: 1px solid #edf1f6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fafbfd;
+}
+.metric-strip__pill span,
+.metric-strip__pill small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metric-strip__pill span { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+.metric-strip__pill strong { display: block; font-size: 12px; color: var(--navy); margin-top: 2px; }
+.metric-strip__pill small { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .charts-grid { grid-template-columns: 1fr; gap: 10px; }
+  .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .charts-grid__card-header { padding: 10px 12px 8px; }
+  .charts-grid__card-body { padding: 10px 10px; }
+}

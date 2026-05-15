@@ -7,6 +7,7 @@
   import Pagination from '../lib/components/Pagination.svelte';
   import { toast } from '../lib/stores/toast';
   import type { Producto } from '../lib/types';
+  import '../styles/pages/_stock.css';
 
   type FiltroStock = 'todos' | 'bajo' | 'agotado' | 'inactivo';
 
@@ -166,18 +167,18 @@
     </div>
 
     {#if categorias.length}
-      <div class="stock-cats mt-3">
+      <div class="stock-filter mt-3">
         {#if selectedCategorias.length > 0}
-          <button class="stock-cat stock-cat-clear" on:click={() => (selectedCategorias = [])}>
+          <button class="stock-filter__chip stock-filter__chip--clear" on:click={() => (selectedCategorias = [])}>
             ✕ Limpiar filtro
           </button>
         {/if}
         {#each categorias as c}
           {@const count = productos.filter((p) => p.categoria === c).length}
           <button
-            class="stock-cat {selectedCategorias.includes(c) ? 'active' : ''}"
+            class="stock-filter__chip {selectedCategorias.includes(c) ? 'stock-filter__chip--active' : ''}"
             on:click={() => toggleCategoria(c)}
-          >{c}<strong>{count}</strong></button>
+          >{c}<strong class="stock-filter__chip-count">{count}</strong></button>
         {/each}
       </div>
     {/if}
@@ -219,27 +220,3 @@
     </button>
   </svelte:fragment>
 </Modal>
-
-<style>
-  .stock-cats { display: flex; flex-wrap: wrap; gap: 8px; }
-  .stock-cat {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 10px; border-radius: 16px; background: #fff;
-    color: #5a6478; font-size: 12px; box-shadow: var(--shadow);
-    border: 1.5px solid transparent; cursor: pointer;
-    transition: all .15s; font-family: inherit;
-  }
-  .stock-cat:hover { border-color: var(--navy); color: var(--navy); }
-  .stock-cat.active {
-    background: var(--navy); color: white; border-color: var(--navy);
-  }
-  .stock-cat.active strong { background: rgba(255,255,255,.2); color: white; }
-  .stock-cat strong {
-    background: #eef1f6; color: var(--navy); border-radius: 10px;
-    min-width: 22px; text-align: center; padding: 1px 6px;
-  }
-  .stock-cat-clear {
-    background: #fdecea; color: #c0392b; border-color: #f5c6cb;
-  }
-  .stock-cat-clear:hover { background: #f8d7da; border-color: #c0392b; }
-</style>

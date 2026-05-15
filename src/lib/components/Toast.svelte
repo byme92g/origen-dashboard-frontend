@@ -9,7 +9,7 @@
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999">
   {#each $toasts as t (t.id)}
     <div
-      class="toast show align-items-center border-0 mb-2 text-bg-{t.type === 'error' ? 'danger' : t.type === 'success' ? 'success' : 'secondary'}"
+      class="toast show align-items-center border-0 mb-2 text-bg-{t.type === 'error' ? 'danger' : t.type === 'success' ? 'success' : t.type === 'warning' ? 'warning' : 'secondary'}"
       role="alert"
     >
       <div class="d-flex">

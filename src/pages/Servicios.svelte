@@ -116,12 +116,13 @@
         precio: Number(editing.precio ?? 0),
         duracionMin: Number(editing.duracionMin ?? 0),
         comisionPct: Number(editing.comisionPct ?? 0),
+        descuento: Number(editing.descuento ?? 0),
       };
       res = isEdit ? await servicioApi.actualizar(editing.id, payload) : await servicioApi.crear(payload);
     } else if (deleteType === 'productos') {
       const payload = isEdit
-        ? { ...editing, precioVenta: Number(editing.precioVenta ?? 0), stock: Number(editing.stock ?? 0) }
-        : { ...editing, precioVenta: Number(editing.precioVenta ?? 0), stockInicial: Number(editing.stock ?? 0) };
+        ? { ...editing, precioVenta: Number(editing.precioVenta ?? 0), stock: Number(editing.stock ?? 0), comisionPct: Number(editing.comisionPct ?? 0), descuento: Number(editing.descuento ?? 0) }
+        : { ...editing, precioVenta: Number(editing.precioVenta ?? 0), stockInicial: Number(editing.stock ?? 0), comisionPct: Number(editing.comisionPct ?? 0), descuento: Number(editing.descuento ?? 0) };
       res = isEdit ? await productoApi.actualizar(editing.id, payload) : await productoApi.crear(payload);
     } else {
       const payload = {
@@ -199,7 +200,7 @@
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
             <thead class="table-origen table-origen--navy">
-              <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th class="d-none d-md-table-cell">Duración</th><th>Comisión</th><th>Estado</th><th class="pe-3"></th></tr>
+              <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th class="d-none d-md-table-cell">Duración</th><th>Comisión</th><th class="d-none d-md-table-cell">Descuento</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each servicios as s}
@@ -209,6 +210,7 @@
                   <td class="small">S/ {s.precio.toFixed(2)}</td>
                   <td class="small d-none d-md-table-cell">{s.duracionMin} min</td>
                   <td class="small">{s.comisionPct}%</td>
+                  <td class="small d-none d-md-table-cell">{s.descuento > 0 ? `${s.descuento}%` : '—'}</td>
                   <td><span class="badge badge-origen {s.activo ? 'badge-origen--green' : 'badge-origen--gray'}">{s.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
@@ -238,7 +240,7 @@
         <div class="table-responsive">
           <table class="table table-sm table-hover table-origen mb-0">
             <thead class="table-origen table-origen--navy">
-              <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th class="pe-3"></th></tr>
+              <tr><th class="ps-3">Nombre</th><th>Categoría</th><th>Precio</th><th class="d-none d-md-table-cell">Comisión</th><th class="d-none d-md-table-cell">Descuento</th><th>Estado</th><th class="pe-3"></th></tr>
             </thead>
             <tbody>
               {#each productos as p}
@@ -246,7 +248,8 @@
                   <td class="ps-3 fw-semibold small">{p.nombre}</td>
                   <td class="small">{p.categoria}</td>
                   <td class="small">S/ {p.precioVenta.toFixed(2)}</td>
-                  <td><span class="badge badge-origen {p.stock <= 0 ? 'badge-origen--red' : p.stock <= 5 ? 'badge-origen--gold' : 'badge-origen--green'}">{p.stock} unid.</span></td>
+                  <td class="small d-none d-md-table-cell">{p.comisionPct > 0 ? `${p.comisionPct}%` : '—'}</td>
+                  <td class="small d-none d-md-table-cell">{p.descuento > 0 ? `${p.descuento}%` : '—'}</td>
                   <td><span class="badge badge-origen {p.activo ? 'badge-origen--green' : 'badge-origen--gray'}">{p.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="pe-3 text-end">
                     <div class="d-flex gap-1 justify-content-end">
@@ -259,7 +262,7 @@
                     </div>
                   </td>
                 </tr>
-              {:else}<tr><td colspan="6" class="text-center text-muted py-4">Sin productos</td></tr>{/each}
+              {:else}<tr><td colspan="7" class="text-center text-muted py-4">Sin productos</td></tr>{/each}
             </tbody>
           </table>
         </div>
@@ -328,28 +331,32 @@
   <svelte:fragment slot="body">
     {#if deleteType === 'servicios'}
       <div class="row g-3">
-        <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={editing.nombre} /></div>
-        <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Categoría *</label><input class="form-control" bind:value={editing.categoria} /></div>
-        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Precio S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precio} placeholder="0.00" /></div>
-        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Duración (min)</label><input class="form-control" type="number" bind:value={editing.duracionMin} placeholder="0" /></div>
-        <div class="col-6 col-md-4"><label class="form-label small fw-semibold">Comisión %</label><input class="form-control" type="number" bind:value={editing.comisionPct} placeholder="0" /></div>
-        {#if isEdit}<div class="col-6"><label class="form-label small fw-semibold">Estado</label><select class="form-select" bind:value={editing.activo}><option value={true}>Activo</option><option value={false}>Inactivo</option></select></div>{/if}
+        <div class="col-12 col-md-6"><label class="form-label small fw-semibold" for="srv-nombre">Nombre *</label><input class="form-control" id="srv-nombre" bind:value={editing.nombre} /></div>
+        <div class="col-12 col-md-6"><label class="form-label small fw-semibold" for="srv-categoria">Categoría *</label><input class="form-control" id="srv-categoria" bind:value={editing.categoria} /></div>
+        <div class="col-6 col-md-4"><label class="form-label small fw-semibold" for="srv-precio">Precio S/ *</label><input class="form-control" id="srv-precio" type="number" step="0.01" bind:value={editing.precio} placeholder="0.00" /></div>
+        <div class="col-6 col-md-4"><label class="form-label small fw-semibold" for="srv-duracion">Duración (min)</label><input class="form-control" id="srv-duracion" type="number" bind:value={editing.duracionMin} placeholder="0" /></div>
+        <div class="col-6 col-md-4"><label class="form-label small fw-semibold" for="srv-comision">Comisión %</label><input class="form-control" id="srv-comision" type="number" bind:value={editing.comisionPct} placeholder="0" /></div>
+        <div class="col-6 col-md-4"><label class="form-label small fw-semibold" for="srv-descuento">Descuento %</label><input class="form-control" id="srv-descuento" type="number" bind:value={editing.descuento} placeholder="0" /></div>
+        {#if isEdit}<div class="col-6"><label class="form-label small fw-semibold" for="srv-estado">Estado</label><select class="form-select" id="srv-estado" bind:value={editing.activo}><option value={true}>Activo</option><option value={false}>Inactivo</option></select></div>{/if}
       </div>
     {:else if deleteType === 'productos'}
       <div class="row g-3">
-        <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={editing.nombre} /></div>
-        <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Categoría *</label><input class="form-control" bind:value={editing.categoria} /></div>
-        <div class="col-6"><label class="form-label small fw-semibold">Precio venta S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precioVenta} placeholder="0.00" /></div>
-        <div class="col-6"><label class="form-label small fw-semibold">Stock inicial</label><input class="form-control" type="number" bind:value={editing.stock} placeholder="0" /></div>
-        {#if isEdit}<div class="col-6"><label class="form-label small fw-semibold">Estado</label><select class="form-select" bind:value={editing.activo}><option value={true}>Activo</option><option value={false}>Inactivo</option></select></div>{/if}
+        <div class="col-12 col-md-6"><label class="form-label small fw-semibold" for="prod-nombre">Nombre *</label><input class="form-control" id="prod-nombre" bind:value={editing.nombre} /></div>
+        <div class="col-12 col-md-6"><label class="form-label small fw-semibold" for="prod-categoria">Categoría *</label><input class="form-control" id="prod-categoria" bind:value={editing.categoria} /></div>
+        <div class="col-6"><label class="form-label small fw-semibold" for="prod-precio-venta">Precio venta S/ *</label><input class="form-control" id="prod-precio-venta" type="number" step="0.01" bind:value={editing.precioVenta} placeholder="0.00" /></div>
+        {#if !isEdit}<div class="col-6"><label class="form-label small fw-semibold" for="prod-stock">Stock inicial</label><input class="form-control" id="prod-stock" type="number" bind:value={editing.stock} placeholder="0" /></div>{/if}
+        <div class="col-6"><label class="form-label small fw-semibold" for="prod-comision">Comisión %</label><input class="form-control" id="prod-comision" type="number" bind:value={editing.comisionPct} placeholder="0" /></div>
+        <div class="col-6"><label class="form-label small fw-semibold" for="prod-descuento">Descuento %</label><input class="form-control" id="prod-descuento" type="number" bind:value={editing.descuento} placeholder="0" /></div>
+        {#if isEdit}<div class="col-6"><label class="form-label small fw-semibold" for="prod-estado">Estado</label><select class="form-select" id="prod-estado" bind:value={editing.activo}><option value={true}>Activo</option><option value={false}>Inactivo</option></select></div>{/if}
       </div>
     {:else}
       <div class="row g-3">
-        <div class="col-12 col-md-6"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={editing.nombre} /></div>
-        <div class="col-6 col-md-3"><label class="form-label small fw-semibold">Precio S/ *</label><input class="form-control" type="number" step="0.01" bind:value={editing.precio} placeholder="0.00" /></div>
-        <div class="col-6 col-md-3"><label class="form-label small fw-semibold">Descuento %</label><input class="form-control" type="number" bind:value={editing.descuento} placeholder="0" /></div>
-        <div class="col-12"><label class="form-label small fw-semibold">Descripción</label><textarea class="form-control" rows="2" bind:value={editing.descripcion}></textarea></div>
+        <div class="col-12 col-md-6"><label class="form-label small fw-semibold" for="paq-nombre">Nombre *</label><input class="form-control" id="paq-nombre" bind:value={editing.nombre} /></div>
+        <div class="col-6 col-md-3"><label class="form-label small fw-semibold" for="paq-precio">Precio S/ *</label><input class="form-control" id="paq-precio" type="number" step="0.01" bind:value={editing.precio} placeholder="0.00" /></div>
+        <div class="col-6 col-md-3"><label class="form-label small fw-semibold" for="paq-descuento">Descuento %</label><input class="form-control" id="paq-descuento" type="number" bind:value={editing.descuento} placeholder="0" /></div>
+        <div class="col-12"><label class="form-label small fw-semibold" for="paq-descripcion">Descripción</label><textarea class="form-control" id="paq-descripcion" rows="2" bind:value={editing.descripcion}></textarea></div>
         <div class="col-12">
+          <!-- svelte-ignore a11y_label_has_associated_control -->
           <label class="form-label small fw-semibold">Servicios incluidos</label>
           <div class="d-flex flex-wrap gap-2">
             {#each allServicios as s}
@@ -358,6 +365,7 @@
           </div>
         </div>
         <div class="col-12">
+          <!-- svelte-ignore a11y_label_has_associated_control -->
           <label class="form-label small fw-semibold">Productos incluidos</label>
           <div class="d-flex flex-wrap gap-2">
             {#each allProductos as p}

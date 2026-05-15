@@ -3,6 +3,8 @@
   import { reporteApi } from '../lib/api/reportes';
   import Spinner from '../lib/components/Spinner.svelte';
   import type { ReporteResumen } from '../lib/types';
+  import '../styles/pages/_reportes.css';
+  import { limaTodayStr, limaDaysAgoStr } from '../lib/utils/date';
 
   type Periodo = 'hoy' | 'semana' | 'mes' | 'mes_ant' | 'año' | 'custom';
 
@@ -12,22 +14,18 @@
   let loading = false;
 
   function getDates(p: Periodo): { desde: string; hasta: string } {
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const today = fmt(now);
+    const today = limaTodayStr();
+    const [y, m] = today.split('-').map(Number);
     if (p === 'hoy') return { desde: today, hasta: today };
-    if (p === 'semana') {
-      const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1);
-      return { desde: fmt(mon), hasta: today };
-    }
-    if (p === 'mes') return { desde: `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`, hasta: today };
+    if (p === 'semana') return { desde: limaDaysAgoStr(6), hasta: today };
+    if (p === 'mes') return { desde: `${y}-${String(m).padStart(2, '0')}-01`, hasta: today };
     if (p === 'mes_ant') {
-      const first = new Date(now.getFullYear(), now.getMonth()-1, 1);
-      const last = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { desde: fmt(first), hasta: fmt(last) };
+      const pm = m === 1 ? 12 : m - 1;
+      const py = m === 1 ? y - 1 : y;
+      const lastDay = new Date(y, m - 1, 0).getDate();
+      return { desde: `${py}-${String(pm).padStart(2, '0')}-01`, hasta: `${py}-${String(pm).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}` };
     }
-    if (p === 'año') return { desde: `${now.getFullYear()}-01-01`, hasta: today };
+    if (p === 'año') return { desde: `${y}-01-01`, hasta: today };
     return { desde, hasta };
   }
 
@@ -100,13 +98,13 @@
     <div class="page-panel__filters">
       <div class="rango-group">
         {#each PERIODOS as p}
-          <button class="rango-btn" class:active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
+          <button class="rango__btn" class:rango__btn--active={periodo === p.key} on:click={() => setPeriodo(p.key)}>{p.label}</button>
         {/each}
       </div>
       <i class="bi bi-calendar3 page-panel__filter-cal-icon"></i>
-      <div><label class="page-panel__filter-label">Desde</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} /></div>
+      <div><label class="page-panel__filter-label" for="rep-desde">Desde</label><input type="date" id="rep-desde" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} /></div>
       <span class="page-panel__filter-sep">→</span>
-      <div><label class="page-panel__filter-label">Hasta</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} /></div>
+      <div><label class="page-panel__filter-label" for="rep-hasta">Hasta</label><input type="date" id="rep-hasta" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} /></div>
       <button class="btn btn-sm btn-primary" on:click={load}>Aplicar</button>
       {#if loading}<span class="page-panel__filter-sep small text-muted">Cargando...</span>{/if}
     </div>
@@ -232,13 +230,3 @@
     <p class="text-muted">No se pudieron cargar los datos.</p>
   {/if}
 </div>
-
-<style>
-.rango-btn {
-  padding: 6px 16px; border: 1.5px solid #d0d8e8; border-radius: 20px;
-  background: white; cursor: pointer; font-size: 12px; font-weight: 600;
-  color: #5a6478; transition: all .15s; white-space: nowrap; font-family: inherit;
-}
-.rango-btn:hover { border-color: #1b3a60; color: #1b3a60; background: #f0f4ff; }
-.rango-btn.active { border-color: #1b3a60; background: #1b3a60; color: white; }
-</style>

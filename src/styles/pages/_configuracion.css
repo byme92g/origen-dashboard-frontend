@@ -1,0 +1,92 @@
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.config-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.account-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f4f6fa;
+  border-radius: 8px;
+}
+
+.account-box__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Cargos */
+.cargo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cargo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eef2fa;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 10px 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.cargo-pill__del {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: #c5cfdf;
+  color: var(--navy);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.cargo-pill__del:hover:not(:disabled) {
+  background: var(--red);
+  color: white;
+}
+
+.cargo-pill__del:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cargo-add {
+  display: flex;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.cargo-add__input {
+  flex: 1;
+}
+
+.cargo-add__btn {
+  flex-shrink: 0;
+}

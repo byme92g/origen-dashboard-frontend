@@ -1,0 +1,57 @@
+.stock-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stock-filter__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text-body);
+  font-size: 12px;
+  box-shadow: var(--shadow);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.stock-filter__chip:hover {
+  border-color: var(--navy);
+  color: var(--navy);
+}
+
+.stock-filter__chip--active {
+  background: var(--navy);
+  color: white;
+  border-color: var(--navy);
+}
+
+.stock-filter__chip-count {
+  background: #eef1f6;
+  color: var(--navy);
+  border-radius: 10px;
+  min-width: 22px;
+  text-align: center;
+  padding: 1px 6px;
+}
+
+.stock-filter__chip--active .stock-filter__chip-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.stock-filter__chip--clear {
+  background: var(--red-bg);
+  color: var(--red);
+  border-color: #f5c6cb;
+}
+
+.stock-filter__chip--clear:hover {
+  background: #f8d7da;
+  border-color: var(--red);
+}

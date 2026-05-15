@@ -1,0 +1,45 @@
+/* ── Wizard step progress ────────────────────────────────────────────────── */
+.wizard__step {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e8edf4;
+  color: var(--text-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.wizard__step--active {
+  background: var(--navy);
+  color: white;
+}
+
+.wizard__step--done {
+  background: var(--green);
+  color: white;
+  font-size: 10px;
+}
+
+.wizard__line {
+  flex: 1;
+  height: 2px;
+  background: #e8edf4;
+  min-width: 20px;
+}
+
+.wizard__line--done {
+  background: var(--navy);
+}
+
+/* Expense variant (red accent) */
+.wizard--expense .wizard__step--active {
+  background: var(--red);
+}
+
+.wizard--expense .wizard__line--done {
+  background: var(--red);
+}

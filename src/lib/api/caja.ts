@@ -45,10 +45,15 @@ export function getResponsablesStr(responsables: CajaResponsable[] | null | unde
 export const cajaApi = {
   estado: () => apiGet<CajaEstadoResponse>('/caja/estado'),
 
-  historial: (page = 1, pageSize = 20) =>
-    apiGet<{ items: CajaApertura[]; total: number; page: number; pageSize: number }>(
-      `/caja/historial?page=${page}&pageSize=${pageSize}`
-    ),
+  historial: (page = 1, pageSize = 20, filters?: { desde?: string; hasta?: string; empleadoId?: number }) => {
+    const p = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (filters?.desde) p.set('desde', filters.desde);
+    if (filters?.hasta) p.set('hasta', filters.hasta);
+    if (filters?.empleadoId != null) p.set('empleadoId', String(filters.empleadoId));
+    return apiGet<{ items: CajaApertura[]; total: number; page: number; pageSize: number }>(
+      `/caja/historial?${p}`
+    );
+  },
 
   movimientos: (id: number) =>
     apiGet<CajaMovimiento[]>(`/caja/${id}/movimientos`),

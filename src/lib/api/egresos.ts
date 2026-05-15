@@ -9,6 +9,7 @@ export interface CrearEgresoRequest {
   proveedor?: string;
   comprobante?: string;
   observaciones?: string;
+  metodoPago?: string;
 }
 
 export interface CategoriaEgreso {
@@ -25,10 +26,11 @@ export const egresoApi = {
     const qs = params.toString();
     return apiGet<Egreso[]>(`/egresos${qs ? '?' + qs : ''}`);
   },
-  listarPaginado: (page: number, pageSize = 10, desde?: string, hasta?: string) => {
+  listarPaginado: (page: number, pageSize = 10, desde?: string, hasta?: string, metodoPago?: string) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (desde) params.set('desde', desde);
     if (hasta) params.set('hasta', hasta);
+    if (metodoPago) params.set('metodoPago', metodoPago);
     return apiGet<PaginatedResult<Egreso>>(`/egresos?${params}`);
   },
   obtener: (id: number) => apiGet<Egreso>(`/egresos/${id}`),

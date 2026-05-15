@@ -1,6 +1,7 @@
 .nav-tabs-origen {
   border-bottom-color: #e0e8f0;
 }
+
 .nav-tabs-origen .nav-link {
   font-size: 13px;
   font-family: var(--font-body);
@@ -10,10 +11,12 @@
   padding: 8px 16px;
   background: transparent;
 }
+
 .nav-tabs-origen .nav-link:hover {
   color: var(--navy);
-  border-bottom-color: rgba(27,58,96,.3);
+  border-bottom-color: rgba(27, 58, 96, .3);
 }
+
 .nav-tabs-origen .nav-link.active {
   color: var(--navy);
   font-weight: 600;

@@ -1,20 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { egresoApi, type CategoriaEgreso, type CrearEgresoRequest } from '../lib/api/egresos';
+  import { cajaApi } from '../lib/api/caja';
   import { isAdmin } from '../lib/stores/auth';
   import Spinner from '../lib/components/Spinner.svelte';
   import Pagination from '../lib/components/Pagination.svelte';
   import ConfirmDialog from '../lib/components/ConfirmDialog.svelte';
   import { toast } from '../lib/stores/toast';
   import type { Egreso } from '../lib/types';
+  import { fmtDateField, limaTodayStr, limaDaysAgoStr } from '../lib/utils/date';
+  import '../styles/pages/_egresos.css';
 
   // ── State ─────────────────────────────────────────────────────────────────
   let items: Egreso[] = []; let total = 0; let page = 1; const pageSize = 10;
   let loading = true;
 
-  const today = new Date().toISOString().split('T')[0];
-  const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+  const today = limaTodayStr();
+  const thirtyAgo = limaDaysAgoStr(30);
   let desde = thirtyAgo; let hasta = today;
+  let filterMetodo = '';
 
   let showWizard = false; let step = 1;
   let form: Partial<CrearEgresoRequest> = {};
@@ -22,6 +26,11 @@
   let showReceipt = false;
   let lastEgreso: Egreso | null = null;
   let deleteConfirm = false; let deleteId: number | null = null; let deleting = false;
+
+  // Caja state
+  let cajaAbierta = false;
+  let cajaResponsable: string | null = null;
+  let cajaLoading = true;
 
   // ── Category config ────────────────────────────────────────────────────────
   const fallbackCategorias: CategoriaEgreso[] = [
@@ -49,10 +58,7 @@
   };
 
   function normalizeCategory(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+    return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   }
 
   function categoriaIconKey(categoria: CategoriaEgreso): string {
@@ -86,7 +92,7 @@
   // ── Data loaders ──────────────────────────────────────────────────────────
   async function load() {
     loading = true;
-    const res = await egresoApi.listarPaginado(page, pageSize, desde || undefined, hasta || undefined);
+    const res = await egresoApi.listarPaginado(page, pageSize, desde || undefined, hasta || undefined, filterMetodo || undefined);
     if (res.ok && res.data) {
       if (Array.isArray(res.data)) { items = res.data as unknown as Egreso[]; total = items.length; }
       else { items = res.data.items; total = res.data.total; }
@@ -102,13 +108,30 @@
     }
   }
 
+  async function loadCajaEstado() {
+    cajaLoading = true;
+    const res = await cajaApi.estado();
+    if (res.ok && res.data) {
+      cajaAbierta = res.data.abierta;
+      if (res.data.abierta && res.data.apertura?.responsables?.length > 0) {
+        cajaResponsable = res.data.apertura.responsables.map((r: any) => r.empleado?.nombre ?? r.empleadoId).join(', ');
+      }
+    }
+    cajaLoading = false;
+  }
+
   onMount(() => {
     loadCategorias();
     load();
+    loadCajaEstado();
   });
 
   function openWizard() {
-    form = { fecha: today, categoriaId: 0 };
+    if (!cajaAbierta) {
+      toast('Debes abrir una caja antes de registrar egresos.', 'error');
+      return;
+    }
+    form = { fecha: today, categoriaId: 0, metodoPago: 'efectivo' };
     step = 1; showWizard = true;
   }
 
@@ -118,7 +141,6 @@
     saving = false;
     if (res.ok && res.data) {
       toast('Egreso registrado', 'success');
-      // Backend wraps response as { egreso, message }
       lastEgreso = (res.data as any).egreso ?? res.data;
       showWizard = false; showReceipt = true;
       load();
@@ -135,16 +157,22 @@
     else toast(res.error ?? 'Error', 'error');
   }
 
-  function fmtDate(s: string) {
-    const d = new Date(s);
-    return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  }
+  const fmtDate = fmtDateField;
   function fmt(v: number) { return `S/. ${v.toFixed(2)}`; }
   function catLabel(key: string | number | { id: number; nombre: string } | undefined | null): string {
     if (!key && key !== 0) return '—';
     if (typeof key === 'object') return key.nombre;
     return categoriaLabels[key] ?? String(key);
   }
+
+  const metodoPagoItems = [
+    { key: 'efectivo',      label: 'Efectivo',      icon: 'bi-cash-stack' },
+    { key: 'transferencia', label: 'Transferencia', icon: 'bi-bank' },
+    { key: 'yape',          label: 'Yape',          content: 'Y', bg: '#6B21A8' },
+    { key: 'plin',          label: 'Plin',          content: 'P', bg: '#00B4D8' },
+    { key: 'pos',           label: 'POS',           icon: 'bi-credit-card' },
+    { key: 'otro',          label: 'Otro',          icon: 'bi-three-dots' },
+  ];
 
   $: step2Valid = !!(form.descripcion && (form.monto ?? 0) > 0);
 </script>
@@ -159,23 +187,52 @@
           <p class="text-muted small mb-0">Historial de gastos y salidas registradas</p>
         </div>
       </div>
-      <button class="btn btn-danger btn-sm d-none d-sm-block" on:click={openWizard}>
-        <i class="bi bi-plus-lg me-1"></i>Registrar Egreso
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        {#if !cajaLoading && !cajaAbierta}
+          <span class="badge bg-warning text-dark small">
+            <i class="bi bi-exclamation-triangle me-1"></i>Sin caja abierta
+          </span>
+        {/if}
+        <button class="btn btn-danger btn-sm d-none d-sm-block" on:click={openWizard} disabled={cajaLoading || !cajaAbierta}>
+          <i class="bi bi-plus-lg me-1"></i>Registrar Egreso
+        </button>
+      </div>
     </div>
     <div class="d-sm-none px-3 pb-2">
-      <button class="btn btn-danger btn-sm w-100 rounded-pill btn-cta-origen" on:click={openWizard}>
+      <button class="btn btn-danger btn-sm w-100 rounded-pill btn-cta-origen" on:click={openWizard} disabled={cajaLoading || !cajaAbierta}>
         <i class="bi bi-plus-lg me-1"></i>Registrar Egreso
       </button>
     </div>
     <div class="page-panel__filters">
       <i class="bi bi-calendar3 page-panel__filter-cal-icon"></i>
-      <div><label class="page-panel__filter-label">Desde</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} /></div>
+      <div>
+        <label for="egreso-desde" class="page-panel__filter-label">Desde</label>
+        <input id="egreso-desde" type="date" class="form-control form-control-sm page-panel__filter-date"
+          bind:value={desde} on:change={() => { page = 1; load(); }} />
+      </div>
       <span class="page-panel__filter-sep">→</span>
-      <div><label class="page-panel__filter-label">Hasta</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} /></div>
-      <button class="btn btn-sm btn-primary" on:click={() => { page=1; load(); }}>Filtrar</button>
-      {#if desde !== thirtyAgo || hasta !== today}
-        <button class="btn btn-sm btn-link text-muted p-0" on:click={() => { desde=thirtyAgo; hasta=today; page=1; load(); }}>Limpiar</button>
+      <div>
+        <label for="egreso-hasta" class="page-panel__filter-label">Hasta</label>
+        <input id="egreso-hasta" type="date" class="form-control form-control-sm page-panel__filter-date"
+          bind:value={hasta} on:change={() => { page = 1; load(); }} />
+      </div>
+      <div>
+        <label for="egreso-metodo" class="page-panel__filter-label">Método</label>
+        <select id="egreso-metodo" class="form-select form-select-sm page-panel__filter-date"
+          bind:value={filterMetodo} on:change={() => { page = 1; load(); }}>
+          <option value="">Todos</option>
+          {#each metodoPagoItems as m}<option value={m.key}>{m.label}</option>{/each}
+        </select>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary"
+        on:click={() => { desde = today; hasta = today; page = 1; load(); }}>
+        Hoy
+      </button>
+      {#if desde !== thirtyAgo || hasta !== today || filterMetodo}
+        <button class="btn btn-sm btn-link text-muted p-0"
+          on:click={() => { desde = thirtyAgo; hasta = today; filterMetodo = ''; page = 1; load(); }}>
+          Limpiar
+        </button>
       {/if}
     </div>
   </div>
@@ -190,6 +247,7 @@
               <th>Descripción</th>
               <th>Categoría</th>
               <th class="d-none d-md-table-cell">Proveedor</th>
+              <th class="d-none d-sm-table-cell">Método</th>
               <th class="text-end">Monto</th>
               {#if $isAdmin}<th class="pe-3"></th>{/if}
             </tr>
@@ -201,17 +259,27 @@
                 <td class="small fw-semibold">{e.descripcion}</td>
                 <td><span class="cat-badge">{catLabel(e.categoria)}</span></td>
                 <td class="small text-muted d-none d-md-table-cell">{e.proveedor ?? '—'}</td>
+                <td class="d-none d-sm-table-cell">
+                  {#if e.metodoPago}
+                    <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+                    <span class="metodo-badge metodo-badge--{e.metodoPago} metodo-badge--clickable"
+                      title="Filtrar por {e.metodoPago}"
+                      on:click={() => { filterMetodo = e.metodoPago ?? ''; page = 1; load(); }}>
+                      {e.metodoPago}
+                    </span>
+                  {:else}—{/if}
+                </td>
                 <td class="text-end fw-bold small text-danger">-{fmt(e.monto)}</td>
                 {#if $isAdmin}
                   <td class="pe-3 text-end">
-                    <button class="btn-icon-sm" title="Eliminar" on:click={() => { deleteId = e.id; deleteConfirm = true; }}>
+                    <button class="btn-icon" title="Eliminar" on:click={() => { deleteId = e.id; deleteConfirm = true; }}>
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
                 {/if}
               </tr>
             {:else}
-              <tr><td colspan="6" class="text-center text-muted py-5">
+              <tr><td colspan="7" class="text-center text-muted py-5">
                 <i class="bi bi-cash-stack empty-icon"></i>
                 Sin egresos en el período seleccionado
               </td></tr>
@@ -234,14 +302,24 @@
           <button class="btn-close" aria-label="Cerrar" on:click={() => (showWizard=false)}></button>
         </div>
 
+        <!-- Responsable de caja -->
+        {#if cajaResponsable}
+          <div class="px-4 pt-2">
+            <div class="small" style="background:#f0f4ff;border-radius:8px;padding:8px 12px;color:#5a6478">
+              <i class="bi bi-person-badge me-1" style="color:#1a2a4a"></i>
+              Responsable: <strong style="color:#1a2a4a">{cajaResponsable}</strong>
+            </div>
+          </div>
+        {/if}
+
         <!-- Step progress -->
         <div class="px-4 pt-3 pb-0">
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2 wizard--expense">
             {#each ['Categoría', 'Detalle', 'Confirmar'] as label, i}
               {@const n = i + 1}
-              <div class="progress-num {step === n ? 'active' : step > n ? 'completed' : ''}">{step > n ? '✓' : n}</div>
+              <div class="wizard__step {step === n ? 'wizard__step--active' : step > n ? 'wizard__step--done' : ''}">{step > n ? '✓' : n}</div>
               <span class="small {step >= n ? 'text-navy fw-semibold' : 'text-muted'}">{label}</span>
-              {#if i < 2}<div class="progress-line {step > n ? 'done' : ''}"></div>{/if}
+              {#if i < 2}<div class="wizard__line {step > n ? 'wizard__line--done' : ''}"></div>{/if}
             {/each}
           </div>
         </div>
@@ -253,11 +331,9 @@
             <p class="text-muted small mb-3">Selecciona la categoría que mejor describe este gasto</p>
             <div class="cat-grid mb-3">
               {#each categoriaItems as c}
-                <button type="button" class="cat-btn {form.categoriaId === c.key ? 'active' : ''}" on:click={() => (form.categoriaId = Number(c.key))}>
-                  <span class="cat-icon">
-                    <i class="bi {c.icon}"></i>
-                  </span>
-                  <span class="cat-name">{c.shortLabel}</span>
+                <button type="button" class="cat-grid__btn {form.categoriaId === c.key ? 'cat-grid__btn--active' : ''}" on:click={() => (form.categoriaId = Number(c.key))}>
+                  <span class="cat-grid__icon"><i class="bi {c.icon}"></i></span>
+                  <span class="cat-grid__name">{c.shortLabel}</span>
                 </button>
               {/each}
             </div>
@@ -267,67 +343,72 @@
             <p class="text-muted small mb-3">Ingresa los datos del gasto en <strong>{catLabel(form.categoriaId)}</strong></p>
 
             <div class="mb-3">
-              <label class="form-label" style="font-size:11px;font-weight:700;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Monto (S/)</label>
+              <label for="egreso-monto" class="form-label" style="font-size:11px;font-weight:700;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Monto (S/)</label>
               <div style="position:relative">
                 <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.3rem;font-weight:700;color:#c0392b;pointer-events:none">S/.</span>
-                <input type="number" step="0.01" min="0" bind:value={form.monto}
+                <input id="egreso-monto" type="number" step="0.01" min="0" bind:value={form.monto}
                   placeholder="0.00"
                   style="width:100%;padding:14px 14px 14px 62px;font-size:1.8rem;font-weight:800;color:#c0392b;border:2.5px solid {(form.monto ?? 0) > 0 ? '#c0392b' : '#d0d8e8'};border-radius:8px;outline:none;background:white;transition:border-color .15s" />
               </div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Descripción *</label>
-              <input class="form-control" bind:value={form.descripcion} placeholder="Ej: Compra de tintes, pago de luz…" />
+              <label for="egreso-descripcion" class="form-label small fw-semibold">Descripción *</label>
+              <input id="egreso-descripcion" class="form-control" bind:value={form.descripcion} placeholder="Ej: Compra de tintes, pago de luz…" />
             </div>
 
             <div class="row g-2 mb-3">
               <div class="col-6">
-                <label class="form-label small fw-semibold">Fecha</label>
-                <input class="form-control" type="date" bind:value={form.fecha} />
+                <label for="egreso-fecha" class="form-label small fw-semibold">Fecha</label>
+                <input id="egreso-fecha" class="form-control" type="date" bind:value={form.fecha} />
               </div>
               <div class="col-6">
-                <label class="form-label small fw-semibold">Proveedor</label>
-                <input class="form-control" bind:value={form.proveedor} placeholder="Opcional" />
+                <label for="egreso-proveedor" class="form-label small fw-semibold">Proveedor</label>
+                <input id="egreso-proveedor" class="form-control" bind:value={form.proveedor} placeholder="Opcional" />
               </div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label small fw-semibold">N° de comprobante</label>
-              <input class="form-control" bind:value={form.comprobante} placeholder="Boleta / Factura (opcional)" />
+              <label for="egreso-comprobante" class="form-label small fw-semibold">N° de comprobante</label>
+              <input id="egreso-comprobante" class="form-control" bind:value={form.comprobante} placeholder="Boleta / Factura (opcional)" />
+            </div>
+
+            <div class="mb-3">
+              <!-- svelte-ignore a11y_label_has_associated_control -->
+              <label class="form-label" style="font-size:11px;font-weight:600;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Método de pago</label>
+              <div class="pago pago--expense">
+                {#each metodoPagoItems as m}
+                  <button type="button" class="pago__btn {form.metodoPago === m.key ? 'pago__btn--selected' : ''}" on:click={() => (form.metodoPago = m.key)}>
+                    <div class="pago__icon">
+                      {#if m.icon}
+                        <i class="bi {m.icon}"></i>
+                      {:else}
+                        <span class="pago__brand" style="background:{m.bg}">{m.content}</span>
+                      {/if}
+                    </div>
+                    <span>{m.label}</span>
+                  </button>
+                {/each}
+              </div>
             </div>
 
           <!-- ── PASO 3: CONFIRMAR ── -->
           {:else}
             <p class="text-muted small mb-3">Revisa los datos antes de confirmar el registro</p>
-            <div class="resumen-card mb-3">
-              <div class="resumen-header-label">Resumen del egreso</div>
-              <div class="resumen-row">
-                <span>Categoría</span>
-                <span class="cat-badge">{catLabel(form.categoriaId)}</span>
-              </div>
-              <div class="resumen-row">
-                <span>Descripción</span>
-                <span class="fw-semibold">{form.descripcion}</span>
-              </div>
-              <div class="resumen-row">
-                <span>Fecha</span>
-                <span>{form.fecha}</span>
-              </div>
-              {#if form.proveedor}
-                <div class="resumen-row"><span>Proveedor</span><span>{form.proveedor}</span></div>
-              {/if}
-              {#if form.comprobante}
-                <div class="resumen-row"><span>Comprobante</span><span>{form.comprobante}</span></div>
-              {/if}
-              <div class="resumen-row resumen-total">
-                <span>Total a registrar</span>
-                <span>- {fmt(form.monto ?? 0)}</span>
-              </div>
+            <div class="resumen--expense mb-3">
+              <div class="resumen__header">Resumen del egreso</div>
+              <div class="resumen__row"><span>Categoría</span><span class="cat-badge">{catLabel(form.categoriaId)}</span></div>
+              <div class="resumen__row"><span>Descripción</span><span class="fw-semibold">{form.descripcion}</span></div>
+              <div class="resumen__row"><span>Fecha</span><span>{form.fecha}</span></div>
+              {#if form.proveedor}<div class="resumen__row"><span>Proveedor</span><span>{form.proveedor}</span></div>{/if}
+              {#if form.comprobante}<div class="resumen__row"><span>Comprobante</span><span>{form.comprobante}</span></div>{/if}
+              {#if form.metodoPago}<div class="resumen__row"><span>Método de pago</span><span class="metodo-badge metodo-badge--{form.metodoPago}">{form.metodoPago}</span></div>{/if}
+              {#if cajaResponsable}<div class="resumen__row"><span>Responsable</span><span class="fw-semibold">{cajaResponsable}</span></div>{/if}
+              <div class="resumen__row resumen__row--total"><span>Total a registrar</span><span>- {fmt(form.monto ?? 0)}</span></div>
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Observaciones</label>
-              <textarea class="form-control" rows="2" bind:value={form.observaciones} placeholder="Notas adicionales (opcional)"></textarea>
+              <label for="egreso-observaciones" class="form-label small fw-semibold">Observaciones</label>
+              <textarea id="egreso-observaciones" class="form-control" rows="2" bind:value={form.observaciones} placeholder="Notas adicionales (opcional)"></textarea>
             </div>
           {/if}
 
@@ -379,77 +460,3 @@
 {/if}
 
 <ConfirmDialog show={deleteConfirm} message="¿Eliminar este egreso?" onConfirm={doDelete} onCancel={() => (deleteConfirm=false)} loading={deleting} />
-
-<style>
-  /* ── Categoria grid ──────────────────────────────────────────────────────── */
-  .cat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 10px;
-  }
-  .cat-btn {
-    padding: 14px 8px; border: 2px solid #d0d8e8; border-radius: 8px;
-    background: white; cursor: pointer; transition: all .15s; text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    color: #8a97b0;
-  }
-  .cat-btn:hover { border-color: #c0392b; background: #fff5f5; color: #c0392b; }
-  .cat-btn.active { border-color: #c0392b; background: #fdecea; color: #c0392b; }
-  .cat-btn.active .cat-name { color: #c0392b; font-weight: 700; }
-  .cat-icon { display: flex; align-items: center; justify-content: center; }
-  .cat-icon .bi { font-size: 22px; line-height: 1; }
-  .cat-name { font-size: 11px; font-weight: 500; color: #5a6478; line-height: 1.2; text-align: center; }
-  .cat-btn.active .cat-name { color: #c0392b; }
-  .empty-icon {
-    display: block;
-    margin: 0 auto 8px;
-    font-size: 36px;
-    line-height: 1;
-    opacity: .2;
-  }
-
-  /* ── Summary card ────────────────────────────────────────────────────────── */
-  .resumen-card {
-    background: #fff8f8; border: 1px solid #f0d0d0;
-    border-left: 4px solid #c0392b; border-radius: 8px; padding: 18px;
-  }
-  .resumen-header-label {
-    font-size: 10px; font-weight: 700; color: #8a97b0;
-    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px;
-  }
-  .resumen-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 7px 0; border-bottom: 1px solid #f0d8d8; font-size: 13px; color: #5a6478;
-  }
-  .resumen-row:last-child { border-bottom: none; }
-  .resumen-total {
-    padding-top: 12px; font-size: 14px; font-weight: 700; color: #c0392b;
-  }
-  .resumen-total span:last-child { font-size: 1.4rem; }
-
-  /* ── Step progress ───────────────────────────────────────────────────────── */
-  .progress-num {
-    width: 26px; height: 26px; border-radius: 50%; background: #e8edf4;
-    color: #5a6478; display: flex; align-items: center; justify-content: center;
-    font-weight: 600; font-size: 12px; flex-shrink: 0;
-  }
-  .progress-num.active    { background: #c0392b; color: white; }
-  .progress-num.completed { background: #2e7d5a; color: white; font-size: 10px; }
-  .progress-line { flex: 1; height: 2px; background: #e8edf4; min-width: 20px; }
-  .progress-line.done { background: #c0392b; }
-  .text-navy { color: var(--navy); }
-
-  /* ── Table badges ────────────────────────────────────────────────────────── */
-  .cat-badge {
-    display: inline-block; padding: 2px 8px; border-radius: 12px;
-    font-size: 11px; font-weight: 600; background: #f0f4ff; color: var(--navy);
-    white-space: nowrap;
-  }
-
-  /* ── Delete button ───────────────────────────────────────────────────────── */
-  .btn-icon-sm {
-    background: none; border: none; cursor: pointer; color: #8a97b0;
-    padding: 4px 6px; border-radius: 4px; transition: color .15s;
-  }
-  .btn-icon-sm:hover { color: #c0392b; background: #fdecea; }
-</style>

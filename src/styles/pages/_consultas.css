@@ -1,0 +1,114 @@
+.consultas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.cq-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s, transform .12s;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cq-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.09);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.cq-card--active {
+  border-color: var(--accent);
+  background: #f0f4ff;
+  box-shadow: 0 0 0 2px rgba(67,97,238,.15);
+}
+
+.cq-card__icon {
+  font-size: 20px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.cq-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.3;
+}
+
+.cq-card__desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.cq-card__tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eef1f6;
+  color: #5a6478;
+  letter-spacing: .03em;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.cq-results {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.cq-results__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cq-results__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.cq-results__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.cq-results__empty {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.cq-loading {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 576px) {
+  .consultas-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cq-card {
+    padding: 12px;
+  }
+}

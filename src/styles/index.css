@@ -20,3 +20,10 @@
 @import './components/_nav-tabs.css';
 @import './components/_progress.css';
 @import './components/_chips.css';
+@import './components/_wizard.css';
+@import './components/_pago.css';
+@import './components/_campana-toast.css';
+
+/* ── Pages ───────────────────────────────────────────────────────────────── */
+@import './pages/_dashboard.css';
+@import './pages/_estadisticas.css';

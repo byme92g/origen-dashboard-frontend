@@ -37,6 +37,7 @@ export function logout(): void {
   localStorage.removeItem('origen_token');
   localStorage.removeItem('origen_user');
   localStorage.removeItem('origen_expiry');
+  localStorage.removeItem('origen_permisos');
 }
 
 export function getUsuario(): UsuarioInfo | null {

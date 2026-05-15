@@ -8,4 +8,8 @@
   background: #eaf0f8;
   color: var(--navy);
 }
-.pk-chip--green { background: #f0f4e8; color: #3a5a1a; }
+
+.pk-chip--green {
+  background: #f0f4e8;
+  color: #3a5a1a;
+}

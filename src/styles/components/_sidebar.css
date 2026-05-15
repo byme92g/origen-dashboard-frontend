@@ -1,0 +1,128 @@
+.sidebar {
+  background: var(--navy);
+}
+
+.sidebar__logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, .10);
+  flex-shrink: 0;
+}
+
+.sidebar__logo-text {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: .05em;
+  display: block;
+}
+
+.sidebar__logo-sub {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, .45);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.sidebar__user {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.sidebar__user-name {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__user-role {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: rgba(255, 255, 255, .45);
+  text-transform: capitalize;
+}
+
+.sidebar__section-label {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: rgba(255, 255, 255, .30);
+  padding: 14px 20px 4px;
+}
+
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  color: rgba(255, 255, 255, .65);
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 400;
+  border-left: 3px solid transparent;
+  transition: background .15s, color .15s;
+}
+
+.sidebar__link:hover {
+  background: rgba(255, 255, 255, .07);
+  color: white;
+}
+
+.sidebar__link--active {
+  background: rgba(160, 120, 56, .15);
+  border-left-color: var(--gold-light);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.sidebar__link-icon {
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot--open {
+  background: #4db87a;
+  box-shadow: 0 0 0 2px rgba(77, 184, 122, .25);
+}
+
+.status-dot--closed {
+  background: #f0a030;
+  box-shadow: 0 0 0 2px rgba(240, 160, 48, .25);
+}

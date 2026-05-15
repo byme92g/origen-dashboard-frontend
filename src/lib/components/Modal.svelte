@@ -12,7 +12,7 @@
       <div class="modal-content modal-origen">
         <div class="modal-header">
           <h5 class="modal-title">{title}</h5>
-          <button type="button" class="btn-close" on:click={onClose}></button>
+          <button type="button" class="btn-close" aria-label="Cerrar" on:click={onClose}></button>
         </div>
         <div class="modal-body">
           <slot name="body" />

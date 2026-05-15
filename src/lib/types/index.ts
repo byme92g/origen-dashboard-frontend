@@ -21,6 +21,7 @@ export interface UsuarioInfo {
 export interface Cliente {
   id: number;
   nombre: string;
+  dni: string;
   telefono?: string;
   email?: string;
   observaciones?: string;
@@ -56,6 +57,7 @@ export interface Servicio {
   precio: number;
   duracionMin: number;
   comisionPct: number;
+  descuento: number;
   activo: boolean;
 }
 
@@ -65,6 +67,8 @@ export interface Producto {
   categoria: string;
   precioVenta: number;
   stock: number;
+  comisionPct: number;
+  descuento: number;
   activo: boolean;
 }
 
@@ -99,15 +103,11 @@ export interface IngresoDetalle {
   id: number;
   ingresoId: number;
   tipo: string;
-  servicioId?: number;
-  productoId?: number;
-  paqueteId?: number;
-  conceptoPersonalizado?: string;
+  nombre: string; // snapshot — immutable after creation
   cantidad: number;
+  precioUnitario: number;
+  descuentoPct: number;
   monto: number;
-  servicio?: { id: number; nombre: string };
-  producto?: { id: number; nombre: string };
-  paquete?: { id: number; nombre: string };
 }
 
 export interface Ingreso {
@@ -126,6 +126,7 @@ export interface Ingreso {
   metodoPago: string;
   referencia?: string;
   comision: number;
+  montoRecibido?: number;
   observaciones?: string;
   clienteId?: number;
   empleadoId?: number;
@@ -147,12 +148,32 @@ export interface Egreso {
   proveedor?: string;
   comprobante?: string;
   observaciones?: string;
+  metodoPago?: string;
+  empleadoId?: number;
+  empleado?: { id: number; nombre: string };
+}
+
+export interface Campana {
+  id: number;
+  titulo: string;
+  descripcion?: string;
+  tipo: 'servicio' | 'producto' | 'paquete';
+  servicioId?: number;
+  productoId?: number;
+  paqueteId?: number;
+  fechaInicio: string;
+  fechaFin: string;
+  activo: boolean;
+  creadoEn: string;
+  servicio?: { id: number; nombre: string; precio: number };
+  producto?: { id: number; nombre: string; precioVenta: number };
+  paquete?: { id: number; nombre: string; precio: number };
 }
 
 export interface DashboardKpis {
   ingresosHoy: number;
-  egresosMes: number;
-  utilidadMes: number;
+  egresosHoy: number;
+  utilidadHoy: number;
   totalClientes: number;
   serviciosHoy: number;
 }
@@ -161,6 +182,25 @@ export interface DashboardData {
   kpis: DashboardKpis;
   ultimasTransacciones: Ingreso[];
   porMetodoPago: { metodo: string; total: number }[];
+}
+
+export interface ComisionTransaccion {
+  ingresoId: number;
+  fecha: string;
+  concepto: string;
+  monto: number;
+  comision: number;
+  metodoPago: string;
+}
+
+export interface ComisionEmpleado {
+  empleadoId: number;
+  nombre: string;
+  cargo: string;
+  cantidadTransacciones: number;
+  totalVentas: number;
+  totalComision: number;
+  transacciones: ComisionTransaccion[];
 }
 
 export interface ReporteResumen {

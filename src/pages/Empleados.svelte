@@ -331,10 +331,10 @@
 <!-- Modales empleados -->
 <Modal show={empModal} title={empIsEdit ? 'Editar empleado' : 'Nuevo empleado'} onClose={() => (empModal = false)}>
   <svelte:fragment slot="body">
-    <div class="mb-3"><label class="form-label small fw-semibold">Nombre *</label><input class="form-control" bind:value={empEdit.nombre} on:input={onNombreInput} /></div>
+    <div class="mb-3"><label for="emp-nombre" class="form-label small fw-semibold">Nombre *</label><input id="emp-nombre" class="form-control" bind:value={empEdit.nombre} on:input={onNombreInput} /></div>
     <div class="mb-3">
-      <label class="form-label small fw-semibold">Cargo *</label>
-      <select class="form-select" bind:value={empEdit.cargo}>
+      <label for="emp-cargo" class="form-label small fw-semibold">Cargo *</label>
+      <select id="emp-cargo" class="form-select" bind:value={empEdit.cargo}>
         <option value="">— Seleccionar cargo —</option>
         {#each cargos as c}
           <option value={c.nombre}>{c.nombre}</option>
@@ -344,14 +344,14 @@
         <div class="form-text text-warning">No hay cargos configurados. Agrégalos en Configuración → Cargos.</div>
       {/if}
     </div>
-    <div class="mb-3"><label class="form-label small fw-semibold">Comisión %</label><input class="form-control" type="number" min="0" max="100" bind:value={empEdit.comisionPct} /></div>
+    <div class="mb-3"><label for="emp-comision" class="form-label small fw-semibold">Comisión %</label><input id="emp-comision" class="form-control" type="number" min="0" max="100" bind:value={empEdit.comisionPct} /></div>
     <div class="mb-3">
-      <label class="form-label small fw-semibold">Usuario de acceso *</label>
-      <input class="form-control" bind:value={empEdit.usuarioLogin} on:input={onLoginInput} placeholder={!empIsEdit ? (sugerirLogin(empEdit.nombre ?? '') || 'ej. pedro.suarez') : ''} />
+      <label for="emp-usuario" class="form-label small fw-semibold">Usuario de acceso *</label>
+      <input id="emp-usuario" class="form-control" bind:value={empEdit.usuarioLogin} on:input={onLoginInput} placeholder={!empIsEdit ? (sugerirLogin(empEdit.nombre ?? '') || 'ej. pedro.suarez') : ''} />
     </div>
     <div class="mb-3">
-      <label class="form-label small fw-semibold">{empIsEdit ? 'Nueva contraseña de acceso' : 'Contraseña de acceso *'}</label>
-      <input class="form-control" type="password" bind:value={empEdit.password} placeholder={empIsEdit ? 'Dejar vacío para no cambiar' : ''} />
+      <label for="emp-password" class="form-label small fw-semibold">{empIsEdit ? 'Nueva contraseña de acceso' : 'Contraseña de acceso *'}</label>
+      <input id="emp-password" class="form-control" type="password" bind:value={empEdit.password} placeholder={empIsEdit ? 'Dejar vacío para no cambiar' : ''} />
     </div>
   </svelte:fragment>
   <svelte:fragment slot="footer">
@@ -365,18 +365,18 @@
 <!-- Modales admins -->
 <Modal show={usrModal} title={usrIsEdit ? 'Editar admin' : 'Nuevo admin'} onClose={() => (usrModal = false)}>
   <svelte:fragment slot="body">
-    <div class="mb-3"><label class="form-label small fw-semibold">Nombre completo *</label><input class="form-control" bind:value={usrEdit.nombreCompleto} /></div>
+    <div class="mb-3"><label for="usr-nombre" class="form-label small fw-semibold">Nombre completo *</label><input id="usr-nombre" class="form-control" bind:value={usrEdit.nombreCompleto} /></div>
     {#if !usrIsEdit}
-      <div class="mb-3"><label class="form-label small fw-semibold">Usuario *</label><input class="form-control" bind:value={usrEdit.nombreUsuario} /></div>
-      <div class="mb-3"><label class="form-label small fw-semibold">Contraseña *</label><input class="form-control" type="password" bind:value={usrEdit.password} /></div>
+      <div class="mb-3"><label for="usr-usuario" class="form-label small fw-semibold">Usuario *</label><input id="usr-usuario" class="form-control" bind:value={usrEdit.nombreUsuario} /></div>
+      <div class="mb-3"><label for="usr-password" class="form-label small fw-semibold">Contraseña *</label><input id="usr-password" class="form-control" type="password" bind:value={usrEdit.password} /></div>
     {:else}
-      <div class="mb-3"><label class="form-label small fw-semibold">Nueva contraseña</label><input class="form-control" type="password" bind:value={usrEdit.password} placeholder="Dejar vacío para no cambiar" /></div>
+      <div class="mb-3"><label for="usr-nueva-password" class="form-label small fw-semibold">Nueva contraseña</label><input id="usr-nueva-password" class="form-control" type="password" bind:value={usrEdit.password} placeholder="Dejar vacío para no cambiar" /></div>
     {/if}
     <input type="hidden" bind:value={usrEdit.rol} />
     {#if usrIsEdit}
       <div class="mb-3">
-        <label class="form-label small fw-semibold">Estado</label>
-        <select class="form-select" bind:value={usrEdit.activo}>
+        <label for="usr-estado" class="form-label small fw-semibold">Estado</label>
+        <select id="usr-estado" class="form-select" bind:value={usrEdit.activo}>
           <option value={true}>Activo</option>
           <option value={false}>Inactivo</option>
         </select>
@@ -397,12 +397,12 @@
 <Modal show={pwdModal} title="Cambiar contraseña" onClose={() => (pwdModal = false)}>
   <svelte:fragment slot="body">
     <div class="mb-3">
-      <label class="form-label small fw-semibold">Usuario</label>
-      <input class="form-control" value={pwdUser?.nombreUsuario ?? ''} disabled />
+      <label for="pwd-usuario" class="form-label small fw-semibold">Usuario</label>
+      <input id="pwd-usuario" class="form-control" value={pwdUser?.nombreUsuario ?? ''} disabled />
     </div>
     <div class="mb-3">
-      <label class="form-label small fw-semibold">Nueva contraseña *</label>
-      <input class="form-control" type="password" bind:value={pwdValue} />
+      <label for="pwd-nueva" class="form-label small fw-semibold">Nueva contraseña *</label>
+      <input id="pwd-nueva" class="form-control" type="password" bind:value={pwdValue} />
     </div>
   </svelte:fragment>
   <svelte:fragment slot="footer">

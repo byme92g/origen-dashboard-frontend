@@ -3,6 +3,7 @@
   import { authStore } from '../lib/stores/auth';
   import { push } from 'svelte-spa-router';
   import { onMount } from 'svelte';
+  import '../styles/pages/_login.css';
 
   let usuario = '';
   let password = '';
@@ -28,11 +29,11 @@
   }
 </script>
 
-<div class="login-page">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="login-logo-text">Origen</div>
-      <div class="login-logo-sub">Capilares Estética</div>
+<div class="login">
+  <div class="login__card">
+    <div class="login__logo">
+      <div class="login__logo-text">Origen</div>
+      <div class="login__logo-sub">Capilares Estética</div>
     </div>
 
     <form on:submit={handleSubmit}>
@@ -65,7 +66,7 @@
         <div class="alert alert-danger py-2 small mb-3">{error}</div>
       {/if}
 
-      <button type="submit" class="btn-submit" disabled={loading}>
+      <button type="submit" class="login__submit" disabled={loading}>
         {#if loading}
           <span class="spinner-border spinner-border-sm me-2"></span>
         {/if}
@@ -74,58 +75,3 @@
     </form>
   </div>
 </div>
-
-<style>
-  .login-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, var(--navy-light) 100%);
-  }
-  .login-card {
-    background: white;
-    border-radius: 12px;
-    padding: 40px;
-    width: 100%;
-    max-width: 380px;
-    box-shadow: 0 16px 48px rgba(0,0,0,.22);
-  }
-  .login-logo {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-  .login-logo-text {
-    font-family: var(--font-heading);
-    font-size: 2.4rem;
-    font-weight: 700;
-    color: var(--navy);
-    line-height: 1;
-  }
-  .login-logo-sub {
-    font-size: 11px;
-    color: #8a97b0;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    margin-top: 4px;
-  }
-  .btn-submit {
-    width: 100%;
-    padding: 10px;
-    background: var(--navy);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .btn-submit:hover { background: var(--navy-light); }
-  .btn-submit:disabled { opacity: .55; cursor: not-allowed; }
-</style>

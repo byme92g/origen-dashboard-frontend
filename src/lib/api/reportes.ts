@@ -1,5 +1,5 @@
 import { apiDownload, apiGet } from './base';
-import type { DashboardData, ReporteResumen } from '../types';
+import type { DashboardData, ReporteResumen, ComisionEmpleado } from '../types';
 
 export const reporteApi = {
   dashboard: async () => {
@@ -29,6 +29,8 @@ export const reporteApi = {
     }
     return res as { ok: boolean; data?: ReporteResumen; error?: string };
   },
+  comisiones: async (desde: string, hasta: string) =>
+    apiGet<ComisionEmpleado[]>(`/reportes/comisiones?desde=${desde}&hasta=${hasta}`),
   exportarCsv: async (desde: string, hasta: string) =>
     apiDownload(`/reportes/exportar/csv?desde=${desde}&hasta=${hasta}`),
   exportarPdf: async (desde: string, hasta: string) =>

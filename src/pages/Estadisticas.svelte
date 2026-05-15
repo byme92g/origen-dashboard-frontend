@@ -1,10 +1,12 @@
 <script lang="ts">
+  import '../styles/pages/_estadisticas.css';
   import { onMount } from 'svelte';
   import { reporteApi } from '../lib/api/reportes';
   import EChart from '../lib/components/EChart.svelte';
   import Spinner from '../lib/components/Spinner.svelte';
   import type { ReporteResumen } from '../lib/types';
   import type { EChartsOption } from 'echarts';
+  import { limaTodayStr, limaDaysAgoStr } from '../lib/utils/date';
 
   type Periodo = 'semana' | 'mes' | 'trimestre' | 'anio' | 'custom';
 
@@ -14,24 +16,18 @@
   let data: ReporteResumen | null = null;
   let loading = true;
 
-  function fmtDate(d: Date) {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }
-
   function range(p: Periodo) {
-    const now = new Date();
-    if (p === 'semana') {
-      const start = new Date(now); start.setDate(now.getDate() - 6);
-      return { desde: fmtDate(start), hasta: fmtDate(now) };
-    }
+    const today = limaTodayStr();
+    const [y, m] = today.split('-').map(Number);
+    if (p === 'semana') return { desde: limaDaysAgoStr(6), hasta: today };
     if (p === 'trimestre') {
-      const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      return { desde: fmtDate(start), hasta: fmtDate(now) };
+      const pm2 = m - 2 <= 0 ? m + 10 : m - 2;
+      const py2 = m - 2 <= 0 ? y - 1 : y;
+      return { desde: `${py2}-${String(pm2).padStart(2, '0')}-01`, hasta: today };
     }
-    if (p === 'anio') return { desde: `${now.getFullYear()}-01-01`, hasta: fmtDate(now) };
+    if (p === 'anio') return { desde: `${y}-01-01`, hasta: today };
     if (p === 'custom') return { desde, hasta };
-    return { desde: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`, hasta: fmtDate(now) };
+    return { desde: `${y}-${String(m).padStart(2, '0')}-01`, hasta: today };
   }
 
   async function load() {
@@ -192,9 +188,9 @@
         {/each}
       </div>
       <i class="bi bi-calendar3 page-panel__filter-cal-icon"></i>
-      <div><label class="page-panel__filter-label">Desde</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} disabled={periodo !== 'custom'} /></div>
+      <div><label class="page-panel__filter-label" for="est-desde">Desde</label><input type="date" id="est-desde" class="form-control form-control-sm page-panel__filter-date" bind:value={desde} disabled={periodo !== 'custom'} /></div>
       <span class="page-panel__filter-sep">→</span>
-      <div><label class="page-panel__filter-label">Hasta</label><input type="date" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} disabled={periodo !== 'custom'} /></div>
+      <div><label class="page-panel__filter-label" for="est-hasta">Hasta</label><input type="date" id="est-hasta" class="form-control form-control-sm page-panel__filter-date" bind:value={hasta} disabled={periodo !== 'custom'} /></div>
       <button class="btn btn-sm btn-primary" on:click={load} disabled={loading || periodo !== 'custom'}>Aplicar</button>
     </div>
   </div>
@@ -206,16 +202,16 @@
     <div class="charts-grid">
 
       <!-- ── Resumen financiero ── -->
-      <section class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-title">Resumen financiero</span>
-          <span class="chart-period">{data.periodo.desde.slice(0,10)} → {data.periodo.hasta.slice(0,10)}</span>
+      <section class="charts-grid__card">
+        <div class="charts-grid__card-header">
+          <span class="charts-grid__card-title">Resumen financiero</span>
+          <span class="charts-grid__card-period">{data.periodo.desde.slice(0,10)} → {data.periodo.hasta.slice(0,10)}</span>
         </div>
-        <div class="chart-card-body chart-body-tight">
+        <div class="charts-grid__card-body charts-grid__card-body--tight">
           <EChart option={financialOption} height="260px" />
           <div class="metric-strip">
             {#each finBars as b}
-              <div class="metric-pill">
+              <div class="metric-strip__pill">
                 <span>{b.label}</span>
                 <strong>{fmt(b.value)}</strong>
                 {#if b.sub}<small>{b.sub}</small>{/if}
@@ -226,14 +222,14 @@
       </section>
 
       <!-- ── Métodos de pago — SVG donut ── -->
-      <section class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-title">Métodos de pago</span>
-          <span class="chart-period">{fmt(donutTotal)} total</span>
+      <section class="charts-grid__card">
+        <div class="charts-grid__card-header">
+          <span class="charts-grid__card-title">Métodos de pago</span>
+          <span class="charts-grid__card-period">{fmt(donutTotal)} total</span>
         </div>
-        <div class="chart-card-body chart-body-tight">
+        <div class="charts-grid__card-body charts-grid__card-body--tight">
           {#if data.porMetodoPago.length === 0}
-            <p class="no-data">Sin pagos registrados</p>
+            <p class="charts-grid__no-data">Sin pagos registrados</p>
           {:else}
             <EChart option={paymentOption} height="260px" />
           {/if}
@@ -241,14 +237,14 @@
       </section>
 
       <!-- ── Top servicios — horizontal bar chart ── -->
-      <section class="chart-card chart-wide">
-        <div class="chart-card-header">
-          <span class="chart-title">Top servicios por ingresos</span>
-          <span class="chart-period">{data.topServicios.length} servicios en el período</span>
+      <section class="charts-grid__card charts-grid__item--wide">
+        <div class="charts-grid__card-header">
+          <span class="charts-grid__card-title">Top servicios por ingresos</span>
+          <span class="charts-grid__card-period">{data.topServicios.length} servicios en el período</span>
         </div>
-        <div class="chart-card-body chart-body-tight">
+        <div class="charts-grid__card-body charts-grid__card-body--tight">
           {#if data.topServicios.length === 0}
-            <p class="no-data">Sin servicios en el período</p>
+            <p class="charts-grid__no-data">Sin servicios en el período</p>
           {:else}
             <EChart option={topServicesOption} height="{Math.max(240, data.topServicios.length * 42)}px" />
           {/if}
@@ -256,14 +252,14 @@
       </section>
 
       <!-- ── Desempeño por empleado ── -->
-      <section class="chart-card chart-wide">
-        <div class="chart-card-header">
-          <span class="chart-title">Desempeño por empleado</span>
-          <span class="chart-period">{data.porEmpleado.length} colaboradores activos</span>
+      <section class="charts-grid__card charts-grid__item--wide">
+        <div class="charts-grid__card-header">
+          <span class="charts-grid__card-title">Desempeño por empleado</span>
+          <span class="charts-grid__card-period">{data.porEmpleado.length} colaboradores activos</span>
         </div>
-        <div class="chart-card-body chart-body-tight">
+        <div class="charts-grid__card-body charts-grid__card-body--tight">
           {#if data.porEmpleado.length === 0}
-            <p class="no-data">Sin empleados en el período</p>
+            <p class="charts-grid__no-data">Sin empleados en el período</p>
           {:else}
             <EChart option={employeeOption} height="{Math.max(240, data.porEmpleado.length * 42)}px" />
           {/if}
@@ -275,55 +271,3 @@
     <p class="text-muted">No se pudieron cargar las estadísticas.</p>
   {/if}
 </div>
-
-<style>
-  /* ── Charts grid ── */
-  .charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .chart-wide { grid-column: 1 / -1; }
-  .chart-card {
-    background: white; border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(27,58,96,.08); overflow: hidden;
-  }
-  .chart-card-header {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-    padding: 14px 20px 12px; border-bottom: 1px solid #f0f4f8;
-  }
-  .chart-title { font-size: 13px; font-weight: 700; color: #1b3a60; }
-  .chart-period { font-size: 11px; color: #8a97b0; white-space: nowrap; }
-  .chart-card-body { padding: 16px 20px; }
-  .chart-body-tight { min-width: 0; overflow: hidden; }
-  .no-data { text-align: center; color: #8a97b0; font-size: 13px; margin: 20px 0; }
-
-  .metric-strip {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-    border-top: 1px solid #f0f4f8;
-    padding-top: 10px;
-  }
-  .metric-pill {
-    min-width: 0;
-    border: 1px solid #edf1f6;
-    border-radius: 8px;
-    padding: 8px 10px;
-    background: #fafbfd;
-  }
-  .metric-pill span,
-  .metric-pill small {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .metric-pill span { font-size: 10px; color: #8a97b0; font-weight: 700; text-transform: uppercase; }
-  .metric-pill strong { display: block; font-size: 12px; color: #1b3a60; margin-top: 2px; }
-  .metric-pill small { font-size: 10px; color: #8a97b0; margin-top: 1px; }
-
-  /* ── Responsive ── */
-  @media (max-width: 768px) {
-    .charts-grid { grid-template-columns: 1fr; gap: 10px; }
-    .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .chart-card-header { padding: 10px 12px 8px; }
-    .chart-card-body { padding: 10px 10px; }
-  }
-</style>
