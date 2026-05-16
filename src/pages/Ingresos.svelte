@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ingresoApi, type CrearIngresoRequest, type DetalleIngresoRequest } from '../lib/api/ingresos';
+  import { ingresoApi, type CrearIngresoRequest, type DetalleIngresoRequest, type PagoMixtoRequest } from '../lib/api/ingresos';
   import { cajaApi } from '../lib/api/caja';
   import { clienteApi } from '../lib/api/clientes';
   import { empleadoApi } from '../lib/api/empleados';
@@ -88,6 +88,32 @@
     observaciones: '',
   };
 
+  // ── Split payment (Step 3) ────────────────────────────────────────────────
+  interface SplitPago { metodoPago: string; monto: number | string; referencia: string; }
+  let modoSplit = false;
+  let splitPagos: SplitPago[] = [
+    { metodoPago: 'yape', monto: '', referencia: '' },
+    { metodoPago: 'efectivo', monto: '', referencia: '' },
+  ];
+
+  function addSplitPago() {
+    splitPagos = [...splitPagos, { metodoPago: 'otro', monto: '', referencia: '' }];
+  }
+  function removeSplitPago(idx: number) {
+    if (splitPagos.length <= 2) return;
+    splitPagos = splitPagos.filter((_, i) => i !== idx);
+  }
+  function enterSplit() {
+    // Pre-fill first row with montoFinal so user just adjusts
+    splitPagos = [
+      { metodoPago: wForm.metodoPago, monto: montoFinal, referencia: wForm.referencia },
+      { metodoPago: 'yape', monto: '', referencia: '' },
+    ];
+    modoSplit = true;
+    montoRecibido = '';
+  }
+  function exitSplit() { modoSplit = false; splitPagos = [{ metodoPago: 'yape', monto: '', referencia: '' }, { metodoPago: 'efectivo', monto: '', referencia: '' }]; }
+
   // ── Client search (Step 2) ────────────────────────────────────────────────
   let clienteSearch = '';
   let clienteDropdownOpen = false;
@@ -108,8 +134,15 @@
   $: montoRecibidoValue = Number(montoRecibido) || 0;
   $: montoFinal = cartTotal - descuentoValue;
   $: vuelto = montoRecibidoValue - montoFinal;
+  $: splitSuma = splitPagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
+  $: splitDiff = Math.abs(splitSuma - montoFinal);
+  $: splitValido = splitPagos.length >= 2
+    && splitPagos.every(p => !!p.metodoPago && Number(p.monto) > 0)
+    && splitDiff < 0.01;
   $: step2Valid = !!wForm.clienteId;
-  $: step3Valid = !!wForm.metodoPago && !descuentoInvalido && (wForm.metodoPago !== 'efectivo' || montoRecibidoValue >= montoFinal);
+  $: step3Valid = !descuentoInvalido && (modoSplit
+    ? splitValido
+    : !!wForm.metodoPago && (wForm.metodoPago !== 'efectivo' || montoRecibidoValue >= montoFinal));
 
   $: filteredItems = (() => {
     const q = itemSearch.toLowerCase();
@@ -191,6 +224,8 @@
     newClienteNombre = '';
     newClienteDni = '';
     montoRecibido = '';
+    modoSplit = false;
+    splitPagos = [{ metodoPago: 'yape', monto: '', referencia: '' }, { metodoPago: 'efectivo', monto: '', referencia: '' }];
     wForm = { clienteId: undefined, empleadoId: cajaEmpleadoId, comision: 0, metodoPago: 'efectivo', descuento: '', referencia: '', observaciones: '' };
 
     const emp = empleados.find(e => e.id === cajaEmpleadoId);
@@ -300,12 +335,11 @@
       cantidad: cart.reduce((s, i) => s + i.cantidad, 0),
       monto: cartTotal,
       descuento: descuentoValue,
-      metodoPago: wForm.metodoPago,
-      referencia: wForm.referencia || undefined,
+      metodoPago: modoSplit ? 'mixto' : wForm.metodoPago,
+      referencia: modoSplit ? undefined : (wForm.referencia || undefined),
       comision: totalComision,
-      montoRecibido: wForm.metodoPago === 'efectivo' && montoRecibidoValue > 0 ? montoRecibidoValue : undefined,
+      montoRecibido: !modoSplit && wForm.metodoPago === 'efectivo' && montoRecibidoValue > 0 ? montoRecibidoValue : undefined,
       observaciones: wForm.observaciones || undefined,
-      // Always send detalles so PrecioUnitario (catalog price) is always snapshotted
       detalles: cart.map(item => ({
         tipo: item.tipo,
         nombre: item.nombre,
@@ -315,6 +349,13 @@
         descuentoPct: item.descuento,
         monto: effectivePrice(item) * item.cantidad,
       } as DetalleIngresoRequest)),
+      pagos: modoSplit
+        ? splitPagos.map(p => ({
+            metodoPago: p.metodoPago,
+            monto: Number(p.monto),
+            referencia: p.referencia || undefined,
+          } as PagoMixtoRequest))
+        : undefined,
     };
   }
 
@@ -764,26 +805,79 @@
               <div class="col-12 col-lg-6 d-flex flex-column">
                 <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="form-label" style="font-size:11px;font-weight:600;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Método de pago</label>
-                <div class="pago mb-3">
-                  {#each metodoPagoItems as m}
-                    <button type="button" class="pago__btn {wForm.metodoPago === m.key ? 'pago__btn--selected' : ''}" on:click={() => { wForm.metodoPago = m.key; if (m.key !== 'efectivo') montoRecibido = ''; }}>
-                      <div class="pago__icon">
-                        {#if m.icon}
-                          <i class="bi {m.icon}"></i>
-                        {:else}
-                          <span class="pago__brand" style="background:{m.bg}">{m.content}</span>
-                        {/if}
-                      </div>
-                      <span>{m.label}</span>
-                    </button>
-                  {/each}
-                </div>
 
-                {#if wForm.metodoPago === 'yape' || wForm.metodoPago === 'plin' || wForm.metodoPago === 'transferencia'}
-                  <div class="mb-3">
-                    <label for="ingreso-referencia" class="form-label small fw-semibold">N° de operación / Referencia</label>
-                    <input id="ingreso-referencia" class="form-control" bind:value={wForm.referencia} placeholder="Código de operación" />
+                {#if !modoSplit}
+                  <!-- Modo normal: botones de método único -->
+                  <div class="pago mb-2">
+                    {#each metodoPagoItems as m}
+                      <button type="button" class="pago__btn {wForm.metodoPago === m.key ? 'pago__btn--selected' : ''}" on:click={() => { wForm.metodoPago = m.key; if (m.key !== 'efectivo') montoRecibido = ''; }}>
+                        <div class="pago__icon">
+                          {#if m.icon}
+                            <i class="bi {m.icon}"></i>
+                          {:else}
+                            <span class="pago__brand" style="background:{m.bg}">{m.content}</span>
+                          {/if}
+                        </div>
+                        <span>{m.label}</span>
+                      </button>
+                    {/each}
                   </div>
+
+                  {#if wForm.metodoPago === 'yape' || wForm.metodoPago === 'plin' || wForm.metodoPago === 'transferencia'}
+                    <div class="mb-2">
+                      <label for="ingreso-referencia" class="form-label small fw-semibold">N° de operación / Referencia</label>
+                      <input id="ingreso-referencia" class="form-control" bind:value={wForm.referencia} placeholder="Código de operación" />
+                    </div>
+                  {/if}
+
+                  <button type="button" class="split-toggle-btn mb-3" on:click={enterSplit}>
+                    <i class="bi bi-credit-card-2-back me-1"></i>¿Pagar con más de un método?
+                  </button>
+
+                {:else}
+                  <!-- Modo split: filas de pago -->
+                  <div class="split-pagos mb-2">
+                    {#each splitPagos as pago, idx}
+                      <div class="split-pago__row">
+                        <select class="form-select form-select-sm split-pago__metodo" bind:value={pago.metodoPago}>
+                          {#each metodoPagoItems as m}
+                            <option value={m.key}>{m.label}</option>
+                          {/each}
+                        </select>
+                        <div class="split-pago__monto-wrap">
+                          <span class="split-pago__prefix">S/</span>
+                          <input type="number" step="0.01" min="0" class="form-control form-control-sm split-pago__monto" bind:value={pago.monto} placeholder="0.00" />
+                        </div>
+                        {#if pago.metodoPago === 'yape' || pago.metodoPago === 'plin' || pago.metodoPago === 'transferencia'}
+                          <input class="form-control form-control-sm split-pago__ref" bind:value={pago.referencia} placeholder="N° op." />
+                        {:else}
+                          <span class="split-pago__ref-spacer"></span>
+                        {/if}
+                        <button type="button" class="split-pago__remove" disabled={splitPagos.length <= 2} on:click={() => removeSplitPago(idx)} aria-label="Quitar">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
+                      </div>
+                    {/each}
+
+                    <div class="split-footer">
+                      <button type="button" class="btn btn-outline-secondary btn-sm" on:click={addSplitPago}>
+                        <i class="bi bi-plus me-1"></i>Agregar método
+                      </button>
+                      <span class="split-sum {splitDiff < 0.01 ? 'split-sum--ok' : splitSuma > montoFinal ? 'split-sum--over' : 'split-sum--under'}">
+                        {#if splitDiff < 0.01}
+                          <i class="bi bi-check-circle-fill me-1"></i>S/ {splitSuma.toFixed(2)} ✓
+                        {:else if splitSuma > montoFinal}
+                          Excede S/ {(splitSuma - montoFinal).toFixed(2)}
+                        {:else}
+                          Faltan S/ {(montoFinal - splitSuma).toFixed(2)}
+                        {/if}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button type="button" class="split-toggle-btn mb-3" on:click={exitSplit}>
+                    <i class="bi bi-arrow-left me-1"></i>Volver a método único
+                  </button>
                 {/if}
 
                 <!-- 1. Descuento -->
@@ -803,8 +897,8 @@
                   <textarea id="ingreso-observaciones" class="form-control" rows="2" bind:value={wForm.observaciones}></textarea>
                 </div>
 
-                <!-- 3. Monto recibido (siempre al final) -->
-                {#if wForm.metodoPago === 'efectivo'}
+                <!-- 3. Monto recibido — solo modo normal + efectivo -->
+                {#if !modoSplit && wForm.metodoPago === 'efectivo'}
                   <div class="mt-auto">
                     <label for="ingreso-monto-recibido" class="form-label" style="font-size:11px;font-weight:700;color:#5a6478;text-transform:uppercase;letter-spacing:.06em">Monto recibido (S/)</label>
                     <div style="position:relative">
@@ -836,14 +930,25 @@
                         <span class="fw-semibold">S/ {(effectivePrice(item) * item.cantidad).toFixed(2)}</span>
                       </div>
                     {/each}
-                    {#if wForm.metodoPago}<div class="resumen__row"><span>Método</span><span class="fw-semibold text-capitalize">{wForm.metodoPago}</span></div>{/if}
+                    {#if modoSplit}
+                      {#each splitPagos as p}
+                        {#if Number(p.monto) > 0}
+                          <div class="resumen__row">
+                            <span class="text-capitalize">{p.metodoPago}</span>
+                            <span class="fw-semibold">S/ {Number(p.monto).toFixed(2)}</span>
+                          </div>
+                        {/if}
+                      {/each}
+                    {:else if wForm.metodoPago}
+                      <div class="resumen__row"><span>Método</span><span class="fw-semibold text-capitalize">{wForm.metodoPago}</span></div>
+                    {/if}
                     {#if descuentoValue > 0}<div class="resumen__row"><span>Descuento</span><span class="fw-semibold" style="color:#856404">-S/ {descuentoValue.toFixed(2)}</span></div>{/if}
                   </div>
 
                   <!-- Total siempre al fondo -->
                   <div>
                     <div class="resumen__row resumen__row--total"><span>Total a cobrar</span><span>S/ {montoFinal.toFixed(2)}</span></div>
-                    {#if wForm.metodoPago === 'efectivo' && montoRecibidoValue > 0}
+                    {#if !modoSplit && wForm.metodoPago === 'efectivo' && montoRecibidoValue > 0}
                       <div style="margin-top:10px;padding:10px;border-radius:8px;background:{vuelto >= 0 ? '#e8f5ee' : '#fdecea'}">
                         <div class="d-flex justify-content-between small"><span style="color:#5a6478">Recibido</span><span class="fw-semibold">S/ {montoRecibidoValue.toFixed(2)}</span></div>
                         <div class="d-flex justify-content-between mt-1">
@@ -1029,6 +1134,22 @@
                     <span style="color:#856404">−S/ {detailIngreso.descuento.toFixed(2)}</span>
                   </div>
                 {/if}
+                {#if detailIngreso.pagos && detailIngreso.pagos.length >= 2}
+                  <!-- Pago mixto: desglose por método -->
+                  {#each detailIngreso.pagos as pago}
+                    <div class="di-totales__row">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="metodo-badge metodo-badge--{pago.metodoPago}" style="font-size:10px">{pago.metodoPago}</span>
+                        {#if pago.referencia}<span class="font-monospace text-muted" style="font-size:10px">· {pago.referencia}</span>{/if}
+                      </div>
+                      <span>S/ {pago.monto.toFixed(2)}</span>
+                    </div>
+                  {/each}
+                  <div class="di-totales__row di-totales__row--final">
+                    <span>Total cobrado</span>
+                    <span>S/ {totalCobrado.toFixed(2)}</span>
+                  </div>
+                {:else}
                 <div class="di-totales__row di-totales__row--final">
                   <span>Total cobrado</span>
                   <div class="d-flex align-items-center gap-2">
@@ -1036,6 +1157,7 @@
                     <span>S/ {totalCobrado.toFixed(2)}</span>
                   </div>
                 </div>
+                {/if}
                 {#if detailIngreso.montoRecibido}
                   {@const vuelto = detailIngreso.montoRecibido - totalCobrado}
                   <div class="di-totales__row" style="color:#5a6478">
@@ -1072,90 +1194,3 @@
 {/if}
 
 <ConfirmDialog show={deleteConfirm} message="¿Eliminar este ingreso?" onConfirm={doDelete} onCancel={() => (deleteConfirm=false)} />
-
-<style>
-  /* ── Detalle ingreso modal ─────────────────────────────── */
-  .di-section__title {
-    font-size: 10px;
-    font-weight: 700;
-    color: #8a97b0;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    margin-bottom: 10px;
-  }
-
-  .di-items-table {
-    border-collapse: collapse;
-    font-size: .8rem;
-    margin-bottom: 2px;
-  }
-  .di-items-table thead th {
-    font-size: 11px;
-    font-weight: 700;
-    color: #4a5568;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    padding: 0 4px 6px;
-    border-bottom: 1px solid #e8edf5;
-    white-space: nowrap;
-  }
-  .di-items-table thead th:first-child { padding-left: 0; }
-  .di-items-table tbody td {
-    padding: 8px 4px;
-    border-bottom: 1px solid #f0f3f8;
-    color: #5a6478;
-    vertical-align: middle;
-  }
-  .di-items-table tbody td:first-child { padding-left: 0; }
-  .di-items-table__name {
-    font-weight: 600;
-    color: #1a2a4a;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    max-width: 0;
-  }
-
-  .di-items-table tbody tr:last-child td { border-bottom: none; }
-
-  .di-totales {
-    margin-top: 6px;
-    padding-top: 0;
-  }
-  .di-totales__row {
-    display: flex;
-    justify-content: space-between;
-    font-size: .825rem;
-    color: #5a6478;
-    padding: 3px 0;
-  }
-  .di-totales__row--final {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1a2a4a;
-    border-top: 1px solid #e8edf5;
-    margin-top: 4px;
-    padding-top: 8px;
-  }
-
-  .di-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .di-meta__row {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    font-size: .875rem;
-  }
-  .di-meta__label {
-    width: 90px;
-    flex-shrink: 0;
-    font-size: .75rem;
-    font-weight: 600;
-    color: #8a97b0;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
-</style>

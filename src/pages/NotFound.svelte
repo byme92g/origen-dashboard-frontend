@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../styles/pages/_notfound.css';
   import { push } from 'svelte-spa-router';
 </script>
 
@@ -17,58 +18,3 @@
     </button>
   </div>
 </div>
-
-<style>
-  .notfound-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100%;
-    padding: 2rem;
-    background: #f4f6fb;
-  }
-
-  .notfound-card {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.09);
-    padding: 2.5rem 2rem;
-    text-align: center;
-    max-width: 380px;
-    width: 100%;
-  }
-
-  .notfound-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: #e8f0fe;
-    color: #1a2a4a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    margin: 0 auto 1rem;
-  }
-
-  .notfound-code {
-    display: block;
-    font-size: 3rem;
-    font-weight: 700;
-    color: #1a2a4a;
-    line-height: 1;
-    margin-bottom: 0.5rem;
-  }
-
-  .notfound-title {
-    font-weight: 700;
-    color: #1a2a4a;
-    margin-bottom: 0.5rem;
-  }
-
-  .notfound-desc {
-    color: #6b7280;
-    font-size: 0.875rem;
-    margin-bottom: 1rem;
-  }
-</style>

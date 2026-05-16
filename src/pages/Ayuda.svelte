@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../styles/pages/_ayuda.css';
   import { isAdmin } from '../lib/stores/auth';
   import { permisosStore } from '../lib/stores/permisos';
 
@@ -280,49 +281,3 @@ Selecciona el tipo de reporte, el rango de fechas y descarga el archivo en el fo
     {/each}
   </div>
 </div>
-
-<style>
-  .ayuda-card {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    overflow: hidden;
-    transition: box-shadow .15s;
-  }
-  .ayuda-card--open {
-    box-shadow: 0 3px 12px rgba(0,0,0,.12);
-  }
-  .ayuda-card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    cursor: pointer;
-    user-select: none;
-    transition: background .12s;
-  }
-  .ayuda-card__header:hover {
-    background: #f8f9fa;
-  }
-  .ayuda-card__icon {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    background: #e8f0fe;
-    color: #1a2a4a;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-  }
-  .ayuda-card__chevron {
-    color: #aaa;
-    transition: transform .2s;
-    font-size: .85rem;
-  }
-  .ayuda-card__chevron.rotated {
-    transform: rotate(180deg);
-  }
-  .ayuda-card__body {
-    padding: 4px 18px 18px 18px;
-    border-top: 1px solid #f0f0f0;
-  }
-</style>

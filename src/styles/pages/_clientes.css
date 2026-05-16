@@ -1,0 +1,28 @@
+.hist-list { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
+
+.hist-fecha {
+  font-size: 11px; font-weight: 700; color: #5a6478;
+  letter-spacing: .05em; padding: 2px 0 4px;
+  border-bottom: 1px solid #e8ecf3;
+}
+
+.hist-tx {
+  border: 1px solid #e8ecf3; border-radius: 8px; overflow: hidden;
+}
+.hist-tx__header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; background: #f8f9fc;
+  border-bottom: 1px solid #e8ecf3;
+}
+.hist-tx__hora { font-size: 12px; color: #5a6478; font-weight: 500; white-space: nowrap; flex: 1; }
+.hist-tx__total { font-size: 13px; font-weight: 700; color: #2e7d5a; margin-left: auto; white-space: nowrap; }
+
+.hist-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 12px 6px 20px;
+  border-bottom: 1px solid #f0f2f7;
+  font-size: 13px;
+}
+.hist-item:last-child { border-bottom: none; }
+.hist-item__nombre { color: #1a2a4a; font-weight: 500; }
+.hist-item__monto { color: #5a6478; white-space: nowrap; }

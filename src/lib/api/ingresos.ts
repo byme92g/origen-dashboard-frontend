@@ -1,6 +1,12 @@
 import { apiGet, apiPost, apiDelete } from './base';
 import type { Ingreso, PaginatedResult } from '../types';
 
+export interface PagoMixtoRequest {
+  metodoPago: string;
+  monto: number;
+  referencia?: string;
+}
+
 export interface DetalleIngresoRequest {
   tipo: string;
   nombre: string;       // snapshot sent by frontend at checkout time
@@ -28,6 +34,7 @@ export interface CrearIngresoRequest {
   montoRecibido?: number;
   observaciones?: string;
   detalles?: DetalleIngresoRequest[];
+  pagos?: PagoMixtoRequest[];
 }
 
 function normalizeIngreso(i: Ingreso): Ingreso {

@@ -110,6 +110,14 @@ export interface IngresoDetalle {
   monto: number;
 }
 
+export interface IngresoMetodoPago {
+  id: number;
+  ingresoId: number;
+  metodoPago: string;
+  monto: number;
+  referencia?: string;
+}
+
 export interface Ingreso {
   id: number;
   fecha: string;
@@ -136,6 +144,7 @@ export interface Ingreso {
   producto?: { id: number; nombre: string; precioVenta: number };
   paquete?: { id: number; nombre: string; precio: number };
   detalles?: IngresoDetalle[];
+  pagos?: IngresoMetodoPago[];
 }
 
 export interface Egreso {

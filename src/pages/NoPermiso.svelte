@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../styles/pages/_nopermiso.css';
   import { push } from 'svelte-spa-router';
   import { authStore } from '../lib/stores/auth';
 </script>
@@ -28,78 +29,3 @@
     </button>
   </div>
 </div>
-
-<style>
-  .nopermiso-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100%;
-    padding: 2rem;
-    background: #f4f6fb;
-  }
-
-  .nopermiso-card {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.09);
-    padding: 2.5rem 2rem;
-    text-align: center;
-    max-width: 380px;
-    width: 100%;
-  }
-
-  .nopermiso-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: #fef2f2;
-    color: #dc2626;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    margin: 0 auto 1rem;
-  }
-
-  .nopermiso-code {
-    display: block;
-    font-size: 3rem;
-    font-weight: 700;
-    color: #1a2a4a;
-    line-height: 1;
-    margin-bottom: 0.5rem;
-  }
-
-  .nopermiso-title {
-    font-weight: 700;
-    color: #1a2a4a;
-    margin-bottom: 0.5rem;
-  }
-
-  .nopermiso-desc {
-    color: #6b7280;
-    font-size: 0.875rem;
-    margin-bottom: 1rem;
-    line-height: 1.6;
-  }
-
-  .nopermiso-user {
-    font-size: 0.8rem;
-    color: #6b7280;
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    display: inline-block;
-  }
-
-  .badge-admin {
-    background: #1a2a4a;
-    color: white;
-  }
-
-  .badge-empleado {
-    background: #e8f0fe;
-    color: #1a2a4a;
-  }
-</style>

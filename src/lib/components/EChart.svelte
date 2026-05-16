@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../../styles/components/_echart.css';
   import { onDestroy, onMount } from 'svelte';
   import { BarChart, PieChart } from 'echarts/charts';
   import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
@@ -33,10 +34,3 @@
 </script>
 
 <div bind:this={el} class="echart" style:height></div>
-
-<style>
-  .echart {
-    width: 100%;
-    min-width: 0;
-  }
-</style>
